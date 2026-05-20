@@ -9,9 +9,9 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 - Project: Smart City Zero-Disk IoT Infrastructure.
 - Strategy: local-first MVP, cloud-ready architecture.
 - Current branch of record: `main`.
-- Latest merged slice: Slice 2, Simulator to TimescaleDB Vertical Slice.
-- Active slice: Slice 3, Grafana datasource and starter dashboard provisioning.
-- Current working capability: deterministic Go simulator can generate smart-city readings and insert them into local TimescaleDB.
+- Latest merged slice: Slice 3, Grafana datasource and starter dashboard provisioning.
+- Next planned slice: Slice 4, OpenAQ poller integration.
+- Current working capability: deterministic Go simulator can generate smart-city readings, insert them into local TimescaleDB, and visualize seeded readings through provisioned Grafana dashboards.
 - Local checks expected to pass on `main`: `make check`, `make test`.
 - Known blocker: GitHub branch protection for private repositories requires GitHub Pro or making the repo public. Direct-push protection is deferred.
 - Operational note: Docker Compose stack is not assumed to be running. Start it with `make run-local` when needed.
@@ -22,12 +22,12 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 | --- | --- | --- | --- | --- |
 | 1 | Repo Foundation | [#3](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/3) | Merged into `main` | `make check`, `docker compose config` |
 | 2 | Simulator to TimescaleDB Vertical Slice | [#4](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/4) | Merged into `main` | `make test`, `make check`, `docker compose config`, `make seed-simulator`, Timescale row checks |
+| 3 | Grafana datasource and starter dashboard provisioning | [#6](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/6) | Merged into `main` | `make check`, `make test`, `docker compose config`, Grafana datasource/dashboard API checks, Timescale row checks |
 
 ## Next Planned Slices
 
 | Slice | Goal | Status | Default Owner |
 | --- | --- | --- | --- |
-| 3 | Grafana datasource and starter dashboard provisioning | In Review | Dashboards workstream |
 | 4 | OpenAQ poller integration | Backlog | Go ingestion workstream |
 | 5 | Queue abstraction and local buffering | Backlog | Go ingestion + storage workstreams |
 | 6 | Cold path and Parquet writer | Backlog | Storage workstream |
@@ -50,12 +50,13 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 
 ### In Review
 
-- Slice 3: Grafana datasource and starter dashboard provisioning. Owner: Codex. Branch: `codex/grafana-provisioning`. PR: [#6](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/6). Validation: `make check`, `make test`, `docker compose config`, Grafana datasource/dashboard API checks, Timescale row checks. Blockers: none.
+- None.
 
 ### Done
 
 - Slice 1: Repo Foundation, PR #3.
 - Slice 2: Simulator to TimescaleDB Vertical Slice, PR #4.
+- Slice 3: Grafana datasource and starter dashboard provisioning, PR #6.
 
 ## Workstreams
 
@@ -71,8 +72,8 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 - Each active task should record owner, branch, PR number, status, validation, and blockers.
 - Keep updates short and factual; put deeper technical details in runbooks or service docs.
 - If a team member takes a slice, move it from `Backlog` to `In Progress` with their name and branch.
-- If a PR is opened, move the slice to `In Review` with the PR link.
-- After merge, move the slice to `Done` and update `Current Snapshot`.
+- For future implementation PRs, update the tracker to show the completed outcome for the slice and identify the next planned backlog slice before the PR is merged.
+- After merge, pull `main` locally and confirm the tracker already reflects the completed slice.
 
 ## Resume Protocol
 
@@ -90,4 +91,4 @@ Then read this tracker, pick the next `Backlog` slice, create a `codex/<slice-na
 
 ## Handoff Notes
 
-- 2026-05-20: Completed and merged Slice 1 and Slice 2. Local `main` was updated after both merges. `gh` CLI was installed and authenticated. Branch protection attempt was blocked by GitHub plan/private repo limitations.
+- 2026-05-20: Completed and merged Slice 1, Slice 2, and Slice 3. Local `main` was updated after all three merges. `gh` CLI was installed and authenticated. Branch protection attempt was blocked by GitHub plan/private repo limitations.
