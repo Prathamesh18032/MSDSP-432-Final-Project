@@ -4,7 +4,7 @@ Smart City Zero-Disk IoT Infrastructure for MSDS 432 Foundations of Data Enginee
 
 Author: Prathamesh  
 Team: Group 4  
-Status: Repo foundation scaffold is in progress.
+Status: Local-first MVP in progress. See [Project Tracker](docs/PROJECT_TRACKER.md) for current slice status and next steps.
 
 ## Project Direction
 
@@ -58,6 +58,10 @@ make stop
 - Storage: TimescaleDB schema, batch inserts, aggregates, retention flush, Parquet writer.
 - Dashboards: Grafana provisioning, Streamlit reports, cost and data-quality analytics.
 - DevOps: Docker Compose, Makefile, CI, cloud manifests, setup documentation.
+
+## Project Tracking
+
+- [Project Tracker](docs/PROJECT_TRACKER.md): current status, completed slices, roadmap, team work board, and resume protocol.
 
 ## Design Inputs
 
