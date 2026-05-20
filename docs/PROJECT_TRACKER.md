@@ -10,6 +10,7 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 - Strategy: local-first MVP, cloud-ready architecture.
 - Current branch of record: `main`.
 - Latest merged slice: Slice 2, Simulator to TimescaleDB Vertical Slice.
+- Active slice: Slice 3, Grafana datasource and starter dashboard provisioning.
 - Current working capability: deterministic Go simulator can generate smart-city readings and insert them into local TimescaleDB.
 - Local checks expected to pass on `main`: `make check`, `make test`.
 - Known blocker: GitHub branch protection for private repositories requires GitHub Pro or making the repo public. Direct-push protection is deferred.
@@ -26,7 +27,7 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 
 | Slice | Goal | Status | Default Owner |
 | --- | --- | --- | --- |
-| 3 | Grafana datasource and starter dashboard provisioning | Backlog | Dashboards workstream |
+| 3 | Grafana datasource and starter dashboard provisioning | In Review | Dashboards workstream |
 | 4 | OpenAQ poller integration | Backlog | Go ingestion workstream |
 | 5 | Queue abstraction and local buffering | Backlog | Go ingestion + storage workstreams |
 | 6 | Cold path and Parquet writer | Backlog | Storage workstream |
@@ -37,7 +38,6 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 
 ### Backlog
 
-- Slice 3: Grafana datasource and starter dashboard provisioning.
 - Slice 4: OpenAQ poller integration.
 - Slice 5: Queue abstraction and local buffering.
 - Slice 6: Cold path and Parquet writer.
@@ -50,7 +50,7 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 
 ### In Review
 
-- None.
+- Slice 3: Grafana datasource and starter dashboard provisioning. Owner: Codex. Branch: `codex/grafana-provisioning`. PR: [#6](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/6). Validation: `make check`, `make test`, `docker compose config`, Grafana datasource/dashboard API checks, Timescale row checks. Blockers: none.
 
 ### Done
 

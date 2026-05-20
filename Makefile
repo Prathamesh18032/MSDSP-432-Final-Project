@@ -29,6 +29,9 @@ check: ## Validate the repo foundation scaffold
 	@test -f docs/design/Project_Phase_2_Group4_Report_Detailed_Design.pdf
 	@test -f docs/design/Smart_City_Architecture_Group4_Final.html
 	@test -f infra/local/timescaledb/init/001_schema.sql
+	@test -f infra/local/grafana/provisioning/datasources/timescaledb.yml
+	@test -f infra/local/grafana/provisioning/dashboards/dashboard-provider.yml
+	@test -f infra/local/grafana/provisioning/dashboards/smart-city-operations.json
 	@echo "Foundation check passed."
 
 test: ## Run Go tests
