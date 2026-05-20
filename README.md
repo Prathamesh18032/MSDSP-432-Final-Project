@@ -43,11 +43,14 @@ Useful commands:
 ```sh
 make help
 make check
+make test
+make run-local
+make seed-simulator
 make run
 make stop
 ```
 
-`make check` validates the foundation scaffold. `make run` starts the local Docker Compose stack once Docker is available.
+`make check` validates the foundation scaffold. `make test` runs Go tests. `make run-local` starts the local Docker Compose stack in the background, and `make seed-simulator` inserts deterministic simulator readings into local TimescaleDB once the database is healthy.
 
 ## Workstreams
 
