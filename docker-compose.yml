@@ -42,6 +42,11 @@ services:
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      TIMESCALE_HOST: timescaledb
+      TIMESCALE_PORT: 5432
+      TIMESCALE_DB: ${TIMESCALE_DB:-smartcity_hot}
+      TIMESCALE_USER: ${TIMESCALE_USER:-smartcity}
+      TIMESCALE_PASSWORD: ${TIMESCALE_PASSWORD:-smartcity_dev_password}
     ports:
       - "${GRAFANA_PORT:-3000}:3000"
     volumes:

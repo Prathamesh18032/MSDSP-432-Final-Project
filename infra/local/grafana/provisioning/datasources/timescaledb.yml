@@ -1,0 +1,19 @@
+apiVersion: 1
+
+datasources:
+  - name: Smart City TimescaleDB
+    uid: timescaledb-hot
+    type: postgres
+    access: proxy
+    url: ${TIMESCALE_HOST}:${TIMESCALE_PORT}
+    user: ${TIMESCALE_USER}
+    database: ${TIMESCALE_DB}
+    isDefault: true
+    editable: true
+    jsonData:
+      database: ${TIMESCALE_DB}
+      sslmode: disable
+      postgresVersion: 1500
+      timescaledb: true
+    secureJsonData:
+      password: ${TIMESCALE_PASSWORD}
