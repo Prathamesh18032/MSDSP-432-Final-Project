@@ -27,7 +27,7 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 
 | Slice | Goal | Status | Default Owner |
 | --- | --- | --- | --- |
-| 3 | Grafana datasource and starter dashboard provisioning | In Progress | Dashboards workstream |
+| 3 | Grafana datasource and starter dashboard provisioning | In Review | Dashboards workstream |
 | 4 | OpenAQ poller integration | Backlog | Go ingestion workstream |
 | 5 | Queue abstraction and local buffering | Backlog | Go ingestion + storage workstreams |
 | 6 | Cold path and Parquet writer | Backlog | Storage workstream |
@@ -46,11 +46,11 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 
 ### In Progress
 
-- Slice 3: Grafana datasource and starter dashboard provisioning. Owner: Codex. Branch: `codex/grafana-provisioning`. PR: TBD. Validation: `make check`, `make test`, `docker compose config`, Grafana datasource/dashboard API checks, Timescale row checks. Blockers: none.
+- None.
 
 ### In Review
 
-- None.
+- Slice 3: Grafana datasource and starter dashboard provisioning. Owner: Codex. Branch: `codex/grafana-provisioning`. PR: [#6](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/6). Validation: `make check`, `make test`, `docker compose config`, Grafana datasource/dashboard API checks, Timescale row checks. Blockers: none.
 
 ### Done
 
