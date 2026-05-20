@@ -29,6 +29,9 @@ go.work.sum
 .env.local
 .env.*.local
 
+# Local caches
+.cache/
+
 # Editor/IDE
 # .idea/
 # .vscode/
