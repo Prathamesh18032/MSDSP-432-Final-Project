@@ -52,6 +52,8 @@ make stop
 
 `make check` validates the foundation scaffold. `make test` runs Go tests. `make run-local` starts the local Docker Compose stack in the background, and `make seed-simulator` inserts deterministic simulator readings into local TimescaleDB once the database is healthy.
 
+After seeding data, open Grafana at [http://localhost:3000](http://localhost:3000) and sign in with the local defaults `admin / admin`. The `Smart City Operations` dashboard is provisioned automatically and reads from the local TimescaleDB datasource. If an existing `grafana-data` volume has a changed admin password, Grafana keeps that password until local volumes are reset.
+
 ## Workstreams
 
 - Go ingestion: OpenAQ client, simulator, validation, retry/backoff, quality flags.
