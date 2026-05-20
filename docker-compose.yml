@@ -1,0 +1,56 @@
+name: smartcity-zero-disk
+
+services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg15
+    container_name: smartcity-timescaledb
+    environment:
+      POSTGRES_DB: ${TIMESCALE_DB:-smartcity_hot}
+      POSTGRES_USER: ${TIMESCALE_USER:-smartcity}
+      POSTGRES_PASSWORD: ${TIMESCALE_PASSWORD:-smartcity_dev_password}
+    ports:
+      - "${TIMESCALE_PORT:-5432}:5432"
+    volumes:
+      - timescale-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  metadata-db:
+    image: postgres:15
+    container_name: smartcity-metadata-db
+    environment:
+      POSTGRES_DB: ${METADATA_DB_NAME:-smartcity_metadata}
+      POSTGRES_USER: ${METADATA_DB_USER:-smartcity_meta}
+      POSTGRES_PASSWORD: ${METADATA_DB_PASSWORD:-smartcity_meta_dev_password}
+    ports:
+      - "${METADATA_DB_PORT:-5433}:5432"
+    volumes:
+      - metadata-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: smartcity-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./infra/local/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+
+volumes:
+  timescale-data:
+  metadata-data:
+  grafana-data:
