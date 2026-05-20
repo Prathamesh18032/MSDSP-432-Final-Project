@@ -18,6 +18,7 @@ check: ## Validate the repo foundation scaffold
 	@test -f docker-compose.yml
 	@test -f .github/workflows/ci.yml
 	@test -f go.mod
+	@test -f docs/PROJECT_TRACKER.md
 	@test -d services/ingestor
 	@test -d services/writer
 	@test -d infra/local
