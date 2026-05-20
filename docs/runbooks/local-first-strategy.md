@@ -12,6 +12,19 @@ Build a deterministic local vertical slice:
 4. Writer inserts hot data into TimescaleDB.
 5. Grafana reads live data from TimescaleDB.
 
+The current slice implements the simulator, validator, initial TimescaleDB schema, and local seed writer. OpenAQ and Grafana provisioning come next.
+
+## Current Local Commands
+
+```sh
+make check
+make test
+make run-local
+make seed-simulator
+```
+
+If the local TimescaleDB volume already exists from an earlier schema, run `make clean` before `make run-local` so Docker replays the init SQL.
+
 ## Parallel Workstreams
 
 - Go ingestion: source clients, simulator, validator, retry/backoff, quality flags.
