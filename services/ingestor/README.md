@@ -29,6 +29,7 @@ make run-local
 make run-openaq
 make poll-multisource-once
 make run-multisource
+make docker-build-ingestor
 ```
 
 Required environment:
@@ -62,6 +63,16 @@ The multi-source poller makes the local MVP feel like a practical city operation
 - OpenAQ is included when `OPENAQ_API_KEY` is present.
 
 All source pollers publish valid readings through the same local queue and TimescaleDB writer. A failure in one live source is logged but does not stop the remaining sources in that polling cycle.
+
+## Container Image
+
+Build the deployable ingestor image locally:
+
+```sh
+make docker-build-ingestor
+```
+
+The image runs `poll-multisource` by default and is tagged as `smartcity-ingestor` under the configured `IMAGE_REGISTRY` and `IMAGE_TAG`. Slice 10 only builds and smoke-tests locally; pushing to Artifact Registry is deferred.
 
 Future responsibilities:
 

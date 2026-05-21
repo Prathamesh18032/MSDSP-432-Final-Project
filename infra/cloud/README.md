@@ -6,12 +6,14 @@ This directory contains cloud-ready scaffolding for the Smart City Zero-Disk IoT
 
 - `terraform/`: GCP resource scaffold for Pub/Sub, dead-letter routing, GCS cold storage, BigQuery external analytics, Artifact Registry, service accounts, and Workload Identity IAM bindings.
 - `k8s/`: GKE manifest scaffold for the multi-source ingestor, cold export writer job, Streamlit, and Grafana.
+- Local container image packaging uses the same placeholder Artifact Registry naming convention through `make docker-build`.
 
 ## What Is Not Included Yet
 
 - No Terraform backend or remote state configuration.
 - No live GCP apply/plan workflow.
-- No container image build or publish pipeline.
+- No image push to Artifact Registry.
+- No image publish or cloud deployment pipeline.
 - No committed secrets, service account JSON keys, or OpenAQ API key.
 - No final hot-store decision for cloud TimescaleDB. Future deployment should provide `TIMESCALE_DSN` through `smartcity-runtime-secrets`.
 

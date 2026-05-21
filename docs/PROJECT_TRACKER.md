@@ -9,10 +9,10 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 - Project: Smart City Zero-Disk IoT Infrastructure.
 - Strategy: local-first MVP, cloud-ready architecture.
 - Current branch of record: `main`.
-- Latest merged slice: Slice 8, multi-source smart city sensor integration.
-- Active slice: Slice 9, GCP infrastructure readiness docs/manifests.
-- Next planned slice after this PR merges: Slice 10, container image packaging and cloud deployment preparation.
-- Current working capability: deterministic Go simulator, OpenAQ, Open-Meteo, Divvy GBFS, and USGS pollers can generate or fetch smart-city readings, publish through a local queue buffer, insert into local TimescaleDB, export local Parquet cold-storage files, record ingestion metrics, visualize readings through Grafana dashboards, and run local Streamlit reports. This PR adds cloud-readiness Terraform and GKE manifests without applying anything to GCP.
+- Latest merged slice: Slice 9, GCP infrastructure readiness docs/manifests.
+- Active slice: Slice 10, container image packaging and deployment artifact readiness.
+- Next planned slice after this PR merges: Slice 11, Artifact Registry and image publish readiness.
+- Current working capability: deterministic Go simulator, OpenAQ, Open-Meteo, Divvy GBFS, and USGS pollers can generate or fetch smart-city readings, publish through a local queue buffer, insert into local TimescaleDB, export local Parquet cold-storage files, record ingestion metrics, visualize readings through Grafana dashboards, run local Streamlit reports, and provide cloud-readiness Terraform/GKE manifests. This PR adds local container image packaging for deployable artifacts without pushing anything to GCP.
 - Local checks expected to pass on `main`: `make check`, `make test`.
 - Known blocker: GitHub branch protection for private repositories requires GitHub Pro or making the repo public. Direct-push protection is deferred.
 - Operational note: Docker Compose stack is not assumed to be running. Start it with `make run-local` when needed.
@@ -29,23 +29,24 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 | 6 | Cold path and Parquet writer | [#11](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/11) | Merged into `main` | `make check`, `make test`, `docker compose config`, `make export-cold-demo`, Parquet file readback checks |
 | 7 | Streamlit reports from local/seeded data | [#12](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/12) | Merged into `main` | `make check`, `make test`, `make streamlit-check`, `docker compose config`, Streamlit local and Compose smoke checks |
 | 8 | Multi-source smart city sensor integration | [#13](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/13) | Merged into `main` | `make check`, `make test`, `docker compose config`, `make poll-multisource-once`, Timescale source checks for `openmeteo`, `gbfs`, and `usgs` |
-| 9 | GCP infrastructure readiness docs/manifests | This PR | Completes on merge | `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `docker compose config`, `git diff --check` |
+| 9 | GCP infrastructure readiness docs/manifests | [#14](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/14) | Merged into `main` | `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `docker compose config`, `git diff --check` |
+| 10 | Container image packaging and deployment artifact readiness | This PR | Completes on merge | `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `make docker-build`, `make docker-smoke`, `docker compose config`, `git diff --check` |
 
 ## Next Planned Slices
 
 | Slice | Goal | Status | Default Owner |
 | --- | --- | --- | --- |
-| 10 | Container image packaging and cloud deployment preparation | Backlog | DevOps workstream |
+| 11 | Artifact Registry and image publish readiness | Backlog | DevOps workstream |
 
 ## Team Work Board
 
 ### Backlog
 
-- Slice 10: Container image packaging and cloud deployment preparation.
+- Slice 11: Artifact Registry and image publish readiness.
 
 ### In Progress
 
-- Slice 9: GCP infrastructure readiness docs/manifests, branch `codex/slice-9-gcp-readiness`.
+- Slice 10: Container image packaging and deployment artifact readiness, branch `codex/slice-10-container-packaging`.
 
 ### In Review
 
@@ -61,14 +62,15 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 - Slice 6: Cold path and Parquet writer, PR #11.
 - Slice 7: Streamlit reports from local/seeded data, PR #12.
 - Slice 8: Multi-source smart city sensor integration, PR #13.
-- Slice 9: GCP infrastructure readiness docs/manifests, this PR after merge.
+- Slice 9: GCP infrastructure readiness docs/manifests, PR #14.
+- Slice 10: Container image packaging and deployment artifact readiness, this PR after merge.
 
 ## Workstreams
 
 - Go ingestion: OpenAQ, Open-Meteo, GBFS, USGS, simulator, validator, retry/backoff, quality flags.
 - Storage: TimescaleDB schema, inserts, aggregates, retention flush, Parquet path.
 - Dashboards and analytics: Grafana provisioning, Streamlit reports, data-quality views.
-- DevOps and cloud readiness: Compose, CI, Makefile, Terraform/GKE readiness manifests, setup docs.
+- DevOps and cloud readiness: Compose, container images, CI, Makefile, Terraform/GKE readiness manifests, setup docs.
 
 ## Update Protocol
 
@@ -96,4 +98,4 @@ Then read this tracker, pick the next `Backlog` slice, create a `codex/<slice-na
 
 ## Handoff Notes
 
-- 2026-05-21: Completed and merged Slice 1 through Slice 8. Started Slice 9 GCP infrastructure readiness docs/manifests on branch `codex/slice-9-gcp-readiness`. Local `main` was updated after PR #13. `gh` CLI token became invalid, but the GitHub connector can still create PRs. Branch protection attempt was blocked by GitHub plan/private repo limitations.
+- 2026-05-21: Completed and merged Slice 1 through Slice 9. Started Slice 10 container image packaging on branch `codex/slice-10-container-packaging`. Local `main` was updated after PR #14. `gh` CLI token became invalid, but the GitHub connector can still create PRs. Branch protection attempt was blocked by GitHub plan/private repo limitations.

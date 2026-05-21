@@ -45,6 +45,8 @@ make help
 make check
 make test
 make cloud-check
+make docker-build
+make docker-smoke
 make run-local
 make seed-simulator
 make run-openaq
@@ -57,7 +59,7 @@ make run
 make stop
 ```
 
-`make check` validates the foundation scaffold. `make test` runs Go tests. `make streamlit-check` validates the Streamlit Python files. `make cloud-check` validates the cloud-readiness scaffold without contacting GCP. `make run-local` starts the local Docker Compose stack in the background, and `make seed-simulator` publishes deterministic simulator readings through the local buffer into TimescaleDB once the database is healthy. `make run-openaq` starts the continuous OpenAQ v3 poller and requires `OPENAQ_API_KEY`. `make poll-multisource-once` runs one local poll across OpenAQ, Open-Meteo, Divvy GBFS, and USGS; `OPENAQ_API_KEY` is optional in this unified path, so OpenAQ is skipped when the key is missing. `make run-multisource` runs the same source set continuously. `make export-cold-demo` exports current TimescaleDB readings to local Parquet files under `data/cold`. `make run-streamlit` starts the local reports app, and `make run-streamlit-compose` starts the Compose Streamlit service.
+`make check` validates the foundation scaffold. `make test` runs Go tests. `make streamlit-check` validates the Streamlit Python files. `make cloud-check` validates the cloud-readiness scaffold without contacting GCP. `make docker-build` builds local deployable images for the ingestor, writer, and Streamlit app; `make docker-smoke` verifies those images start cleanly without pushing them. `make run-local` starts the local Docker Compose stack in the background, and `make seed-simulator` publishes deterministic simulator readings through the local buffer into TimescaleDB once the database is healthy. `make run-openaq` starts the continuous OpenAQ v3 poller and requires `OPENAQ_API_KEY`. `make poll-multisource-once` runs one local poll across OpenAQ, Open-Meteo, Divvy GBFS, and USGS; `OPENAQ_API_KEY` is optional in this unified path, so OpenAQ is skipped when the key is missing. `make run-multisource` runs the same source set continuously. `make export-cold-demo` exports current TimescaleDB readings to local Parquet files under `data/cold`. `make run-streamlit` starts the local reports app, and `make run-streamlit-compose` starts the Compose Streamlit service.
 
 After seeding data, open Grafana at [http://localhost:3000](http://localhost:3000) and sign in with the local defaults `admin / admin`. The `Smart City Operations` dashboard is provisioned automatically and reads from the local TimescaleDB datasource. If an existing `grafana-data` volume has a changed admin password, Grafana keeps that password until local volumes are reset.
 
@@ -76,7 +78,7 @@ For local Streamlit reports, install the Python dependencies once with `python3 
 - Go ingestion: OpenAQ, Open-Meteo, GBFS, USGS, simulator, validation, retry/backoff, quality flags.
 - Storage: TimescaleDB schema, batch inserts, aggregates, retention flush, Parquet writer.
 - Dashboards: Grafana provisioning, Streamlit reports, cost and data-quality analytics.
-- DevOps: Docker Compose, Makefile, CI, Terraform/GKE readiness manifests, setup documentation.
+- DevOps: Docker Compose, container images, Makefile, CI, Terraform/GKE readiness manifests, setup documentation.
 
 ## Project Tracking
 

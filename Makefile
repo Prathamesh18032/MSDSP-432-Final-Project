@@ -1,13 +1,18 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 GO_TEST_ENV := GOCACHE="$(CURDIR)/.cache/go-build"
+IMAGE_REGISTRY ?= us-central1-docker.pkg.dev/replace-me-project/smartcity
+IMAGE_TAG ?= local
+INGESTOR_IMAGE := $(IMAGE_REGISTRY)/smartcity-ingestor:$(IMAGE_TAG)
+WRITER_IMAGE := $(IMAGE_REGISTRY)/smartcity-writer:$(IMAGE_TAG)
+STREAMLIT_IMAGE := $(IMAGE_REGISTRY)/smartcity-streamlit:$(IMAGE_TAG)
 
 ifneq (,$(wildcard .env))
 include .env
 export
 endif
 
-.PHONY: help check test streamlit-check cloud-check run run-local seed-simulator run-openaq run-multisource poll-multisource-once export-cold export-cold-demo run-streamlit run-streamlit-compose stop logs clean
+.PHONY: help check test streamlit-check cloud-check docker-build docker-build-ingestor docker-build-writer docker-build-streamlit docker-smoke run run-local seed-simulator run-openaq run-multisource poll-multisource-once export-cold export-cold-demo run-streamlit run-streamlit-compose stop logs clean
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z_-]+:.*##/ {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -34,11 +39,14 @@ check: ## Validate the repo foundation scaffold
 	@test -f infra/local/grafana/provisioning/dashboards/smart-city-operations.json
 	@test -f services/ingestor/cmd/poll-openaq/main.go
 	@test -f services/ingestor/cmd/poll-multisource/main.go
+	@test -f services/ingestor/Dockerfile
 	@test -f internal/buffer/queue.go
 	@test -f internal/coldstore/parquet.go
 	@test -f services/writer/cmd/export-cold/main.go
+	@test -f services/writer/Dockerfile
 	@test -f apps/streamlit/app.py
 	@test -f apps/streamlit/requirements.txt
+	@test -f apps/streamlit/Dockerfile
 	@echo "Foundation check passed."
 
 test: ## Run Go tests
@@ -66,6 +74,26 @@ cloud-check: ## Validate cloud-readiness scaffold without contacting GCP
 	@if command -v kubectl >/dev/null 2>&1; then kubectl version --client=true >/dev/null; echo "kubectl installed; cluster dry-run intentionally skipped"; else echo "kubectl not installed; skipping kubernetes client check"; fi
 	@! grep -R "smartcity_dev_password\|smartcity_meta_dev_password" infra/cloud >/dev/null
 	@echo "Cloud readiness check passed."
+
+docker-build: docker-build-ingestor docker-build-writer docker-build-streamlit ## Build all application container images locally
+
+docker-build-ingestor: ## Build the multi-source ingestor image locally
+	docker build -f services/ingestor/Dockerfile -t $(INGESTOR_IMAGE) .
+
+docker-build-writer: ## Build the cold export writer image locally
+	docker build -f services/writer/Dockerfile -t $(WRITER_IMAGE) .
+
+docker-build-streamlit: ## Build the Streamlit reports image locally
+	docker build -f apps/streamlit/Dockerfile -t $(STREAMLIT_IMAGE) .
+
+docker-smoke: ## Smoke-test locally built images without pushing or contacting GCP
+	@docker image inspect $(INGESTOR_IMAGE) >/dev/null
+	@docker image inspect $(WRITER_IMAGE) >/dev/null
+	@docker image inspect $(STREAMLIT_IMAGE) >/dev/null
+	@docker run --rm $(INGESTOR_IMAGE) -once 2>&1 | grep -q "connect to TimescaleDB"
+	@docker run --rm $(WRITER_IMAGE) 2>&1 | grep -q "connect to TimescaleDB"
+	@docker run --rm --entrypoint python $(STREAMLIT_IMAGE) -m py_compile apps/streamlit/app.py apps/streamlit/smartcity/cold_storage.py apps/streamlit/smartcity/data_access.py
+	@echo "Docker smoke check passed."
 
 run: ## Start the local Docker Compose stack
 	docker compose up

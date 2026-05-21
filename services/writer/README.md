@@ -16,6 +16,7 @@ Current command:
 make seed-simulator
 make export-cold
 make export-cold-demo
+make docker-build-writer
 ```
 
 `make seed-simulator` generates deterministic simulator readings and publishes them through the local queue into TimescaleDB using `pgx`.
@@ -27,3 +28,13 @@ Cold Parquet output uses the future GCS-compatible partition layout:
 ```text
 data/cold/sensor_readings/source=<source>/metric=<metric>/year=YYYY/month=MM/day=DD/part-<timestamp>.parquet
 ```
+
+## Container Image
+
+Build the deployable writer image locally:
+
+```sh
+make docker-build-writer
+```
+
+The image runs `export-cold` by default and is tagged as `smartcity-writer` under the configured `IMAGE_REGISTRY` and `IMAGE_TAG`. Slice 10 only builds and smoke-tests locally; pushing to Artifact Registry is deferred.
