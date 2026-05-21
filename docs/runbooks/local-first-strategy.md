@@ -21,9 +21,12 @@ make check
 make test
 make run-local
 make seed-simulator
+make run-openaq
 ```
 
 If the local TimescaleDB volume already exists from an earlier schema, run `make clean` before `make run-local` so Docker replays the init SQL.
+
+`make run-openaq` requires `OPENAQ_API_KEY` and runs continuously until interrupted. Use it after `make run-local` to insert OpenAQ readings into TimescaleDB and watch Grafana panels refresh.
 
 ## Parallel Workstreams
 

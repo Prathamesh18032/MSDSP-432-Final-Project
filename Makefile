@@ -7,7 +7,7 @@ include .env
 export
 endif
 
-.PHONY: help check test run run-local seed-simulator stop logs clean
+.PHONY: help check test run run-local seed-simulator run-openaq stop logs clean
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z_-]+:.*##/ {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -32,6 +32,7 @@ check: ## Validate the repo foundation scaffold
 	@test -f infra/local/grafana/provisioning/datasources/timescaledb.yml
 	@test -f infra/local/grafana/provisioning/dashboards/dashboard-provider.yml
 	@test -f infra/local/grafana/provisioning/dashboards/smart-city-operations.json
+	@test -f services/ingestor/cmd/poll-openaq/main.go
 	@echo "Foundation check passed."
 
 test: ## Run Go tests
@@ -45,6 +46,9 @@ run-local: ## Start the local stack in the background
 
 seed-simulator: ## Insert deterministic simulator readings into local TimescaleDB
 	$(GO_TEST_ENV) go run ./services/writer/cmd/seed-simulator
+
+run-openaq: ## Continuously poll OpenAQ latest readings into local TimescaleDB
+	$(GO_TEST_ENV) go run ./services/ingestor/cmd/poll-openaq
 
 stop: ## Stop the local Docker Compose stack
 	docker compose down
