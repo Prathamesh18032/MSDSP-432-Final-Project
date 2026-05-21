@@ -7,7 +7,7 @@ include .env
 export
 endif
 
-.PHONY: help check test run run-local seed-simulator run-openaq stop logs clean
+.PHONY: help check test run run-local seed-simulator run-openaq export-cold export-cold-demo stop logs clean
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z_-]+:.*##/ {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -34,6 +34,8 @@ check: ## Validate the repo foundation scaffold
 	@test -f infra/local/grafana/provisioning/dashboards/smart-city-operations.json
 	@test -f services/ingestor/cmd/poll-openaq/main.go
 	@test -f internal/buffer/queue.go
+	@test -f internal/coldstore/parquet.go
+	@test -f services/writer/cmd/export-cold/main.go
 	@echo "Foundation check passed."
 
 test: ## Run Go tests
@@ -50,6 +52,12 @@ seed-simulator: ## Insert deterministic simulator readings into local TimescaleD
 
 run-openaq: ## Continuously poll OpenAQ latest readings into local TimescaleDB
 	$(GO_TEST_ENV) go run ./services/ingestor/cmd/poll-openaq
+
+export-cold: ## Export retention-eligible TimescaleDB readings to local Parquet cold storage
+	$(GO_TEST_ENV) go run ./services/writer/cmd/export-cold
+
+export-cold-demo: ## Export current local TimescaleDB readings to local Parquet cold storage
+	$(GO_TEST_ENV) go run ./services/writer/cmd/export-cold -mode all
 
 stop: ## Stop the local Docker Compose stack
 	docker compose down
