@@ -9,10 +9,10 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 - Project: Smart City Zero-Disk IoT Infrastructure.
 - Strategy: local-first MVP, cloud-ready architecture.
 - Current branch of record: `main`.
-- Latest merged slice: Slice 7, Streamlit reports from local/seeded data.
-- Active slice: Slice 8, multi-source smart city sensor integration.
-- Next planned slice after this PR merges: Slice 9, GCP infrastructure readiness docs/manifests.
-- Current working capability: deterministic Go simulator and OpenAQ poller can generate or fetch smart-city readings, publish through a local queue buffer, insert into local TimescaleDB, export local Parquet cold-storage files, record ingestion metrics, visualize readings through Grafana dashboards, and run local Streamlit reports. This PR adds Open-Meteo weather, Divvy GBFS bike-share, and USGS Chicago River telemetry through the same queue path.
+- Latest merged slice: Slice 8, multi-source smart city sensor integration.
+- Active slice: Slice 9, GCP infrastructure readiness docs/manifests.
+- Next planned slice after this PR merges: Slice 10, container image packaging and cloud deployment preparation.
+- Current working capability: deterministic Go simulator, OpenAQ, Open-Meteo, Divvy GBFS, and USGS pollers can generate or fetch smart-city readings, publish through a local queue buffer, insert into local TimescaleDB, export local Parquet cold-storage files, record ingestion metrics, visualize readings through Grafana dashboards, and run local Streamlit reports. This PR adds cloud-readiness Terraform and GKE manifests without applying anything to GCP.
 - Local checks expected to pass on `main`: `make check`, `make test`.
 - Known blocker: GitHub branch protection for private repositories requires GitHub Pro or making the repo public. Direct-push protection is deferred.
 - Operational note: Docker Compose stack is not assumed to be running. Start it with `make run-local` when needed.
@@ -28,23 +28,24 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 | 5 | Queue abstraction and local buffering | [#10](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/10) | Merged into `main` | `make check`, `make test`, `docker compose config`, local buffer tests, Timescale `ingestion_metrics` row checks |
 | 6 | Cold path and Parquet writer | [#11](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/11) | Merged into `main` | `make check`, `make test`, `docker compose config`, `make export-cold-demo`, Parquet file readback checks |
 | 7 | Streamlit reports from local/seeded data | [#12](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/12) | Merged into `main` | `make check`, `make test`, `make streamlit-check`, `docker compose config`, Streamlit local and Compose smoke checks |
-| 8 | Multi-source smart city sensor integration | This PR | Completes on merge | `make check`, `make test`, `docker compose config`, `make poll-multisource-once`, Timescale source checks for `openmeteo`, `gbfs`, and `usgs` |
+| 8 | Multi-source smart city sensor integration | [#13](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/13) | Merged into `main` | `make check`, `make test`, `docker compose config`, `make poll-multisource-once`, Timescale source checks for `openmeteo`, `gbfs`, and `usgs` |
+| 9 | GCP infrastructure readiness docs/manifests | This PR | Completes on merge | `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `docker compose config`, `git diff --check` |
 
 ## Next Planned Slices
 
 | Slice | Goal | Status | Default Owner |
 | --- | --- | --- | --- |
-| 9 | GCP infrastructure readiness docs/manifests | Backlog | DevOps workstream |
+| 10 | Container image packaging and cloud deployment preparation | Backlog | DevOps workstream |
 
 ## Team Work Board
 
 ### Backlog
 
-- Slice 9: GCP infrastructure readiness docs/manifests.
+- Slice 10: Container image packaging and cloud deployment preparation.
 
 ### In Progress
 
-- Slice 8: Multi-source smart city sensor integration, branch `codex/slice-8-multisource`.
+- Slice 9: GCP infrastructure readiness docs/manifests, branch `codex/slice-9-gcp-readiness`.
 
 ### In Review
 
@@ -59,14 +60,15 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 - Slice 5: Queue abstraction and local buffering, PR #10.
 - Slice 6: Cold path and Parquet writer, PR #11.
 - Slice 7: Streamlit reports from local/seeded data, PR #12.
-- Slice 8: Multi-source smart city sensor integration, this PR after merge.
+- Slice 8: Multi-source smart city sensor integration, PR #13.
+- Slice 9: GCP infrastructure readiness docs/manifests, this PR after merge.
 
 ## Workstreams
 
 - Go ingestion: OpenAQ, Open-Meteo, GBFS, USGS, simulator, validator, retry/backoff, quality flags.
 - Storage: TimescaleDB schema, inserts, aggregates, retention flush, Parquet path.
 - Dashboards and analytics: Grafana provisioning, Streamlit reports, data-quality views.
-- DevOps and cloud readiness: Compose, CI, Makefile, Terraform/Kubernetes placeholders, setup docs.
+- DevOps and cloud readiness: Compose, CI, Makefile, Terraform/GKE readiness manifests, setup docs.
 
 ## Update Protocol
 
@@ -94,4 +96,4 @@ Then read this tracker, pick the next `Backlog` slice, create a `codex/<slice-na
 
 ## Handoff Notes
 
-- 2026-05-21: Completed and merged Slice 1 through Slice 7. Started Slice 8 multi-source smart city sensor integration on branch `codex/slice-8-multisource`. Local `main` was updated after PR #12. `gh` CLI token became invalid, but the GitHub connector can still create PRs. Branch protection attempt was blocked by GitHub plan/private repo limitations.
+- 2026-05-21: Completed and merged Slice 1 through Slice 8. Started Slice 9 GCP infrastructure readiness docs/manifests on branch `codex/slice-9-gcp-readiness`. Local `main` was updated after PR #13. `gh` CLI token became invalid, but the GitHub connector can still create PRs. Branch protection attempt was blocked by GitHub plan/private repo limitations.
