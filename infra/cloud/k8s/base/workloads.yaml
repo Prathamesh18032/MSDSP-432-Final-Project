@@ -1,0 +1,196 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smartcity-ingestor
+  namespace: smartcity
+  labels:
+    app.kubernetes.io/name: smartcity-ingestor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: smartcity-ingestor
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: smartcity-ingestor
+    spec:
+      serviceAccountName: smartcity-ingestor
+      containers:
+        - name: ingestor
+          image: us-central1-docker.pkg.dev/replace-me-project/smartcity/smartcity-ingestor:todo
+          imagePullPolicy: IfNotPresent
+          args: ["poll-multisource"]
+          envFrom:
+            - configMapRef:
+                name: smartcity-config
+          env:
+            - name: OPENAQ_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: smartcity-runtime-secrets
+                  key: OPENAQ_API_KEY
+                  optional: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: smartcity-cold-export
+  namespace: smartcity
+  labels:
+    app.kubernetes.io/name: smartcity-cold-export
+spec:
+  schedule: "0 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: smartcity-writer
+          restartPolicy: OnFailure
+          containers:
+            - name: writer
+              image: us-central1-docker.pkg.dev/replace-me-project/smartcity/smartcity-writer:todo
+              imagePullPolicy: IfNotPresent
+              args: ["export-cold"]
+              envFrom:
+                - configMapRef:
+                    name: smartcity-config
+              env:
+                - name: TIMESCALE_DSN
+                  valueFrom:
+                    secretKeyRef:
+                      name: smartcity-runtime-secrets
+                      key: TIMESCALE_DSN
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smartcity-streamlit
+  namespace: smartcity
+  labels:
+    app.kubernetes.io/name: smartcity-streamlit
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: smartcity-streamlit
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: smartcity-streamlit
+    spec:
+      serviceAccountName: smartcity-analytics
+      containers:
+        - name: streamlit
+          image: us-central1-docker.pkg.dev/replace-me-project/smartcity/smartcity-streamlit:todo
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8501
+          envFrom:
+            - configMapRef:
+                name: smartcity-config
+          env:
+            - name: STREAMLIT_TIMESCALE_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: smartcity-runtime-secrets
+                  key: TIMESCALE_DSN
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: smartcity-streamlit
+  namespace: smartcity
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: smartcity-streamlit
+  ports:
+    - name: http
+      port: 8501
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smartcity-grafana
+  namespace: smartcity
+  labels:
+    app.kubernetes.io/name: smartcity-grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: smartcity-grafana
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: smartcity-grafana
+    spec:
+      serviceAccountName: smartcity-analytics
+      containers:
+        - name: grafana
+          image: grafana/grafana-oss:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              valueFrom:
+                secretKeyRef:
+                  name: smartcity-runtime-secrets
+                  key: GRAFANA_ADMIN_USER
+                  optional: true
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: smartcity-runtime-secrets
+                  key: GRAFANA_ADMIN_PASSWORD
+                  optional: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: smartcity-grafana
+  namespace: smartcity
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: smartcity-grafana
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
