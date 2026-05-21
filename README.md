@@ -51,11 +51,13 @@ make run
 make stop
 ```
 
-`make check` validates the foundation scaffold. `make test` runs Go tests. `make run-local` starts the local Docker Compose stack in the background, and `make seed-simulator` inserts deterministic simulator readings into local TimescaleDB once the database is healthy. `make run-openaq` starts the continuous OpenAQ v3 poller and requires `OPENAQ_API_KEY`.
+`make check` validates the foundation scaffold. `make test` runs Go tests. `make run-local` starts the local Docker Compose stack in the background, and `make seed-simulator` publishes deterministic simulator readings through the local buffer into TimescaleDB once the database is healthy. `make run-openaq` starts the continuous OpenAQ v3 poller and requires `OPENAQ_API_KEY`.
 
 After seeding data, open Grafana at [http://localhost:3000](http://localhost:3000) and sign in with the local defaults `admin / admin`. The `Smart City Operations` dashboard is provisioned automatically and reads from the local TimescaleDB datasource. If an existing `grafana-data` volume has a changed admin password, Grafana keeps that password until local volumes are reset.
 
 To watch live OpenAQ readings, set `OPENAQ_API_KEY` in `.env`, run `make run-local`, then run `make run-openaq` in a second terminal. Stop the poller with `Ctrl+C`.
+
+Both simulator and OpenAQ commands use the local queue buffer before writing to TimescaleDB. Queue behavior is controlled by `BACKPRESSURE_CHANNEL_CAPACITY`, `QUEUE_BATCH_SIZE`, and `QUEUE_FLUSH_INTERVAL_MS`.
 
 ## Workstreams
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Prathamesh18032/MSDSP-432-Final-Project/internal/buffer"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Prathamesh18032/MSDSP-432-Final-Project/internal/readings"
@@ -89,5 +90,40 @@ func (w *Writer) InsertReadings(ctx context.Context, batch []readings.SensorRead
 		return fmt.Errorf("commit readings: %w", err)
 	}
 
+	return nil
+}
+
+func (w *Writer) RecordIngestionMetrics(ctx context.Context, metric buffer.IngestionMetric) error {
+	if metric.RecordedAt.IsZero() {
+		return fmt.Errorf("recorded_at is required")
+	}
+
+	_, err := w.pool.Exec(ctx, `
+		INSERT INTO ingestion_metrics (
+			recorded_at,
+			readings_per_second,
+			channel_fill_pct,
+			pubsub_lag_ms,
+			gcs_write_latency_ms,
+			dropped_readings_total
+		)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		ON CONFLICT (recorded_at) DO UPDATE SET
+			readings_per_second = EXCLUDED.readings_per_second,
+			channel_fill_pct = EXCLUDED.channel_fill_pct,
+			pubsub_lag_ms = EXCLUDED.pubsub_lag_ms,
+			gcs_write_latency_ms = EXCLUDED.gcs_write_latency_ms,
+			dropped_readings_total = EXCLUDED.dropped_readings_total
+	`,
+		metric.RecordedAt,
+		metric.ReadingsPerSecond,
+		metric.ChannelFillPct,
+		metric.PubSubLagMillis,
+		metric.GCSWriteLatencyMS,
+		metric.DroppedReadingsTotal,
+	)
+	if err != nil {
+		return fmt.Errorf("insert ingestion metrics: %w", err)
+	}
 	return nil
 }

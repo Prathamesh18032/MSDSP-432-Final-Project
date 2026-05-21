@@ -33,6 +33,7 @@ check: ## Validate the repo foundation scaffold
 	@test -f infra/local/grafana/provisioning/dashboards/dashboard-provider.yml
 	@test -f infra/local/grafana/provisioning/dashboards/smart-city-operations.json
 	@test -f services/ingestor/cmd/poll-openaq/main.go
+	@test -f internal/buffer/queue.go
 	@echo "Foundation check passed."
 
 test: ## Run Go tests

@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Prathamesh18032/MSDSP-432-Final-Project/internal/buffer"
 	"github.com/Prathamesh18032/MSDSP-432-Final-Project/internal/openaq"
 	"github.com/Prathamesh18032/MSDSP-432-Final-Project/internal/timescale"
 )
@@ -38,7 +39,20 @@ func main() {
 	}
 	defer writer.Close()
 
-	poller, err := openaq.NewPoller(client, writer, openaq.PollConfig{
+	queue, err := buffer.NewQueue(writer, writer, cfg.queue)
+	if err != nil {
+		logger.Fatalf("create local buffer: %v", err)
+	}
+	queue.Start(context.Background())
+	defer func() {
+		closeCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := queue.Close(closeCtx); err != nil {
+			logger.Printf("flush local buffer: %v", err)
+		}
+	}()
+
+	poller, err := openaq.NewPoller(client, queue, openaq.PollConfig{
 		Coordinates:   cfg.coordinates,
 		RadiusMeters:  cfg.radiusMeters,
 		LocationLimit: cfg.locationLimit,
@@ -53,6 +67,12 @@ func main() {
 		cfg.radiusMeters,
 		cfg.locationLimit,
 		cfg.pollInterval,
+	)
+	logger.Printf(
+		"local buffer capacity=%d batch_size=%d flush_interval=%s",
+		cfg.queue.Capacity,
+		cfg.queue.BatchSize,
+		cfg.queue.FlushInterval,
 	)
 
 	runPoll(ctx, poller, logger)
@@ -78,6 +98,7 @@ type config struct {
 	locationLimit int
 	pollInterval  time.Duration
 	timescaleDSN  string
+	queue         buffer.Config
 }
 
 func loadConfig() (config, error) {
@@ -105,6 +126,11 @@ func loadConfig() (config, error) {
 		return config{}, fmt.Errorf("OPENAQ_LOCATION_LIMIT must be positive")
 	}
 
+	queueConfig, err := loadQueueConfig()
+	if err != nil {
+		return config{}, err
+	}
+
 	cfg := config{
 		apiKey:        os.Getenv("OPENAQ_API_KEY"),
 		baseURL:       envOrDefault("OPENAQ_BASE_URL", openaq.DefaultBaseURL),
@@ -113,6 +139,7 @@ func loadConfig() (config, error) {
 		locationLimit: locationLimit,
 		pollInterval:  time.Duration(pollSeconds) * time.Second,
 		timescaleDSN:  envOrDefault("TIMESCALE_DSN", defaultTimescaleDSN),
+		queue:         queueConfig,
 	}
 	if cfg.apiKey == "" {
 		return config{}, fmt.Errorf("OPENAQ_API_KEY is required")
@@ -127,12 +154,33 @@ func runPoll(ctx context.Context, poller *openaq.Poller, logger *log.Logger) {
 		return
 	}
 	logger.Printf(
-		"poll complete locations=%d measurements=%d inserted=%d skipped=%d",
+		"poll complete locations=%d measurements=%d published=%d skipped=%d",
 		stats.Locations,
 		stats.Measurements,
-		stats.Inserted,
+		stats.Published,
 		stats.Skipped,
 	)
+}
+
+func loadQueueConfig() (buffer.Config, error) {
+	capacity, err := envInt("BACKPRESSURE_CHANNEL_CAPACITY", 10000)
+	if err != nil {
+		return buffer.Config{}, err
+	}
+	batchSize, err := envInt("QUEUE_BATCH_SIZE", 100)
+	if err != nil {
+		return buffer.Config{}, err
+	}
+	flushMillis, err := envInt("QUEUE_FLUSH_INTERVAL_MS", 1000)
+	if err != nil {
+		return buffer.Config{}, err
+	}
+
+	return buffer.Config{
+		Capacity:      capacity,
+		BatchSize:     batchSize,
+		FlushInterval: time.Duration(flushMillis) * time.Millisecond,
+	}, nil
 }
 
 func envOrDefault(name, fallback string) string {

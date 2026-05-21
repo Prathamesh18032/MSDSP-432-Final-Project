@@ -11,6 +11,8 @@ Implemented local sources:
 
 The OpenAQ poller discovers locations near the configured coordinates, fetches latest readings for each location, maps supported pollutants into the shared `SensorReading` contract, validates them, and writes valid readings into local TimescaleDB.
 
+Simulator and OpenAQ readings are published through the local queue buffer before they are flushed into TimescaleDB. The buffer is bounded, drops readings when full, and records `ingestion_metrics` so Grafana can show throughput, channel fill, and dropped-reading totals.
+
 Supported OpenAQ mappings:
 
 - `pm25` / `pm2.5` with `µg/m³` or equivalent units -> `PM2.5` / `ug/m3`.
@@ -36,6 +38,9 @@ Useful optional environment:
 - `OPENAQ_RADIUS_METERS`
 - `OPENAQ_LOCATION_LIMIT`
 - `OPENAQ_POLL_INTERVAL_SECONDS`
+- `BACKPRESSURE_CHANNEL_CAPACITY`
+- `QUEUE_BATCH_SIZE`
+- `QUEUE_FLUSH_INTERVAL_MS`
 
 Future responsibilities:
 
