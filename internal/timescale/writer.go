@@ -3,6 +3,7 @@ package timescale
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/Prathamesh18032/MSDSP-432-Final-Project/internal/buffer"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -12,6 +13,11 @@ import (
 
 type Writer struct {
 	pool *pgxpool.Pool
+}
+
+type ExportReadingsQuery struct {
+	Before *time.Time
+	Limit  int
 }
 
 func Connect(ctx context.Context, dsn string) (*Writer, error) {
@@ -91,6 +97,66 @@ func (w *Writer) InsertReadings(ctx context.Context, batch []readings.SensorRead
 	}
 
 	return nil
+}
+
+func (w *Writer) ExportReadings(ctx context.Context, query ExportReadingsQuery) ([]readings.SensorReading, error) {
+	if query.Limit <= 0 {
+		return nil, fmt.Errorf("export limit must be positive")
+	}
+
+	var cutoff any
+	if query.Before != nil {
+		cutoff = query.Before.UTC()
+	}
+
+	rows, err := w.pool.Query(ctx, `
+		SELECT
+			time,
+			sensor_id,
+			metric,
+			value,
+			unit,
+			source,
+			latitude,
+			longitude,
+			quality_flag,
+			ingested_at,
+			schema_version
+		FROM sensor_readings
+		WHERE ($1::timestamptz IS NULL OR time < $1::timestamptz)
+		ORDER BY time, source, metric, sensor_id
+		LIMIT $2
+	`, cutoff, query.Limit)
+	if err != nil {
+		return nil, fmt.Errorf("query export readings: %w", err)
+	}
+	defer rows.Close()
+
+	result := make([]readings.SensorReading, 0)
+	for rows.Next() {
+		var reading readings.SensorReading
+		if err := rows.Scan(
+			&reading.Time,
+			&reading.SensorID,
+			&reading.Metric,
+			&reading.Value,
+			&reading.Unit,
+			&reading.Source,
+			&reading.Latitude,
+			&reading.Longitude,
+			&reading.QualityFlag,
+			&reading.IngestedAt,
+			&reading.SchemaVersion,
+		); err != nil {
+			return nil, fmt.Errorf("scan export reading: %w", err)
+		}
+		result = append(result, reading)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate export readings: %w", err)
+	}
+
+	return result, nil
 }
 
 func (w *Writer) RecordIngestionMetrics(ctx context.Context, metric buffer.IngestionMetric) error {

@@ -10,7 +10,8 @@ Build a deterministic local vertical slice:
 2. Validator normalizes and flags readings.
 3. Queue abstraction passes readings to the writer.
 4. Writer inserts hot data into TimescaleDB.
-5. Grafana reads live data from TimescaleDB.
+5. Writer can export hot data to local Parquet cold storage.
+6. Grafana reads live data from TimescaleDB.
 
 The current slice implements the simulator, validator, initial TimescaleDB schema, and local seed writer. OpenAQ and Grafana provisioning come next.
 
@@ -22,6 +23,7 @@ make test
 make run-local
 make seed-simulator
 make run-openaq
+make export-cold-demo
 ```
 
 If the local TimescaleDB volume already exists from an earlier schema, run `make clean` before `make run-local` so Docker replays the init SQL.
@@ -29,6 +31,8 @@ If the local TimescaleDB volume already exists from an earlier schema, run `make
 `make seed-simulator` and `make run-openaq` publish through the local queue buffer before TimescaleDB. The buffer records `ingestion_metrics`, so Grafana operation panels should populate after local ingestion runs.
 
 `make run-openaq` requires `OPENAQ_API_KEY` and runs continuously until interrupted. Use it after `make run-local` to insert OpenAQ readings into TimescaleDB and watch Grafana panels refresh.
+
+`make export-cold` exports retention-eligible readings into local Parquet files under `data/cold`. `make export-cold-demo` exports current rows for immediate validation. Local cold exports do not delete TimescaleDB rows yet.
 
 ## Parallel Workstreams
 

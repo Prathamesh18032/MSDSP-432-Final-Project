@@ -32,6 +32,9 @@ go.work.sum
 # Local caches
 .cache/
 
+# Local cold-storage runtime artifacts
+data/
+
 # Editor/IDE
 # .idea/
 # .vscode/
