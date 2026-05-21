@@ -6,6 +6,7 @@ Implemented local sources:
 
 - Deterministic Go simulator in `internal/simulator`.
 - OpenAQ v3 latest-measurement poller in `services/ingestor/cmd/poll-openaq`.
+- Multi-source poller in `services/ingestor/cmd/poll-multisource` for OpenAQ, Open-Meteo, Divvy GBFS, and USGS.
 
 ## OpenAQ Poller
 
@@ -26,11 +27,15 @@ Local workflow:
 ```sh
 make run-local
 make run-openaq
+make poll-multisource-once
+make run-multisource
 ```
 
 Required environment:
 
 - `OPENAQ_API_KEY`
+
+`OPENAQ_API_KEY` is required for `make run-openaq`. It is optional for `make run-multisource`; the unified poller skips OpenAQ when the key is empty and continues with public no-secret sources.
 
 Useful optional environment:
 
@@ -38,12 +43,27 @@ Useful optional environment:
 - `OPENAQ_RADIUS_METERS`
 - `OPENAQ_LOCATION_LIMIT`
 - `OPENAQ_POLL_INTERVAL_SECONDS`
+- `MULTISOURCE_POLL_INTERVAL_SECONDS`
+- `OPENMETEO_COORDINATES`
+- `GBFS_STATION_LIMIT`
+- `USGS_SITE_IDS`
+- `USGS_PARAMETER_CODES`
 - `BACKPRESSURE_CHANNEL_CAPACITY`
 - `QUEUE_BATCH_SIZE`
 - `QUEUE_FLUSH_INTERVAL_MS`
 
+## Multi-Source Poller
+
+The multi-source poller makes the local MVP feel like a practical city operations feed:
+
+- Open-Meteo maps current weather into `temperature`, `humidity`, `wind_speed`, and `precipitation`.
+- Divvy GBFS joins `station_information` with `station_status` and emits `bike_available_count`, `dock_available_count`, and `station_capacity`.
+- USGS reads the Chicago River at Columbus Drive gage height as `water_gage_height`.
+- OpenAQ is included when `OPENAQ_API_KEY` is present.
+
+All source pollers publish valid readings through the same local queue and TimescaleDB writer. A failure in one live source is logged but does not stop the remaining sources in that polling cycle.
+
 Future responsibilities:
 
-- Queue publisher abstraction for local mode and future GCP Pub/Sub mode.
 - Retry/backoff policy shared across source clients.
 - Operational metrics for poller throughput, dropped readings, and lag.
