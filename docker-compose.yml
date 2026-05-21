@@ -56,6 +56,26 @@ services:
       timescaledb:
         condition: service_healthy
 
+  streamlit:
+    profiles:
+      - analytics
+    build:
+      context: .
+      dockerfile: apps/streamlit/Dockerfile
+    container_name: smartcity-streamlit
+    environment:
+      STREAMLIT_TIMESCALE_DSN: postgresql://${TIMESCALE_USER:-smartcity}:${TIMESCALE_PASSWORD:-smartcity_dev_password}@timescaledb:5432/${TIMESCALE_DB:-smartcity_hot}
+      STREAMLIT_COLD_STORAGE_ROOT: /app/data/cold
+      STREAMLIT_PORT: ${STREAMLIT_PORT:-8501}
+    ports:
+      - "${STREAMLIT_PORT:-8501}:8501"
+    volumes:
+      - ./apps/streamlit:/app/apps/streamlit:ro
+      - ./data/cold:/app/data/cold:ro
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+
 volumes:
   timescale-data:
   metadata-data:

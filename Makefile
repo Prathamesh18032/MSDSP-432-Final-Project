@@ -7,7 +7,7 @@ include .env
 export
 endif
 
-.PHONY: help check test run run-local seed-simulator run-openaq export-cold export-cold-demo stop logs clean
+.PHONY: help check test streamlit-check run run-local seed-simulator run-openaq export-cold export-cold-demo run-streamlit run-streamlit-compose stop logs clean
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z_-]+:.*##/ {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -36,10 +36,15 @@ check: ## Validate the repo foundation scaffold
 	@test -f internal/buffer/queue.go
 	@test -f internal/coldstore/parquet.go
 	@test -f services/writer/cmd/export-cold/main.go
+	@test -f apps/streamlit/app.py
+	@test -f apps/streamlit/requirements.txt
 	@echo "Foundation check passed."
 
 test: ## Run Go tests
 	$(GO_TEST_ENV) go test ./...
+
+streamlit-check: ## Run lightweight Streamlit app syntax checks
+	python3 -m py_compile apps/streamlit/app.py apps/streamlit/smartcity/*.py
 
 run: ## Start the local Docker Compose stack
 	docker compose up
@@ -58,6 +63,12 @@ export-cold: ## Export retention-eligible TimescaleDB readings to local Parquet 
 
 export-cold-demo: ## Export current local TimescaleDB readings to local Parquet cold storage
 	$(GO_TEST_ENV) go run ./services/writer/cmd/export-cold -mode all
+
+run-streamlit: ## Run the Streamlit reports app locally
+	python3 -m streamlit run apps/streamlit/app.py --server.port $${STREAMLIT_PORT:-8501} --server.headless true --browser.gatherUsageStats false
+
+run-streamlit-compose: ## Run the Streamlit reports app through Docker Compose
+	docker compose --profile analytics up -d --build streamlit
 
 stop: ## Stop the local Docker Compose stack
 	docker compose down

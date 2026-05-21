@@ -9,9 +9,9 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 - Project: Smart City Zero-Disk IoT Infrastructure.
 - Strategy: local-first MVP, cloud-ready architecture.
 - Current branch of record: `main`.
-- Latest merged slice: Slice 6, Cold path and Parquet writer.
-- Next planned slice: Slice 7, Streamlit reports from local/seeded data.
-- Current working capability: deterministic Go simulator and OpenAQ poller can generate or fetch smart-city readings, publish through a local queue buffer, insert into local TimescaleDB, export local Parquet cold-storage files, record ingestion metrics, and visualize readings through provisioned Grafana dashboards.
+- Latest merged slice: Slice 7, Streamlit reports from local/seeded data.
+- Next planned slice: Slice 8, GCP infrastructure readiness docs/manifests.
+- Current working capability: deterministic Go simulator and OpenAQ poller can generate or fetch smart-city readings, publish through a local queue buffer, insert into local TimescaleDB, export local Parquet cold-storage files, record ingestion metrics, visualize readings through Grafana dashboards, and run local Streamlit reports.
 - Local checks expected to pass on `main`: `make check`, `make test`.
 - Known blocker: GitHub branch protection for private repositories requires GitHub Pro or making the repo public. Direct-push protection is deferred.
 - Operational note: Docker Compose stack is not assumed to be running. Start it with `make run-local` when needed.
@@ -25,20 +25,19 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 | 3 | Grafana datasource and starter dashboard provisioning | [#6](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/6) | Merged into `main` | `make check`, `make test`, `docker compose config`, Grafana datasource/dashboard API checks, Timescale row checks |
 | 4 | OpenAQ poller integration | [#8](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/8) | Merged into `main` | `make check`, `make test`, `docker compose config`, live OpenAQ poll with API key, Timescale `source = 'openaq'` row checks |
 | 5 | Queue abstraction and local buffering | [#10](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/10) | Merged into `main` | `make check`, `make test`, `docker compose config`, local buffer tests, Timescale `ingestion_metrics` row checks |
-| 6 | Cold path and Parquet writer | This PR | Completes on merge | `make check`, `make test`, `docker compose config`, `make export-cold-demo`, Parquet file readback checks |
+| 6 | Cold path and Parquet writer | [#11](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/11) | Merged into `main` | `make check`, `make test`, `docker compose config`, `make export-cold-demo`, Parquet file readback checks |
+| 7 | Streamlit reports from local/seeded data | This PR | Completes on merge | `make check`, `make test`, `make streamlit-check`, `docker compose config`, Streamlit local and Compose smoke checks |
 
 ## Next Planned Slices
 
 | Slice | Goal | Status | Default Owner |
 | --- | --- | --- | --- |
-| 7 | Streamlit reports from local/seeded data | Backlog | Analytics workstream |
 | 8 | GCP infrastructure readiness docs/manifests | Backlog | DevOps workstream |
 
 ## Team Work Board
 
 ### Backlog
 
-- Slice 7: Streamlit reports from local/seeded data.
 - Slice 8: GCP infrastructure readiness docs/manifests.
 
 ### In Progress
@@ -56,7 +55,8 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 - Slice 3: Grafana datasource and starter dashboard provisioning, PR #6.
 - Slice 4: OpenAQ poller integration, PR #8.
 - Slice 5: Queue abstraction and local buffering, PR #10.
-- Slice 6: Cold path and Parquet writer, this PR after merge.
+- Slice 6: Cold path and Parquet writer, PR #11.
+- Slice 7: Streamlit reports from local/seeded data, this PR after merge.
 
 ## Workstreams
 
@@ -91,4 +91,4 @@ Then read this tracker, pick the next `Backlog` slice, create a `codex/<slice-na
 
 ## Handoff Notes
 
-- 2026-05-21: Completed and merged Slice 1 through Slice 5. Started Slice 6 cold path and Parquet writer. Local `main` was updated after PR #10. `gh` CLI token became invalid, but the GitHub connector can still create PRs. Branch protection attempt was blocked by GitHub plan/private repo limitations.
+- 2026-05-21: Completed and merged Slice 1 through Slice 6. Started Slice 7 Streamlit reports. Local `main` was updated after PR #11. `gh` CLI token became invalid, but the GitHub connector can still create PRs. Branch protection attempt was blocked by GitHub plan/private repo limitations.
