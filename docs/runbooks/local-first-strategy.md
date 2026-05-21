@@ -22,6 +22,8 @@ The local MVP now includes simulator data, OpenAQ air-quality readings, Open-Met
 make check
 make test
 make cloud-check
+make docker-build
+make docker-smoke
 make run-local
 make seed-simulator
 make run-openaq
@@ -46,12 +48,14 @@ If the local TimescaleDB volume already exists from an earlier schema, run `make
 
 `make cloud-check` validates Terraform and GKE readiness files without contacting GCP. Use it before changing cloud scaffolding or opening a cloud-readiness PR.
 
+`make docker-build` builds the local ingestor, writer, and Streamlit images. `make docker-smoke` verifies those images exist and start with clear local behavior. These commands do not push images or contact GCP.
+
 ## Parallel Workstreams
 
 - Go ingestion: OpenAQ, Open-Meteo, GBFS, USGS, simulator, validator, retry/backoff, quality flags.
 - Storage: TimescaleDB schema, inserts, aggregates, retention flush, Parquet path.
 - Dashboards: Grafana provisioning, Streamlit reports, data-quality views.
-- DevOps: Compose, CI, Makefile, Terraform/GKE readiness manifests, setup docs.
+- DevOps: Compose, container images, CI, Makefile, Terraform/GKE readiness manifests, setup docs.
 
 ## Cloud Readiness
 

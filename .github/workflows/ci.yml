@@ -54,3 +54,17 @@ jobs:
 
       - name: Validate cloud scaffold
         run: make cloud-check
+
+  container-images:
+    name: Container image build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build container images
+        run: make docker-build
+
+      - name: Smoke-test container images
+        run: make docker-smoke

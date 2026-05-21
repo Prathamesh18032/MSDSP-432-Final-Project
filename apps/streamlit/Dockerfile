@@ -2,6 +2,10 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
+LABEL org.opencontainers.image.title="smartcity-streamlit" \
+      org.opencontainers.image.description="Smart City local analytics and reporting app" \
+      org.opencontainers.image.source="https://github.com/Prathamesh18032/MSDSP-432-Final-Project"
+
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
@@ -9,6 +13,10 @@ COPY apps/streamlit/requirements.txt /app/apps/streamlit/requirements.txt
 RUN pip install --no-cache-dir -r /app/apps/streamlit/requirements.txt
 
 COPY apps/streamlit /app/apps/streamlit
+RUN useradd --create-home --uid 10001 smartcity \
+    && chown -R smartcity:smartcity /app
+
+USER smartcity
 
 EXPOSE 8501
 

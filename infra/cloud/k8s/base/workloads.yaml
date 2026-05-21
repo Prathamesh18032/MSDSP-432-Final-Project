@@ -18,7 +18,7 @@ spec:
       serviceAccountName: smartcity-ingestor
       containers:
         - name: ingestor
-          image: us-central1-docker.pkg.dev/replace-me-project/smartcity/smartcity-ingestor:todo
+          image: us-central1-docker.pkg.dev/replace-me-project/smartcity/smartcity-ingestor:local
           imagePullPolicy: IfNotPresent
           args: ["poll-multisource"]
           envFrom:
@@ -59,7 +59,7 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: writer
-              image: us-central1-docker.pkg.dev/replace-me-project/smartcity/smartcity-writer:todo
+              image: us-central1-docker.pkg.dev/replace-me-project/smartcity/smartcity-writer:local
               imagePullPolicy: IfNotPresent
               args: ["export-cold"]
               envFrom:
@@ -99,7 +99,7 @@ spec:
       serviceAccountName: smartcity-analytics
       containers:
         - name: streamlit
-          image: us-central1-docker.pkg.dev/replace-me-project/smartcity/smartcity-streamlit:todo
+          image: us-central1-docker.pkg.dev/replace-me-project/smartcity/smartcity-streamlit:local
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

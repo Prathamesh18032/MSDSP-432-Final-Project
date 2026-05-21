@@ -2,7 +2,7 @@
 
 These manifests describe the future GKE Autopilot workload shape for the Smart City Zero-Disk IoT project.
 
-They are not ready to apply as-is. Replace placeholder values such as `replace-me-project`, publish real container images, and create `smartcity-runtime-secrets` out of band before deployment.
+They are not ready to apply as-is. Replace placeholder values such as `replace-me-project`, publish real container images, update image tags, and create `smartcity-runtime-secrets` out of band before deployment.
 
 ## Included
 
@@ -29,3 +29,5 @@ Run from the repository root:
 ```sh
 make cloud-check
 ```
+
+The app image references use the same default local naming convention as `make docker-build`, but images are not pushed to Artifact Registry until a later slice.

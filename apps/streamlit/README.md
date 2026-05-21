@@ -1,5 +1,19 @@
 # Streamlit Reports
 
+Run locally:
+
+```sh
+make run-streamlit
+```
+
+Build the deployable Streamlit image locally:
+
+```sh
+make docker-build-streamlit
+```
+
+The image is tagged as `smartcity-streamlit` under the configured `IMAGE_REGISTRY` and `IMAGE_TAG`. Slice 10 only builds and smoke-tests locally; pushing to Artifact Registry is deferred.
+
 The Streamlit app provides the local analytics surface for seeded TimescaleDB data and locally exported Parquet files.
 
 Implemented reports:
