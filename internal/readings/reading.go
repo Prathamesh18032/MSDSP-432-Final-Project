@@ -5,6 +5,9 @@ import "time"
 const (
 	SourceSimulator = "simulator"
 	SourceOpenAQ    = "openaq"
+	SourceOpenMeteo = "openmeteo"
+	SourceGBFS      = "gbfs"
+	SourceUSGS      = "usgs"
 
 	QualityInvalid = -1
 	QualitySuspect = 0
