@@ -34,6 +34,9 @@ From the repository root:
 
 ```sh
 make cloud-check
+make gcp-bootstrap-check
+make gcp-cost-guard-check
+make artifact-registry-preview
 ```
 
-`cloud-check` validates expected cloud files and runs optional Terraform/Kubernetes checks only when the related tools are installed. It does not contact GCP.
+`cloud-check` validates expected cloud files and runs optional Terraform/Kubernetes checks only when the related tools are installed. The bootstrap targets verify local configuration and print future commands. They do not create resources, enable APIs, push images, deploy workloads, or run Terraform.

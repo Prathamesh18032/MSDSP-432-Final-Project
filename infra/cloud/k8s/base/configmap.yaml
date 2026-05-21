@@ -7,7 +7,7 @@ data:
   APP_ENV: cloud
   LOG_LEVEL: info
   GCP_PROJECT_ID: replace-me-project
-  GCP_REGION: us-central1
+  GCP_REGION: asia-south1
   GCP_PUBSUB_TOPIC: smartcity-readings
   GCP_PUBSUB_DLQ_TOPIC: smartcity-dlq
   GCS_BUCKET: replace-me-smartcity-iot

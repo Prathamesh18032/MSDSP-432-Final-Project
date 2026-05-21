@@ -1,6 +1,17 @@
 # GCP Readiness Runbook
 
-This runbook lists the prerequisites for moving from the local-first MVP to the first cloud deployment. Slice 9 does not create cloud resources; it prepares the reviewable scaffolding.
+This runbook lists the prerequisites for moving from the local-first MVP to the first cloud deployment. Slice 11 is bootstrap-only: it helps verify your local setup and project choices, but it does not create cloud resources.
+
+## Region Choice
+
+Use `asia-south1` for the India/Mumbai default:
+
+```sh
+GCP_REGION=asia-south1
+IMAGE_REGISTRY=asia-south1-docker.pkg.dev/<your-project-id>/smartcity
+```
+
+Keep this aligned across `.env`, Terraform variables, image tags, and future Artifact Registry commands.
 
 ## Required Before Terraform
 
@@ -10,6 +21,31 @@ This runbook lists the prerequisites for moving from the local-first MVP to the 
 - Install and authenticate `gcloud`.
 - Install Terraform locally or configure it in CI.
 - Decide where Terraform state will live before the first real apply.
+
+## Fresh Account Bootstrap
+
+1. Create or select a GCP project in the Google Cloud Console.
+2. Confirm billing is linked to that project.
+3. Create a budget alert before enabling services or creating resources.
+4. Copy `infra/cloud/gcp.env.example` into your local `.env` values and replace `replace-me-project`.
+5. Install the Google Cloud CLI.
+6. Authenticate locally:
+
+```sh
+gcloud auth login
+gcloud config set project <your-project-id>
+gcloud config set compute/region asia-south1
+```
+
+7. Run local bootstrap checks:
+
+```sh
+make gcp-bootstrap-check
+make gcp-cost-guard-check
+make artifact-registry-preview
+```
+
+These checks do not create resources, enable APIs, run Terraform, or push images.
 
 ## Required APIs
 
