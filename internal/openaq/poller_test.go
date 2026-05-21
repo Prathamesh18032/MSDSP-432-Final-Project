@@ -37,7 +37,7 @@ func TestPollOnceHandlesEmptyLocations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("PollOnce() error = %v", err)
 	}
-	if stats.Locations != 0 || stats.Inserted != 0 || len(writer.batch) != 0 {
+	if stats.Locations != 0 || stats.Published != 0 || len(writer.batch) != 0 {
 		t.Fatalf("unexpected stats/batch: %+v %#v", stats, writer.batch)
 	}
 }
@@ -89,7 +89,7 @@ func TestPollOnceNormalizesAndWritesSupportedMeasurements(t *testing.T) {
 	if err != nil {
 		t.Fatalf("PollOnce() error = %v", err)
 	}
-	if stats.Locations != 1 || stats.Measurements != 1 || stats.Inserted != 1 || stats.Skipped != 0 {
+	if stats.Locations != 1 || stats.Measurements != 1 || stats.Published != 1 || stats.Skipped != 0 {
 		t.Fatalf("unexpected stats: %+v", stats)
 	}
 	if len(writer.batch) != 1 || writer.batch[0].Metric != "PM2.5" || writer.batch[0].Time.IsZero() {

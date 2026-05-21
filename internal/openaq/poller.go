@@ -23,7 +23,7 @@ type PollConfig struct {
 type PollStats struct {
 	Locations    int
 	Measurements int
-	Inserted     int
+	Published    int
 	Skipped      int
 }
 
@@ -109,9 +109,9 @@ func (p *Poller) PollOnce(ctx context.Context) (PollStats, error) {
 	}
 
 	if err := p.writer.InsertReadings(ctx, batch); err != nil {
-		return stats, fmt.Errorf("insert OpenAQ readings: %w", err)
+		return stats, fmt.Errorf("publish OpenAQ readings: %w", err)
 	}
-	stats.Inserted = len(batch)
+	stats.Published = len(batch)
 
 	return stats, nil
 }
