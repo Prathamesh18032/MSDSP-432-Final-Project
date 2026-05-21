@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: smartcity-config
+  namespace: smartcity
+data:
+  APP_ENV: cloud
+  LOG_LEVEL: info
+  GCP_PROJECT_ID: replace-me-project
+  GCP_REGION: us-central1
+  GCP_PUBSUB_TOPIC: smartcity-readings
+  GCP_PUBSUB_DLQ_TOPIC: smartcity-dlq
+  GCS_BUCKET: replace-me-smartcity-iot
+  BIGQUERY_DATASET: smartcity_iot
+  OPENAQ_COORDINATES: "41.8781,-87.6298"
+  OPENAQ_RADIUS_METERS: "25000"
+  OPENAQ_LOCATION_LIMIT: "5"
+  MULTISOURCE_POLL_INTERVAL_SECONDS: "300"
+  OPENMETEO_BASE_URL: https://api.open-meteo.com
+  OPENMETEO_COORDINATES: "41.8781,-87.6298"
+  GBFS_DISCOVERY_URL: https://gbfs.divvybikes.com/gbfs/gbfs.json
+  GBFS_LANGUAGE: en
+  GBFS_STATION_LIMIT: "25"
+  USGS_BASE_URL: https://waterservices.usgs.gov
+  USGS_SITE_IDS: "05536123"
+  USGS_PARAMETER_CODES: "00065"
+  COLD_STORAGE_ROOT: gs://replace-me-smartcity-iot
+  COLD_EXPORT_HOT_RETENTION_HOURS: "72"
+  COLD_EXPORT_BATCH_SIZE: "1000"
+  COLD_EXPORT_MODE: retention
+  STREAMLIT_COLD_STORAGE_ROOT: gs://replace-me-smartcity-iot

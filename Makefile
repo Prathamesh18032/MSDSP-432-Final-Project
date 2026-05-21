@@ -7,7 +7,7 @@ include .env
 export
 endif
 
-.PHONY: help check test streamlit-check run run-local seed-simulator run-openaq run-multisource poll-multisource-once export-cold export-cold-demo run-streamlit run-streamlit-compose stop logs clean
+.PHONY: help check test streamlit-check cloud-check run run-local seed-simulator run-openaq run-multisource poll-multisource-once export-cold export-cold-demo run-streamlit run-streamlit-compose stop logs clean
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z_-]+:.*##/ {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -46,6 +46,26 @@ test: ## Run Go tests
 
 streamlit-check: ## Run lightweight Streamlit app syntax checks
 	python3 -m py_compile apps/streamlit/app.py apps/streamlit/smartcity/*.py
+
+cloud-check: ## Validate cloud-readiness scaffold without contacting GCP
+	@test -f infra/cloud/README.md
+	@test -f docs/runbooks/gcp-readiness.md
+	@test -f infra/cloud/terraform/README.md
+	@test -f infra/cloud/terraform/versions.tf
+	@test -f infra/cloud/terraform/variables.tf
+	@test -f infra/cloud/terraform/main.tf
+	@test -f infra/cloud/terraform/outputs.tf
+	@test -f infra/cloud/terraform/terraform.tfvars.example
+	@test -f infra/cloud/k8s/README.md
+	@test -f infra/cloud/k8s/base/namespace.yaml
+	@test -f infra/cloud/k8s/base/serviceaccounts.yaml
+	@test -f infra/cloud/k8s/base/configmap.yaml
+	@test -f infra/cloud/k8s/base/workloads.yaml
+	@for file in $$(find infra/cloud/k8s -name '*.yaml' -type f); do grep -q '^apiVersion:' "$$file"; grep -q '^kind:' "$$file"; done
+	@if command -v terraform >/dev/null 2>&1; then terraform fmt -check -recursive infra/cloud/terraform; else echo "terraform not installed; skipping terraform fmt"; fi
+	@if command -v kubectl >/dev/null 2>&1; then kubectl version --client=true >/dev/null; echo "kubectl installed; cluster dry-run intentionally skipped"; else echo "kubectl not installed; skipping kubernetes client check"; fi
+	@! grep -R "smartcity_dev_password\|smartcity_meta_dev_password" infra/cloud >/dev/null
+	@echo "Cloud readiness check passed."
 
 run: ## Start the local Docker Compose stack
 	docker compose up

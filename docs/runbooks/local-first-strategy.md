@@ -21,6 +21,7 @@ The local MVP now includes simulator data, OpenAQ air-quality readings, Open-Met
 ```sh
 make check
 make test
+make cloud-check
 make run-local
 make seed-simulator
 make run-openaq
@@ -43,12 +44,14 @@ If the local TimescaleDB volume already exists from an earlier schema, run `make
 
 `make run-streamlit` starts the local reports app after Python dependencies are installed. `make run-streamlit-compose` starts the profiled Docker Compose Streamlit service at port `8501`.
 
+`make cloud-check` validates Terraform and GKE readiness files without contacting GCP. Use it before changing cloud scaffolding or opening a cloud-readiness PR.
+
 ## Parallel Workstreams
 
 - Go ingestion: OpenAQ, Open-Meteo, GBFS, USGS, simulator, validator, retry/backoff, quality flags.
 - Storage: TimescaleDB schema, inserts, aggregates, retention flush, Parquet path.
 - Dashboards: Grafana provisioning, Streamlit reports, data-quality views.
-- DevOps: Compose, CI, Makefile, Terraform/Kubernetes placeholders, setup docs.
+- DevOps: Compose, CI, Makefile, Terraform/GKE readiness manifests, setup docs.
 
 ## Cloud Readiness
 
