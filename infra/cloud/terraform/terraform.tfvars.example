@@ -1,5 +1,5 @@
 gcp_project_id = "replace-me-project"
-gcp_region     = "us-central1"
+gcp_region     = "asia-south1"
 environment    = "dev"
 
 pubsub_topic_name         = "smartcity-readings"

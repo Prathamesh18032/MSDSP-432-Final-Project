@@ -25,6 +25,7 @@ This may run `terraform fmt -check -recursive infra/cloud/terraform` when Terraf
 
 1. Copy `terraform.tfvars.example` to a local uncommitted `terraform.tfvars`.
 2. Replace every `replace-me-*` value.
-3. Confirm Terraform state ownership and backend.
-4. Confirm GCP billing, APIs, IAM permissions, and budget alerts.
-5. Run `terraform init` and `terraform plan` only after the above are agreed by the team.
+3. Use `asia-south1` unless the team explicitly chooses another region.
+4. Confirm Terraform state ownership and backend.
+5. Confirm GCP billing, APIs, IAM permissions, and budget alerts.
+6. Run `terraform init` and `terraform plan` only after the above are agreed by the team.

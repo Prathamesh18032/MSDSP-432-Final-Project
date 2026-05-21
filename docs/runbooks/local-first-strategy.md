@@ -22,6 +22,9 @@ The local MVP now includes simulator data, OpenAQ air-quality readings, Open-Met
 make check
 make test
 make cloud-check
+make gcp-bootstrap-check
+make gcp-cost-guard-check
+make artifact-registry-preview
 make docker-build
 make docker-smoke
 make run-local
@@ -47,6 +50,8 @@ If the local TimescaleDB volume already exists from an earlier schema, run `make
 `make run-streamlit` starts the local reports app after Python dependencies are installed. `make run-streamlit-compose` starts the profiled Docker Compose Streamlit service at port `8501`.
 
 `make cloud-check` validates Terraform and GKE readiness files without contacting GCP. Use it before changing cloud scaffolding or opening a cloud-readiness PR.
+
+`make gcp-bootstrap-check`, `make gcp-cost-guard-check`, and `make artifact-registry-preview` prepare local GCP settings safely for a fresh account. They do not create resources or push images.
 
 `make docker-build` builds the local ingestor, writer, and Streamlit images. `make docker-smoke` verifies those images exist and start with clear local behavior. These commands do not push images or contact GCP.
 
