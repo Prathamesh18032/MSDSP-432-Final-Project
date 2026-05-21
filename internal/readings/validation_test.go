@@ -72,6 +72,38 @@ func TestValidateRejectsInvalidMetricRange(t *testing.T) {
 	}
 }
 
+func TestValidateAcceptsMultiSourceMetrics(t *testing.T) {
+	reference := time.Date(2026, 5, 20, 12, 0, 0, 0, time.UTC)
+	cases := []struct {
+		name   string
+		source string
+		metric string
+		value  float64
+		unit   string
+	}{
+		{name: "openmeteo wind", source: SourceOpenMeteo, metric: "wind_speed", value: 17.2, unit: "km/h"},
+		{name: "openmeteo precipitation", source: SourceOpenMeteo, metric: "precipitation", value: 1.5, unit: "mm"},
+		{name: "gbfs bikes", source: SourceGBFS, metric: "bike_available_count", value: 8, unit: "count"},
+		{name: "gbfs docks", source: SourceGBFS, metric: "dock_available_count", value: 12, unit: "count"},
+		{name: "gbfs capacity", source: SourceGBFS, metric: "station_capacity", value: 20, unit: "count"},
+		{name: "usgs gage", source: SourceUSGS, metric: "water_gage_height", value: 2.7, unit: "ft"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			reading := validReading(reference)
+			reading.Source = tc.source
+			reading.Metric = tc.metric
+			reading.Value = tc.value
+			reading.Unit = tc.unit
+
+			if err := Validate(reading, reference); err != nil {
+				t.Fatalf("expected valid %s reading, got %v", tc.metric, err)
+			}
+		})
+	}
+}
+
 func TestValidateRejectsInvalidCoordinates(t *testing.T) {
 	reference := time.Date(2026, 5, 20, 12, 0, 0, 0, time.UTC)
 	reading := validReading(reference)
