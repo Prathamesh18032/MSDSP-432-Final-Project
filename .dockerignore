@@ -2,7 +2,17 @@
 .env
 .env.*
 .git/
+.terraform/
 .DS_Store
 data/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.test
+*.out
+coverage.*
+profile.cov
+go.work
+go.work.sum
 **/__pycache__/
 **/*.pyc
