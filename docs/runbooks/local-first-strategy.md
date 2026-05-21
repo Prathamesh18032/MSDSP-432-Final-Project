@@ -12,6 +12,7 @@ Build a deterministic local vertical slice:
 4. Writer inserts hot data into TimescaleDB.
 5. Writer can export hot data to local Parquet cold storage.
 6. Grafana reads live data from TimescaleDB.
+7. Streamlit reports on local hot and cold data.
 
 The current slice implements the simulator, validator, initial TimescaleDB schema, and local seed writer. OpenAQ and Grafana provisioning come next.
 
@@ -24,6 +25,8 @@ make run-local
 make seed-simulator
 make run-openaq
 make export-cold-demo
+make run-streamlit
+make run-streamlit-compose
 ```
 
 If the local TimescaleDB volume already exists from an earlier schema, run `make clean` before `make run-local` so Docker replays the init SQL.
@@ -33,6 +36,8 @@ If the local TimescaleDB volume already exists from an earlier schema, run `make
 `make run-openaq` requires `OPENAQ_API_KEY` and runs continuously until interrupted. Use it after `make run-local` to insert OpenAQ readings into TimescaleDB and watch Grafana panels refresh.
 
 `make export-cold` exports retention-eligible readings into local Parquet files under `data/cold`. `make export-cold-demo` exports current rows for immediate validation. Local cold exports do not delete TimescaleDB rows yet.
+
+`make run-streamlit` starts the local reports app after Python dependencies are installed. `make run-streamlit-compose` starts the profiled Docker Compose Streamlit service at port `8501`.
 
 ## Parallel Workstreams
 

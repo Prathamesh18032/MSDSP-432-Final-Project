@@ -31,6 +31,10 @@ go.work.sum
 
 # Local caches
 .cache/
+__pycache__/
+*.pyc
+.venv/
+venv/
 
 # Local cold-storage runtime artifacts
 data/
