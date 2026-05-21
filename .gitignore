@@ -39,6 +39,17 @@ venv/
 # Local cold-storage runtime artifacts
 data/
 
+# Terraform local state and provider artifacts
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
 # Editor/IDE
 # .idea/
 # .vscode/

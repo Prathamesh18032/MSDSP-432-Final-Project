@@ -1,0 +1,15 @@
+gcp_project_id = "replace-me-project"
+gcp_region     = "us-central1"
+environment    = "dev"
+
+pubsub_topic_name         = "smartcity-readings"
+pubsub_dlq_topic_name     = "smartcity-dlq"
+pubsub_subscription_name  = "smartcity-hot-writer"
+pubsub_max_delivery_attempts = 5
+
+gcs_bucket                  = "replace-me-smartcity-iot"
+cold_storage_retention_days = 365
+
+bigquery_dataset             = "smartcity_iot"
+artifact_registry_repository = "smartcity"
+gke_namespace                = "smartcity"
