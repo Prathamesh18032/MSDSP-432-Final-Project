@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 GO_TEST_ENV := GOCACHE="$(CURDIR)/.cache/go-build"
-IMAGE_REGISTRY ?= us-central1-docker.pkg.dev/replace-me-project/smartcity
+IMAGE_REGISTRY ?= asia-south1-docker.pkg.dev/replace-me-project/smartcity
 IMAGE_TAG ?= local
 INGESTOR_IMAGE := $(IMAGE_REGISTRY)/smartcity-ingestor:$(IMAGE_TAG)
 WRITER_IMAGE := $(IMAGE_REGISTRY)/smartcity-writer:$(IMAGE_TAG)
@@ -12,7 +12,7 @@ include .env
 export
 endif
 
-.PHONY: help check test streamlit-check cloud-check docker-build docker-build-ingestor docker-build-writer docker-build-streamlit docker-smoke run run-local seed-simulator run-openaq run-multisource poll-multisource-once export-cold export-cold-demo run-streamlit run-streamlit-compose stop logs clean
+.PHONY: help check test streamlit-check cloud-check gcp-bootstrap-check gcp-cost-guard-check artifact-registry-preview docker-build docker-build-ingestor docker-build-writer docker-build-streamlit docker-smoke run run-local seed-simulator run-openaq run-multisource poll-multisource-once export-cold export-cold-demo run-streamlit run-streamlit-compose stop logs clean
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z_-]+:.*##/ {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -69,11 +69,24 @@ cloud-check: ## Validate cloud-readiness scaffold without contacting GCP
 	@test -f infra/cloud/k8s/base/serviceaccounts.yaml
 	@test -f infra/cloud/k8s/base/configmap.yaml
 	@test -f infra/cloud/k8s/base/workloads.yaml
+	@test -f infra/cloud/gcp.env.example
+	@test -x infra/cloud/scripts/gcp_bootstrap_check.sh
+	@test -x infra/cloud/scripts/gcp_cost_guard_check.sh
+	@test -x infra/cloud/scripts/artifact_registry_preview.sh
 	@for file in $$(find infra/cloud/k8s -name '*.yaml' -type f); do grep -q '^apiVersion:' "$$file"; grep -q '^kind:' "$$file"; done
 	@if command -v terraform >/dev/null 2>&1; then terraform fmt -check -recursive infra/cloud/terraform; else echo "terraform not installed; skipping terraform fmt"; fi
 	@if command -v kubectl >/dev/null 2>&1; then kubectl version --client=true >/dev/null; echo "kubectl installed; cluster dry-run intentionally skipped"; else echo "kubectl not installed; skipping kubernetes client check"; fi
 	@! grep -R "smartcity_dev_password\|smartcity_meta_dev_password" infra/cloud >/dev/null
 	@echo "Cloud readiness check passed."
+
+gcp-bootstrap-check: ## Verify local gcloud/project/region/image settings without creating GCP resources
+	infra/cloud/scripts/gcp_bootstrap_check.sh
+
+gcp-cost-guard-check: ## Verify local project/region/budget guard values without billing API calls
+	infra/cloud/scripts/gcp_cost_guard_check.sh
+
+artifact-registry-preview: ## Print future Artifact Registry setup and push commands without executing them
+	infra/cloud/scripts/artifact_registry_preview.sh
 
 docker-build: docker-build-ingestor docker-build-writer docker-build-streamlit ## Build all application container images locally
 

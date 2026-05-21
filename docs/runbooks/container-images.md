@@ -12,9 +12,9 @@ make docker-smoke
 Default image names:
 
 ```text
-us-central1-docker.pkg.dev/replace-me-project/smartcity/smartcity-ingestor:local
-us-central1-docker.pkg.dev/replace-me-project/smartcity/smartcity-writer:local
-us-central1-docker.pkg.dev/replace-me-project/smartcity/smartcity-streamlit:local
+asia-south1-docker.pkg.dev/replace-me-project/smartcity/smartcity-ingestor:local
+asia-south1-docker.pkg.dev/replace-me-project/smartcity/smartcity-writer:local
+asia-south1-docker.pkg.dev/replace-me-project/smartcity/smartcity-streamlit:local
 ```
 
 Override the local tag when needed:
@@ -35,10 +35,18 @@ make docker-build IMAGE_TAG=dev-pr-10
 
 ## Future Artifact Registry Push
 
-Do not push images in Slice 10. When the team is ready for Slice 11:
+Do not push images until the team explicitly starts the Artifact Registry push slice. Before that, run the bootstrap checks:
+
+```sh
+make gcp-bootstrap-check
+make gcp-cost-guard-check
+make artifact-registry-preview
+```
+
+When the team is ready to push images:
 
 1. Replace `replace-me-project` with the real `GCP_PROJECT_ID`.
-2. Authenticate Docker to Artifact Registry with `gcloud auth configure-docker`.
+2. Authenticate Docker to Artifact Registry with `gcloud auth configure-docker asia-south1-docker.pkg.dev`.
 3. Rebuild images with a non-`local` tag.
 4. Push images after the team confirms costs and repository permissions.
 
