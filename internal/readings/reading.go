@@ -4,6 +4,7 @@ import "time"
 
 const (
 	SourceSimulator = "simulator"
+	SourceOpenAQ    = "openaq"
 
 	QualityInvalid = -1
 	QualitySuspect = 0
