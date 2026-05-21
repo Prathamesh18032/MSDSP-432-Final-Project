@@ -1,12 +1,34 @@
 # Streamlit Reports
 
-Placeholder for the Streamlit reporting application.
+The Streamlit app provides the local analytics surface for seeded TimescaleDB data and locally exported Parquet files.
 
-Planned reports:
+Implemented reports:
 
-- 30-day air quality trend report.
-- Cost savings analysis.
+- Overview metrics for readings, sensors, metrics, sources, and latest reading time.
+- Air quality trend report from TimescaleDB.
 - Data quality and coverage report.
-- Sensor uptime and health report.
+- Sensor health report with stale sensor indicators.
+- Cold storage summary from local Parquet files under `data/cold`.
 
-The first version should run from local sample data or local database queries before BigQuery is enabled.
+Local setup:
+
+```sh
+python3 -m pip install -r apps/streamlit/requirements.txt
+make run-local
+make seed-simulator
+make export-cold-demo
+make run-streamlit
+```
+
+Then open [http://localhost:8501](http://localhost:8501).
+
+Docker setup:
+
+```sh
+make run-local
+make seed-simulator
+make export-cold-demo
+make run-streamlit-compose
+```
+
+The profiled Compose service starts at [http://localhost:8501](http://localhost:8501). The container reads TimescaleDB through the Compose network and mounts local `data/cold` read-only for Parquet summaries.
