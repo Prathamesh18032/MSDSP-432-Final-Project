@@ -15,11 +15,17 @@ var metricRanges = map[string]struct {
 	max  float64
 	unit string
 }{
-	"PM2.5":       {min: 0, max: 1000, unit: "ug/m3"},
-	"O3":          {min: 0, max: 1, unit: "ppm"},
-	"NO2":         {min: 0, max: 1000, unit: "ppb"},
-	"temperature": {min: -80, max: 60, unit: "C"},
-	"humidity":    {min: 0, max: 100, unit: "%"},
+	"PM2.5":                {min: 0, max: 1000, unit: "ug/m3"},
+	"O3":                   {min: 0, max: 1, unit: "ppm"},
+	"NO2":                  {min: 0, max: 1000, unit: "ppb"},
+	"temperature":          {min: -80, max: 60, unit: "C"},
+	"humidity":             {min: 0, max: 100, unit: "%"},
+	"wind_speed":           {min: 0, max: 400, unit: "km/h"},
+	"precipitation":        {min: 0, max: 1000, unit: "mm"},
+	"bike_available_count": {min: 0, max: 1000, unit: "count"},
+	"dock_available_count": {min: 0, max: 1000, unit: "count"},
+	"station_capacity":     {min: 0, max: 1000, unit: "count"},
+	"water_gage_height":    {min: -100, max: 100, unit: "ft"},
 }
 
 func Validate(reading SensorReading, reference time.Time) error {
