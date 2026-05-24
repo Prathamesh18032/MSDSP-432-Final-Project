@@ -9,10 +9,10 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 - Project: Smart City Zero-Disk IoT Infrastructure.
 - Strategy: local-first MVP, cloud-ready architecture.
 - Current branch of record: `main`.
-- Latest merged slice: Slice 10, container image packaging and deployment artifact readiness.
-- Active slice: Slice 11, GCP account bootstrap and Artifact Registry readiness.
-- Next planned slice after this PR merges: Slice 12, Artifact Registry image push.
-- Current working capability: deterministic Go simulator, OpenAQ, Open-Meteo, Divvy GBFS, and USGS pollers can generate or fetch smart-city readings, publish through a local queue buffer, insert into local TimescaleDB, export local Parquet cold-storage files, record ingestion metrics, visualize readings through Grafana dashboards, run local Streamlit reports, provide cloud-readiness Terraform/GKE manifests, and build local deployable container images. This PR adds safe GCP bootstrap checks and Artifact Registry command previews without creating resources.
+- Latest merged slice: Slice 11, GCP account bootstrap and Artifact Registry readiness.
+- Active slice: Slice 12, Artifact Registry image publish readiness.
+- Next planned slice after this PR merges: Slice 13, Terraform plan review for core GCP resources.
+- Current working capability: deterministic Go simulator, OpenAQ, Open-Meteo, Divvy GBFS, and USGS pollers can generate or fetch smart-city readings, publish through a local queue buffer, insert into local TimescaleDB, export local Parquet cold-storage files, record ingestion metrics, visualize readings through Grafana dashboards, run local Streamlit reports, provide cloud-readiness Terraform/GKE manifests, build local deployable container images, and run safe GCP bootstrap checks. This PR adds the controlled Artifact Registry create/check/list/push workflow for publishing those images to `asia-south1`.
 - Local checks expected to pass on `main`: `make check`, `make test`.
 - Known blocker: GitHub branch protection for private repositories requires GitHub Pro or making the repo public. Direct-push protection is deferred.
 - Operational note: Docker Compose stack is not assumed to be running. Start it with `make run-local` when needed.
@@ -31,23 +31,24 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 | 8 | Multi-source smart city sensor integration | [#13](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/13) | Merged into `main` | `make check`, `make test`, `docker compose config`, `make poll-multisource-once`, Timescale source checks for `openmeteo`, `gbfs`, and `usgs` |
 | 9 | GCP infrastructure readiness docs/manifests | [#14](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/14) | Merged into `main` | `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `docker compose config`, `git diff --check` |
 | 10 | Container image packaging and deployment artifact readiness | [#15](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/15) | Merged into `main` | `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `make docker-build`, `make docker-smoke`, `docker compose config`, `git diff --check` |
-| 11 | GCP account bootstrap and Artifact Registry readiness | This PR | Completes on merge | `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `make artifact-registry-preview`, expected bootstrap failure without local `gcloud`, `docker compose config`, `git diff --check` |
+| 11 | GCP account bootstrap and Artifact Registry readiness | [#16](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/16) | Merged into `main` | `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `make artifact-registry-preview`, expected bootstrap failure without local `gcloud`, `docker compose config`, `git diff --check` |
+| 12 | Artifact Registry image publish readiness | This PR | Completes on merge | `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `make gcp-bootstrap-check`, `make gcp-cost-guard-check`, `make artifact-registry-create`, `make artifact-registry-check`, `make docker-build IMAGE_TAG=slice12`, `make docker-smoke IMAGE_TAG=slice12`, `make docker-push IMAGE_TAG=slice12`, `make artifact-registry-list`, `docker compose config`, `git diff --check` |
 
 ## Next Planned Slices
 
 | Slice | Goal | Status | Default Owner |
 | --- | --- | --- | --- |
-| 12 | Artifact Registry image push | Backlog | DevOps workstream |
+| 13 | Terraform plan review for core GCP resources | Backlog | DevOps workstream |
 
 ## Team Work Board
 
 ### Backlog
 
-- Slice 12: Artifact Registry image push.
+- Slice 13: Terraform plan review for core GCP resources.
 
 ### In Progress
 
-- Slice 11: GCP account bootstrap and Artifact Registry readiness, branch `codex/slice-11-gcp-bootstrap`.
+- Slice 12: Artifact Registry image publish readiness, branch `codex/slice-12-artifact-registry-publish`.
 
 ### In Review
 
@@ -65,14 +66,15 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 - Slice 8: Multi-source smart city sensor integration, PR #13.
 - Slice 9: GCP infrastructure readiness docs/manifests, PR #14.
 - Slice 10: Container image packaging and deployment artifact readiness, PR #15.
-- Slice 11: GCP account bootstrap and Artifact Registry readiness, this PR after merge.
+- Slice 11: GCP account bootstrap and Artifact Registry readiness, PR #16.
+- Slice 12: Artifact Registry image publish readiness, this PR after merge.
 
 ## Workstreams
 
 - Go ingestion: OpenAQ, Open-Meteo, GBFS, USGS, simulator, validator, retry/backoff, quality flags.
 - Storage: TimescaleDB schema, inserts, aggregates, retention flush, Parquet path.
 - Dashboards and analytics: Grafana provisioning, Streamlit reports, data-quality views.
-- DevOps and cloud readiness: Compose, container images, GCP bootstrap checks, CI, Makefile, Terraform/GKE readiness manifests, setup docs.
+- DevOps and cloud readiness: Compose, container images, GCP bootstrap checks, Artifact Registry publish workflow, CI, Makefile, Terraform/GKE readiness manifests, setup docs.
 
 ## Update Protocol
 
@@ -100,4 +102,5 @@ Then read this tracker, pick the next `Backlog` slice, create a `codex/<slice-na
 
 ## Handoff Notes
 
-- 2026-05-21: Completed and merged Slice 1 through Slice 10. Started Slice 11 GCP account bootstrap on branch `codex/slice-11-gcp-bootstrap`. Local `main` was updated after PR #15. `gh` CLI token became invalid, but the GitHub connector can still create PRs. Branch protection attempt was blocked by GitHub plan/private repo limitations.
+- 2026-05-21: Completed and merged Slice 1 through Slice 11. Started Slice 12 Artifact Registry image publish readiness on branch `codex/slice-12-artifact-registry-publish`. Local `main` was updated after PR #16. Branch protection attempt was blocked by GitHub plan/private repo limitations.
+- 2026-05-24: Completed Slice 12 local and live GCP validation. Configured `gcloud` for project `smartcity-zero-disk-iot-pa` in `asia-south1`, created Artifact Registry repository `smartcity`, and pushed `slice12` images for ingestor, writer, and Streamlit.

@@ -6,6 +6,7 @@ region="${GCP_REGION:-asia-south1}"
 repository="${ARTIFACT_REGISTRY_REPOSITORY:-smartcity}"
 registry="${IMAGE_REGISTRY:-${region}-docker.pkg.dev/${project}/${repository}}"
 tag="${IMAGE_TAG:-local}"
+expected_registry="${region}-docker.pkg.dev/${project}/${repository}"
 
 if [[ "${region}" != "asia-south1" ]]; then
   cat <<EOF
@@ -16,6 +17,19 @@ Update your local .env:
 
 GCP_REGION=asia-south1
 IMAGE_REGISTRY=asia-south1-docker.pkg.dev/<your-project-id>/smartcity
+EOF
+  exit 1
+fi
+
+if [[ "${registry}" != "${expected_registry}" ]]; then
+  cat <<EOF
+ERROR: IMAGE_REGISTRY should match the configured project, region, and repository.
+Expected: ${expected_registry}
+Current:  ${registry}
+
+Update your local .env:
+
+IMAGE_REGISTRY=${expected_registry}
 EOF
   exit 1
 fi
@@ -45,4 +59,14 @@ And future pushes would look like:
 docker push ${registry}/smartcity-ingestor:${tag}
 docker push ${registry}/smartcity-writer:${tag}
 docker push ${registry}/smartcity-streamlit:${tag}
+
+Equivalent Make workflow:
+
+make gcp-bootstrap-check
+make gcp-cost-guard-check
+make artifact-registry-create
+make docker-build IMAGE_TAG=${tag}
+make docker-tag-release IMAGE_TAG=${tag}
+make docker-push IMAGE_TAG=${tag}
+make artifact-registry-list
 EOF
