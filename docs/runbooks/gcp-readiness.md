@@ -67,6 +67,20 @@ make artifact-registry-list
 
 This creates only the Docker repository configured by `ARTIFACT_REGISTRY_REPOSITORY` and pushes the three project images. It does not create GKE, Pub/Sub, GCS, BigQuery, TimescaleDB, runtime secrets, or Terraform state.
 
+## Pub/Sub Adapter Readiness
+
+Slice 14 adds Pub/Sub publisher and consumer code. It is readiness-only: no topic, subscription, GKE workload, or Terraform apply is created by this slice.
+
+Use the adapter runbook after Pub/Sub resources exist:
+
+```sh
+make pubsub-check
+INGESTION_SINK=pubsub make pubsub-smoke
+make consume-pubsub
+```
+
+The expected topic is `smartcity-readings` and the expected subscription is `smartcity-hot-writer`.
+
 ## Required APIs
 
 The Terraform scaffold includes API enablement for:

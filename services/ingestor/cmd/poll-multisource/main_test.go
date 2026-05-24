@@ -36,6 +36,9 @@ func TestLoadConfigUsesMultiSourceDefaults(t *testing.T) {
 	if cfg.queue.Capacity != 10000 || cfg.queue.BatchSize != 100 {
 		t.Fatalf("queue defaults = %+v", cfg.queue)
 	}
+	if cfg.ingestionSink != sinkLocal {
+		t.Fatalf("ingestion sink = %q", cfg.ingestionSink)
+	}
 }
 
 func TestLoadConfigRejectsInvalidPollInterval(t *testing.T) {
@@ -51,5 +54,33 @@ func TestLoadConfigRejectsInvalidStationLimit(t *testing.T) {
 
 	if _, err := loadConfig(); err == nil {
 		t.Fatal("expected invalid station limit error")
+	}
+}
+
+func TestLoadConfigRejectsInvalidIngestionSink(t *testing.T) {
+	t.Setenv("INGESTION_SINK", "unknown")
+
+	if _, err := loadConfig(); err == nil {
+		t.Fatal("expected invalid ingestion sink error")
+	}
+}
+
+func TestLoadConfigAllowsPubSubSink(t *testing.T) {
+	t.Setenv("INGESTION_SINK", sinkPubSub)
+	t.Setenv("GCP_PROJECT_ID", "smartcity-project")
+	t.Setenv("GCP_PUBSUB_TOPIC", "")
+
+	cfg, err := loadConfig()
+	if err != nil {
+		t.Fatalf("loadConfig() error = %v", err)
+	}
+	if cfg.ingestionSink != sinkPubSub {
+		t.Fatalf("ingestion sink = %q", cfg.ingestionSink)
+	}
+	if cfg.pubsub.projectID != "smartcity-project" {
+		t.Fatalf("project ID = %q", cfg.pubsub.projectID)
+	}
+	if cfg.pubsub.topicID == "" {
+		t.Fatal("expected default topic ID")
 	}
 }

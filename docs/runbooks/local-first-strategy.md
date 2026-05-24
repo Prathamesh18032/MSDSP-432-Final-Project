@@ -32,11 +32,14 @@ make docker-smoke
 make docker-tag-release
 make docker-push
 make artifact-registry-list
+make pubsub-check
 make run-local
 make seed-simulator
 make run-openaq
 make poll-multisource-once
 make run-multisource
+make consume-pubsub
+make pubsub-smoke
 make export-cold-demo
 make run-streamlit
 make run-streamlit-compose
@@ -61,6 +64,8 @@ If the local TimescaleDB volume already exists from an earlier schema, run `make
 `make artifact-registry-create` is the first controlled live cloud command. It enables Artifact Registry, creates one Docker repository in `asia-south1` if missing, and configures Docker auth. `make artifact-registry-check` and `make artifact-registry-list` verify the repository and published images.
 
 `make docker-build` builds the local ingestor, writer, and Streamlit images. `make docker-smoke` verifies those images exist and start with clear local behavior. `make docker-tag-release` applies the configured release tag when needed, and `make docker-push` publishes the images to Artifact Registry. These commands do not deploy workloads.
+
+`INGESTION_SINK=local` is the default producer path. `INGESTION_SINK=pubsub` switches source pollers to publish `SensorReading` JSON messages to an existing Pub/Sub topic. `make pubsub-check`, `make pubsub-smoke`, and `make consume-pubsub` are readiness commands only; they do not create topics or subscriptions.
 
 ## Parallel Workstreams
 
