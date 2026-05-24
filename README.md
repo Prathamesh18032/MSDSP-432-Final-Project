@@ -60,6 +60,9 @@ make terraform-init
 make terraform-validate
 make terraform-plan
 make terraform-show-plan
+make terraform-import-artifact-registry
+make terraform-apply-core
+make gcp-core-check
 make pubsub-check
 make run-local
 make seed-simulator
@@ -67,7 +70,9 @@ make run-openaq
 make poll-multisource-once
 make run-multisource
 make consume-pubsub
+make consume-pubsub-once
 make pubsub-smoke
+make pubsub-hotpath-smoke
 make export-cold-demo
 make run-streamlit
 make run-streamlit-compose
@@ -77,7 +82,7 @@ make stop
 
 `make check` validates the foundation scaffold. `make test` runs Go tests. `make streamlit-check` validates the Streamlit Python files. `make cloud-check` validates the cloud-readiness scaffold without contacting GCP. `make gcp-bootstrap-check`, `make gcp-cost-guard-check`, and `make artifact-registry-preview` prepare a fresh GCP account safely without creating resources. `make artifact-registry-create` is the first live cloud target: it enables Artifact Registry, creates the configured Docker repository if needed, and configures Docker auth for `asia-south1-docker.pkg.dev`. `make artifact-registry-check` verifies that setup, and `make artifact-registry-list` lists published images. `make docker-build` builds local deployable images for the ingestor, writer, and Streamlit app; `make docker-smoke` verifies those images start cleanly without pushing them. `make docker-tag-release` ensures local images have the configured release tag, and `make docker-push` pushes those images to Artifact Registry. `make pubsub-check` verifies that the configured Pub/Sub topic and subscription already exist; it does not create resources. `make run-local` starts the local Docker Compose stack in the background, and `make seed-simulator` publishes deterministic simulator readings through the local buffer into TimescaleDB once the database is healthy. `make run-openaq` starts the continuous OpenAQ v3 poller and requires `OPENAQ_API_KEY`. `make poll-multisource-once` runs one local poll across OpenAQ, Open-Meteo, Divvy GBFS, and USGS; `OPENAQ_API_KEY` is optional in this unified path, so OpenAQ is skipped when the key is missing. `make run-multisource` runs the same source set continuously. `make consume-pubsub` runs the future hot writer that consumes existing Pub/Sub readings into local TimescaleDB. `make pubsub-smoke` publishes one multi-source poll to an existing Pub/Sub topic when `INGESTION_SINK=pubsub` is ready. `make export-cold-demo` exports current TimescaleDB readings to local Parquet files under `data/cold`. `make run-streamlit` starts the local reports app, and `make run-streamlit-compose` starts the Compose Streamlit service.
 
-For the first controlled cloud step, start with the [GCP console bootstrap runbook](docs/runbooks/gcp-console-bootstrap.md), then follow the [Artifact Registry publish runbook](docs/runbooks/artifact-registry-publish.md). Slice 12 only publishes images; it does not create GKE, Pub/Sub, GCS, BigQuery, or run Terraform. For infrastructure planning, use the [Terraform plan review runbook](docs/runbooks/terraform-plan-review.md). For the first cloud hot-path adapter, use the [Pub/Sub adapter readiness runbook](docs/runbooks/pubsub-adapter-readiness.md).
+For the first controlled cloud step, start with the [GCP console bootstrap runbook](docs/runbooks/gcp-console-bootstrap.md), then follow the [Artifact Registry publish runbook](docs/runbooks/artifact-registry-publish.md). Slice 12 only publishes images; it does not create GKE, Pub/Sub, GCS, BigQuery, or run Terraform. For infrastructure planning, use the [Terraform plan review runbook](docs/runbooks/terraform-plan-review.md). For the first cloud hot-path adapter, use the [Pub/Sub adapter readiness runbook](docs/runbooks/pubsub-adapter-readiness.md). For the first controlled Terraform apply, use the [core cloud apply runbook](docs/runbooks/core-cloud-apply.md).
 
 After seeding data, open Grafana at [http://localhost:3000](http://localhost:3000) and sign in with the local defaults `admin / admin`. The `Smart City Operations` dashboard is provisioned automatically and reads from the local TimescaleDB datasource. If an existing `grafana-data` volume has a changed admin password, Grafana keeps that password until local volumes are reset.
 

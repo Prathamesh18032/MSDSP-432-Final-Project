@@ -9,10 +9,10 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 - Project: Smart City Zero-Disk IoT Infrastructure.
 - Strategy: local-first MVP, cloud-ready architecture.
 - Current branch of record: `main`.
-- Latest merged slice: Slice 13, Terraform plan review for core GCP resources.
-- Active slice: Slice 14, Cloud Pub/Sub adapter readiness.
-- Next planned slice after this PR merges: Slice 15, Pub/Sub live resource smoke and cloud hot-path deployment prep.
-- Current working capability: deterministic Go simulator, OpenAQ, Open-Meteo, Divvy GBFS, and USGS pollers can generate or fetch smart-city readings, publish through a local queue buffer, insert into local TimescaleDB, export local Parquet cold-storage files, record ingestion metrics, visualize readings through Grafana dashboards, run local Streamlit reports, provide cloud-readiness Terraform/GKE manifests, build local deployable container images, publish those images to Artifact Registry in `asia-south1`, run safe GCP bootstrap checks, and produce reviewable Terraform plans without applying cloud resources. This PR adds Pub/Sub producer/consumer adapter readiness while keeping local ingestion as the default.
+- Latest merged slice: Slice 14, Cloud Pub/Sub adapter readiness.
+- Active slice: Slice 15, Controlled core cloud apply and Pub/Sub hot-path smoke.
+- Next planned slice after this PR merges: Slice 16, Cloud cold-path GCS/BigQuery Parquet export.
+- Current working capability: deterministic Go simulator, OpenAQ, Open-Meteo, Divvy GBFS, and USGS pollers can generate or fetch smart-city readings, publish through a local queue buffer or Pub/Sub, insert into local TimescaleDB, export local Parquet cold-storage files, record ingestion metrics, visualize readings through Grafana dashboards, run local Streamlit reports, provide cloud-readiness Terraform/GKE manifests, build local deployable container images, publish those images to Artifact Registry in `asia-south1`, run safe GCP bootstrap checks, produce reviewable Terraform plans, and consume Pub/Sub readings into the local hot store. This PR adds the first guarded Terraform apply path for low-cost core GCP resources and live Pub/Sub hot-path smoke validation.
 - Local checks expected to pass on `main`: `make check`, `make test`.
 - Known blocker: GitHub branch protection for private repositories requires GitHub Pro or making the repo public. Direct-push protection is deferred.
 - Operational note: Docker Compose stack is not assumed to be running. Start it with `make run-local` when needed.
@@ -34,23 +34,24 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 | 11 | GCP account bootstrap and Artifact Registry readiness | [#16](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/16) | Merged into `main` | `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `make artifact-registry-preview`, expected bootstrap failure without local `gcloud`, `docker compose config`, `git diff --check` |
 | 12 | Artifact Registry image publish readiness | [#17](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/17) | Merged into `main` | `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `make gcp-bootstrap-check`, `make gcp-cost-guard-check`, `make artifact-registry-create`, `make artifact-registry-check`, `make docker-build IMAGE_TAG=slice12`, `make docker-smoke IMAGE_TAG=slice12`, `make docker-push IMAGE_TAG=slice12`, `make artifact-registry-list`, `docker compose config`, `git diff --check` |
 | 13 | Terraform plan review for core GCP resources | [#18](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/18) | Merged into `main` | `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `make gcp-bootstrap-check`, `make gcp-cost-guard-check`, `make terraform-check`, `make terraform-init`, `make terraform-validate`, `make terraform-plan`, `make terraform-show-plan`, `docker compose config`, `git diff --check` |
-| 14 | Cloud Pub/Sub adapter readiness | This PR | Completes on merge | `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `docker compose config`, `git diff --check` |
+| 14 | Cloud Pub/Sub adapter readiness | [#19](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/19) | Merged into `main` | `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `docker compose config`, `git diff --check`, `make docker-build`, `make docker-smoke` |
+| 15 | Controlled core cloud apply and Pub/Sub hot-path smoke | This PR | Completes on merge | `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `make gcp-bootstrap-check`, `make gcp-cost-guard-check`, `make terraform-check`, `make terraform-init`, `make terraform-import-artifact-registry`, `make terraform-validate`, `make terraform-plan`, `ALLOW_TERRAFORM_APPLY_CORE=yes make terraform-apply-core`, `make gcp-core-check`, `make pubsub-check`, `make docker-build IMAGE_TAG=slice15`, `make docker-smoke IMAGE_TAG=slice15`, `make docker-push IMAGE_TAG=slice15`, `make artifact-registry-list`, `make pubsub-hotpath-smoke`, `docker compose config`, `git diff --check` |
 
 ## Next Planned Slices
 
 | Slice | Goal | Status | Default Owner |
 | --- | --- | --- | --- |
-| 15 | Pub/Sub live resource smoke and cloud hot-path deployment prep | Backlog | Go ingestion / DevOps workstreams |
+| 16 | Cloud cold-path GCS/BigQuery Parquet export | Backlog | Storage / DevOps workstreams |
 
 ## Team Work Board
 
 ### Backlog
 
-- Slice 15: Pub/Sub live resource smoke and cloud hot-path deployment prep.
+- Slice 16: Cloud cold-path GCS/BigQuery Parquet export.
 
 ### In Progress
 
-- Slice 14: Cloud Pub/Sub adapter readiness, branch `codex/slice-14-pubsub-adapter-readiness`.
+- Slice 15: Controlled core cloud apply and Pub/Sub hot-path smoke, branch `codex/slice-15-core-cloud-apply`.
 
 ### In Review
 
@@ -71,14 +72,15 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 - Slice 11: GCP account bootstrap and Artifact Registry readiness, PR #16.
 - Slice 12: Artifact Registry image publish readiness, PR #17.
 - Slice 13: Terraform plan review for core GCP resources, PR #18.
-- Slice 14: Cloud Pub/Sub adapter readiness, this PR after merge.
+- Slice 14: Cloud Pub/Sub adapter readiness, PR #19.
+- Slice 15: Controlled core cloud apply and Pub/Sub hot-path smoke, this PR after merge.
 
 ## Workstreams
 
 - Go ingestion: OpenAQ, Open-Meteo, GBFS, USGS, simulator, validator, retry/backoff, quality flags.
 - Storage: TimescaleDB schema, inserts, aggregates, retention flush, Parquet path.
 - Dashboards and analytics: Grafana provisioning, Streamlit reports, data-quality views.
-- DevOps and cloud readiness: Compose, container images, GCP bootstrap checks, Artifact Registry publish workflow, Terraform plan review, Pub/Sub adapter readiness, CI, Makefile, Terraform/GKE readiness manifests, setup docs.
+- DevOps and cloud readiness: Compose, container images, GCP bootstrap checks, Artifact Registry publish workflow, Terraform plan/apply workflow, Pub/Sub adapter readiness, CI, Makefile, Terraform/GKE readiness manifests, setup docs.
 
 ## Update Protocol
 
@@ -110,3 +112,4 @@ Then read this tracker, pick the next `Backlog` slice, create a `codex/<slice-na
 - 2026-05-24: Completed Slice 12 local and live GCP validation. Configured `gcloud` for project `smartcity-zero-disk-iot-pa` in `asia-south1`, created Artifact Registry repository `smartcity`, and pushed `slice12` images for ingestor, writer, and Streamlit.
 - 2026-05-24: Started Slice 13 Terraform plan review on branch `codex/slice-13-terraform-plan-review`. Slice 13 is plan-only and must not run `terraform apply`.
 - 2026-05-24: Completed and merged Slice 13 / PR #18. Started Slice 14 Pub/Sub adapter readiness on branch `codex/slice-14-pubsub-adapter-readiness`. Slice 14 must not create Pub/Sub resources or run Terraform apply.
+- 2026-05-24: Completed and merged Slice 14 / PR #19. Started Slice 15 controlled core cloud apply on branch `codex/slice-15-core-cloud-apply`. Slice 15 may apply only low-cost core GCP resources behind the explicit `ALLOW_TERRAFORM_APPLY_CORE=yes` guard.

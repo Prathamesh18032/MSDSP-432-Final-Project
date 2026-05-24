@@ -23,7 +23,7 @@ This path writes through the bounded Go queue into local TimescaleDB.
 
 ## Pub/Sub Readiness Check
 
-Use this only after a later slice has created the topic and subscription:
+Use this only after Slice 15 or a later slice has created the topic and subscription:
 
 ```sh
 make gcp-bootstrap-check
@@ -72,3 +72,15 @@ Message data is the existing `SensorReading` JSON contract. Message attributes i
 - `dedup_key`
 
 Pub/Sub is treated as at-least-once delivery. TimescaleDB already upserts on `(time, sensor_id, metric)`, so duplicate deliveries do not create duplicate hot rows.
+
+## Bounded Smoke Mode
+
+For validation runs that should stop automatically:
+
+```sh
+PUBSUB_CONSUME_LIMIT=10
+PUBSUB_CONSUME_TIMEOUT_SECONDS=60
+make consume-pubsub-once
+```
+
+`make pubsub-hotpath-smoke` combines readiness check, one publish, bounded consume, and a local TimescaleDB row-count query.

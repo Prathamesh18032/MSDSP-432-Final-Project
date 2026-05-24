@@ -69,3 +69,9 @@ variable "gke_namespace" {
   type        = string
   default     = "smartcity"
 }
+
+variable "enable_workload_identity_bindings" {
+  description = "Enable only after a GKE Workload Identity pool exists for the project."
+  type        = bool
+  default     = false
+}

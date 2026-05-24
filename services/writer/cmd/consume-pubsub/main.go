@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/Prathamesh18032/MSDSP-432-Final-Project/internal/cloudpubsub"
 	"github.com/Prathamesh18032/MSDSP-432-Final-Project/internal/timescale"
@@ -44,11 +45,31 @@ func main() {
 	defer consumer.Close()
 
 	logger.Printf(
-		"starting Pub/Sub consumer project=%s subscription=%s max_messages=%d",
+		"starting Pub/Sub consumer project=%s subscription=%s max_messages=%d consume_limit=%d timeout=%s",
 		cfg.projectID,
 		cfg.subscriptionID,
 		cfg.maxMessages,
+		cfg.consumeLimit,
+		cfg.consumeTimeout,
 	)
+	if cfg.consumeTimeout > 0 {
+		timeoutCtx, cancel := context.WithTimeout(ctx, cfg.consumeTimeout)
+		defer cancel()
+		ctx = timeoutCtx
+	}
+
+	if cfg.consumeLimit > 0 {
+		count, err := consumer.ReceiveLimit(ctx, cfg.consumeLimit)
+		if err != nil && !errors.Is(ctx.Err(), context.Canceled) && !errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			logger.Fatalf("receive Pub/Sub messages: %v", err)
+		}
+		if count < cfg.consumeLimit {
+			logger.Fatalf("consume limit not reached before stop: consumed=%d limit=%d", count, cfg.consumeLimit)
+		}
+		logger.Printf("bounded Pub/Sub consume complete messages=%d", count)
+		return
+	}
+
 	if err := consumer.Receive(ctx); err != nil && !errors.Is(ctx.Err(), context.Canceled) {
 		logger.Fatalf("receive Pub/Sub messages: %v", err)
 	}
@@ -59,6 +80,8 @@ type config struct {
 	projectID      string
 	subscriptionID string
 	maxMessages    int
+	consumeLimit   int
+	consumeTimeout time.Duration
 	timescaleDSN   string
 }
 
@@ -67,11 +90,27 @@ func loadConfig() (config, error) {
 	if err != nil {
 		return config{}, err
 	}
+	consumeLimit, err := envInt("PUBSUB_CONSUME_LIMIT", 0)
+	if err != nil {
+		return config{}, err
+	}
+	timeoutSeconds, err := envInt("PUBSUB_CONSUME_TIMEOUT_SECONDS", 0)
+	if err != nil {
+		return config{}, err
+	}
+	if consumeLimit < 0 {
+		return config{}, fmt.Errorf("PUBSUB_CONSUME_LIMIT cannot be negative")
+	}
+	if timeoutSeconds < 0 {
+		return config{}, fmt.Errorf("PUBSUB_CONSUME_TIMEOUT_SECONDS cannot be negative")
+	}
 
 	cfg := config{
 		projectID:      os.Getenv("GCP_PROJECT_ID"),
 		subscriptionID: envOrDefault("GCP_PUBSUB_SUBSCRIPTION", cloudpubsub.DefaultSubscriptionID),
 		maxMessages:    maxMessages,
+		consumeLimit:   consumeLimit,
+		consumeTimeout: time.Duration(timeoutSeconds) * time.Second,
 		timescaleDSN:   envOrDefault("TIMESCALE_DSN", defaultTimescaleDSN),
 	}
 	if err := (cloudpubsub.ConsumerConfig{

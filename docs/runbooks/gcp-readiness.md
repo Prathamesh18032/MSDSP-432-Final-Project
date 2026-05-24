@@ -81,6 +81,19 @@ make consume-pubsub
 
 The expected topic is `smartcity-readings` and the expected subscription is `smartcity-hot-writer`.
 
+## First Core Terraform Apply
+
+Slice 15 creates/imports only low-cost core resources. Follow `docs/runbooks/core-cloud-apply.md`:
+
+```sh
+make terraform-import-artifact-registry
+ALLOW_TERRAFORM_APPLY_CORE=yes make terraform-apply-core
+make gcp-core-check
+make pubsub-hotpath-smoke
+```
+
+This still does not create GKE, Cloud SQL, service account keys, remote Terraform state, Workload Identity bindings, or always-on workloads.
+
 ## Required APIs
 
 The Terraform scaffold includes API enablement for:

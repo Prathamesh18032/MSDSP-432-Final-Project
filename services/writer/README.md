@@ -17,6 +17,7 @@ make seed-simulator
 make export-cold
 make export-cold-demo
 make consume-pubsub
+make consume-pubsub-once
 make docker-build-writer
 ```
 
@@ -25,6 +26,8 @@ make docker-build-writer
 `make export-cold` exports readings older than the configured hot-retention window into local Parquet files. `make export-cold-demo` exports current local rows so the team can validate the cold path without waiting 72 hours. Both commands preserve TimescaleDB rows.
 
 `make consume-pubsub` runs the cloud-ready hot writer path. It consumes `SensorReading` JSON messages from `GCP_PUBSUB_SUBSCRIPTION`, validates them, inserts them into TimescaleDB, and acknowledges messages only after a successful write. Pub/Sub is at-least-once delivery, so duplicate messages are tolerated by the existing TimescaleDB upsert key on `(time, sensor_id, metric)`.
+
+`make consume-pubsub-once` sets `PUBSUB_CONSUME_LIMIT` and `PUBSUB_CONSUME_TIMEOUT_SECONDS` so smoke tests can stop automatically after a bounded number of successful message writes.
 
 Cold Parquet output uses the future GCS-compatible partition layout:
 
