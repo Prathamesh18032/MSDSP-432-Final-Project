@@ -14,6 +14,20 @@ locals {
     "storage.googleapis.com",
   ])
 
+  sensor_readings_schema = [
+    { name = "time", type = "TIMESTAMP", mode = "REQUIRED" },
+    { name = "sensor_id", type = "STRING", mode = "REQUIRED" },
+    { name = "metric", type = "STRING", mode = "REQUIRED" },
+    { name = "value", type = "FLOAT", mode = "REQUIRED" },
+    { name = "unit", type = "STRING", mode = "REQUIRED" },
+    { name = "source", type = "STRING", mode = "REQUIRED" },
+    { name = "latitude", type = "FLOAT", mode = "REQUIRED" },
+    { name = "longitude", type = "FLOAT", mode = "REQUIRED" },
+    { name = "quality_flag", type = "INTEGER", mode = "REQUIRED" },
+    { name = "ingested_at", type = "TIMESTAMP", mode = "REQUIRED" },
+    { name = "schema_version", type = "INTEGER", mode = "REQUIRED" },
+  ]
+
   workload_identity_members = {
     ingestor  = "serviceAccount:${var.gcp_project_id}.svc.id.goog[${var.gke_namespace}/smartcity-ingestor]"
     writer    = "serviceAccount:${var.gcp_project_id}.svc.id.goog[${var.gke_namespace}/smartcity-writer]"
@@ -101,12 +115,13 @@ resource "google_bigquery_table" "sensor_readings_external" {
   table_id            = "sensor_readings_external"
   deletion_protection = false
   labels              = local.labels
+  schema              = jsonencode(local.sensor_readings_schema)
 
   external_data_configuration {
-    autodetect    = true
+    autodetect    = false
     source_format = "PARQUET"
     source_uris = [
-      "gs://${google_storage_bucket.cold_storage.name}/sensor_readings/source=*/metric=*/year=*/month=*/day=*/*.parquet"
+      "gs://${google_storage_bucket.cold_storage.name}/sensor_readings/*"
     ]
   }
 }
@@ -188,18 +203,24 @@ resource "google_bigquery_dataset_iam_member" "analytics_dataset_viewer" {
 }
 
 resource "google_service_account_iam_member" "ingestor_workload_identity" {
+  count = var.enable_workload_identity_bindings ? 1 : 0
+
   service_account_id = google_service_account.ingestor.name
   role               = "roles/iam.workloadIdentityUser"
   member             = local.workload_identity_members.ingestor
 }
 
 resource "google_service_account_iam_member" "writer_workload_identity" {
+  count = var.enable_workload_identity_bindings ? 1 : 0
+
   service_account_id = google_service_account.writer.name
   role               = "roles/iam.workloadIdentityUser"
   member             = local.workload_identity_members.writer
 }
 
 resource "google_service_account_iam_member" "analytics_workload_identity" {
+  count = var.enable_workload_identity_bindings ? 1 : 0
+
   service_account_id = google_service_account.analytics.name
   role               = "roles/iam.workloadIdentityUser"
   member             = local.workload_identity_members.analytics

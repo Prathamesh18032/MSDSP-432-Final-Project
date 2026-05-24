@@ -13,3 +13,4 @@ cold_storage_retention_days = 365
 bigquery_dataset             = "smartcity_iot"
 artifact_registry_repository = "smartcity"
 gke_namespace                = "smartcity"
+enable_workload_identity_bindings = false
