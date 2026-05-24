@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"time"
+	"sync/atomic"
 
 	gcppubsub "cloud.google.com/go/pubsub"
 
@@ -74,6 +74,50 @@ func (c *Consumer) Receive(ctx context.Context) error {
 	})
 }
 
+func (c *Consumer) ReceiveLimit(ctx context.Context, limit int) (int, error) {
+	if limit <= 0 {
+		return 0, fmt.Errorf("receive limit must be positive")
+	}
+	if c == nil || c.subscription == nil {
+		return 0, errors.New("pubsub consumer is not initialized")
+	}
+
+	limitedCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	c.subscription.ReceiveSettings.MaxOutstandingMessages = 1
+	c.subscription.ReceiveSettings.NumGoroutines = 1
+
+	var acked int32
+	err := c.subscription.Receive(limitedCtx, func(ctx context.Context, message *gcppubsub.Message) {
+		if atomic.LoadInt32(&acked) >= int32(limit) {
+			message.Nack()
+			cancel()
+			return
+		}
+
+		err := HandleMessage(ctx, Message{
+			Data: message.Data,
+			Ack:  message.Ack,
+			Nack: message.Nack,
+		}, c.writer)
+		if err != nil {
+			c.logger.Printf("pubsub message failed: %v", err)
+			return
+		}
+
+		if atomic.AddInt32(&acked, 1) >= int32(limit) {
+			cancel()
+		}
+	})
+
+	count := int(atomic.LoadInt32(&acked))
+	if errors.Is(err, context.Canceled) && count >= limit {
+		return count, nil
+	}
+	return count, err
+}
+
 func (c *Consumer) Close() error {
 	if c == nil || c.client == nil {
 		return nil
@@ -97,11 +141,7 @@ func HandleMessage(ctx context.Context, message Message, writer ReadingWriter) e
 		return err
 	}
 
-	reference := reading.IngestedAt
-	if reference.IsZero() {
-		reference = time.Now().UTC()
-	}
-	if err := readings.Validate(reading, reference); err != nil {
+	if err := readings.Validate(reading, reading.Time); err != nil {
 		if message.Nack != nil {
 			message.Nack()
 		}
