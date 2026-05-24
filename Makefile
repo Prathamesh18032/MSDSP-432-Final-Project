@@ -3,16 +3,16 @@ SHELL := /bin/bash
 GO_TEST_ENV := GOCACHE="$(CURDIR)/.cache/go-build"
 IMAGE_REGISTRY ?= asia-south1-docker.pkg.dev/replace-me-project/smartcity
 IMAGE_TAG ?= local
-INGESTOR_IMAGE := $(IMAGE_REGISTRY)/smartcity-ingestor:$(IMAGE_TAG)
-WRITER_IMAGE := $(IMAGE_REGISTRY)/smartcity-writer:$(IMAGE_TAG)
-STREAMLIT_IMAGE := $(IMAGE_REGISTRY)/smartcity-streamlit:$(IMAGE_TAG)
+INGESTOR_IMAGE = $(IMAGE_REGISTRY)/smartcity-ingestor:$(IMAGE_TAG)
+WRITER_IMAGE = $(IMAGE_REGISTRY)/smartcity-writer:$(IMAGE_TAG)
+STREAMLIT_IMAGE = $(IMAGE_REGISTRY)/smartcity-streamlit:$(IMAGE_TAG)
 
 ifneq (,$(wildcard .env))
 include .env
 export
 endif
 
-.PHONY: help check test streamlit-check cloud-check gcp-bootstrap-check gcp-cost-guard-check artifact-registry-preview docker-build docker-build-ingestor docker-build-writer docker-build-streamlit docker-smoke run run-local seed-simulator run-openaq run-multisource poll-multisource-once export-cold export-cold-demo run-streamlit run-streamlit-compose stop logs clean
+.PHONY: help check test streamlit-check cloud-check gcp-bootstrap-check gcp-cost-guard-check artifact-registry-preview artifact-registry-check artifact-registry-create artifact-registry-list docker-build docker-build-ingestor docker-build-writer docker-build-streamlit docker-smoke docker-tag-release docker-push run run-local seed-simulator run-openaq run-multisource poll-multisource-once export-cold export-cold-demo run-streamlit run-streamlit-compose stop logs clean
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z_-]+:.*##/ {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -70,9 +70,16 @@ cloud-check: ## Validate cloud-readiness scaffold without contacting GCP
 	@test -f infra/cloud/k8s/base/configmap.yaml
 	@test -f infra/cloud/k8s/base/workloads.yaml
 	@test -f infra/cloud/gcp.env.example
+	@test -f docs/runbooks/gcp-console-bootstrap.md
 	@test -x infra/cloud/scripts/gcp_bootstrap_check.sh
 	@test -x infra/cloud/scripts/gcp_cost_guard_check.sh
 	@test -x infra/cloud/scripts/artifact_registry_preview.sh
+	@test -x infra/cloud/scripts/artifact_registry_check.sh
+	@test -x infra/cloud/scripts/artifact_registry_create.sh
+	@test -x infra/cloud/scripts/artifact_registry_list.sh
+	@test -x infra/cloud/scripts/docker_tag_release.sh
+	@test -x infra/cloud/scripts/docker_push.sh
+	@test -f docs/runbooks/artifact-registry-publish.md
 	@for file in $$(find infra/cloud/k8s -name '*.yaml' -type f); do grep -q '^apiVersion:' "$$file"; grep -q '^kind:' "$$file"; done
 	@if command -v terraform >/dev/null 2>&1; then terraform fmt -check -recursive infra/cloud/terraform; else echo "terraform not installed; skipping terraform fmt"; fi
 	@if command -v kubectl >/dev/null 2>&1; then kubectl version --client=true >/dev/null; echo "kubectl installed; cluster dry-run intentionally skipped"; else echo "kubectl not installed; skipping kubernetes client check"; fi
@@ -87,6 +94,15 @@ gcp-cost-guard-check: ## Verify local project/region/budget guard values without
 
 artifact-registry-preview: ## Print future Artifact Registry setup and push commands without executing them
 	infra/cloud/scripts/artifact_registry_preview.sh
+
+artifact-registry-check: ## Verify Artifact Registry API, repository, and Docker auth are ready
+	infra/cloud/scripts/artifact_registry_check.sh
+
+artifact-registry-create: ## Enable Artifact Registry, create the Docker repository if missing, and configure Docker auth
+	infra/cloud/scripts/artifact_registry_create.sh
+
+artifact-registry-list: ## List published Artifact Registry images for the configured repository
+	infra/cloud/scripts/artifact_registry_list.sh
 
 docker-build: docker-build-ingestor docker-build-writer docker-build-streamlit ## Build all application container images locally
 
@@ -107,6 +123,12 @@ docker-smoke: ## Smoke-test locally built images without pushing or contacting G
 	@docker run --rm $(WRITER_IMAGE) 2>&1 | grep -q "connect to TimescaleDB"
 	@docker run --rm --entrypoint python $(STREAMLIT_IMAGE) -m py_compile apps/streamlit/app.py apps/streamlit/smartcity/cold_storage.py apps/streamlit/smartcity/data_access.py
 	@echo "Docker smoke check passed."
+
+docker-tag-release: ## Ensure all local images have the configured Artifact Registry release tag
+	infra/cloud/scripts/docker_tag_release.sh
+
+docker-push: ## Push all configured service images to Artifact Registry
+	infra/cloud/scripts/docker_push.sh
 
 run: ## Start the local Docker Compose stack
 	docker compose up

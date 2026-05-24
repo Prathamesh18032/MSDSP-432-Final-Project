@@ -1,6 +1,6 @@
 # GCP Readiness Runbook
 
-This runbook lists the prerequisites for moving from the local-first MVP to the first cloud deployment. Slice 11 is bootstrap-only: it helps verify your local setup and project choices, but it does not create cloud resources.
+This runbook lists the prerequisites for moving from the local-first MVP to the first cloud deployment. Slice 11 was bootstrap-only. Slice 12 is the first controlled live GCP step: it creates an Artifact Registry Docker repository and publishes local images, but it does not deploy workloads.
 
 ## Region Choice
 
@@ -24,20 +24,25 @@ Keep this aligned across `.env`, Terraform variables, image tags, and future Art
 
 ## Fresh Account Bootstrap
 
+Follow `docs/runbooks/gcp-console-bootstrap.md` before installing `gcloud`.
+
 1. Create or select a GCP project in the Google Cloud Console.
 2. Confirm billing is linked to that project.
 3. Create a budget alert before enabling services or creating resources.
-4. Copy `infra/cloud/gcp.env.example` into your local `.env` values and replace `replace-me-project`.
-5. Install the Google Cloud CLI.
-6. Authenticate locally:
+4. Confirm your own IAM access on the project.
+5. Avoid creating GKE, Cloud SQL, Pub/Sub, GCS, BigQuery, service account keys, or Terraform state buckets.
+6. Copy `infra/cloud/gcp.env.example` into your local `.env` values and replace `replace-me-project`.
+7. Install the Google Cloud CLI.
+8. Authenticate locally:
 
 ```sh
 gcloud auth login
+gcloud auth application-default login
 gcloud config set project <your-project-id>
 gcloud config set compute/region asia-south1
 ```
 
-7. Run local bootstrap checks:
+9. Run local bootstrap checks:
 
 ```sh
 make gcp-bootstrap-check
@@ -46,6 +51,21 @@ make artifact-registry-preview
 ```
 
 These checks do not create resources, enable APIs, run Terraform, or push images.
+
+## First Live Cloud Step: Artifact Registry
+
+After the bootstrap checks pass, use the Artifact Registry publish runbook:
+
+```sh
+make artifact-registry-create
+make artifact-registry-check
+make docker-build IMAGE_TAG=<tag>
+make docker-tag-release IMAGE_TAG=<tag>
+make docker-push IMAGE_TAG=<tag>
+make artifact-registry-list
+```
+
+This creates only the Docker repository configured by `ARTIFACT_REGISTRY_REPOSITORY` and pushes the three project images. It does not create GKE, Pub/Sub, GCS, BigQuery, TimescaleDB, runtime secrets, or Terraform state.
 
 ## Required APIs
 

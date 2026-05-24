@@ -1,6 +1,6 @@
 # Container Image Workflow
 
-Slice 10 packages the local-first application into deployable container images without pushing to Google Cloud.
+Slice 10 packaged the local-first application into deployable container images. Slice 12 adds the controlled Artifact Registry publishing workflow for those images.
 
 ## Local Build
 
@@ -20,7 +20,7 @@ asia-south1-docker.pkg.dev/replace-me-project/smartcity/smartcity-streamlit:loca
 Override the local tag when needed:
 
 ```sh
-make docker-build IMAGE_TAG=dev-pr-10
+make docker-build IMAGE_TAG=dev-pr-12
 ```
 
 ## Images
@@ -33,9 +33,9 @@ make docker-build IMAGE_TAG=dev-pr-10
 
 `make docker-smoke` confirms the images exist and can start. The Go images are expected to fail clearly when no TimescaleDB runtime connection is provided. The Streamlit image runs Python compile checks inside the container.
 
-## Future Artifact Registry Push
+## Artifact Registry Push
 
-Do not push images until the team explicitly starts the Artifact Registry push slice. Before that, run the bootstrap checks:
+Before the first push, run the bootstrap checks:
 
 ```sh
 make gcp-bootstrap-check
@@ -43,11 +43,21 @@ make gcp-cost-guard-check
 make artifact-registry-preview
 ```
 
-When the team is ready to push images:
+Then create or verify the repository:
 
-1. Replace `replace-me-project` with the real `GCP_PROJECT_ID`.
-2. Authenticate Docker to Artifact Registry with `gcloud auth configure-docker asia-south1-docker.pkg.dev`.
-3. Rebuild images with a non-`local` tag.
-4. Push images after the team confirms costs and repository permissions.
+```sh
+make artifact-registry-create
+make artifact-registry-check
+```
 
-No GCP resources are created by this workflow.
+Build and publish with a reviewable tag:
+
+```sh
+make docker-build IMAGE_TAG=<tag>
+make docker-smoke IMAGE_TAG=<tag>
+make docker-tag-release IMAGE_TAG=<tag>
+make docker-push IMAGE_TAG=<tag>
+make artifact-registry-list
+```
+
+`artifact-registry-create` is the only setup command here that creates a live GCP resource. It enables Artifact Registry and creates one Docker repository if it is missing. The push commands publish images only; they do not deploy workloads.
