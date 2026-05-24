@@ -12,7 +12,7 @@ include .env
 export
 endif
 
-.PHONY: help check test streamlit-check cloud-check gcp-bootstrap-check gcp-cost-guard-check artifact-registry-preview artifact-registry-check artifact-registry-create artifact-registry-list docker-build docker-build-ingestor docker-build-writer docker-build-streamlit docker-smoke docker-tag-release docker-push run run-local seed-simulator run-openaq run-multisource poll-multisource-once export-cold export-cold-demo run-streamlit run-streamlit-compose stop logs clean
+.PHONY: help check test streamlit-check cloud-check gcp-bootstrap-check gcp-cost-guard-check artifact-registry-preview artifact-registry-check artifact-registry-create artifact-registry-list terraform-check terraform-init terraform-validate terraform-plan terraform-show-plan terraform-import-artifact-registry-preview docker-build docker-build-ingestor docker-build-writer docker-build-streamlit docker-smoke docker-tag-release docker-push run run-local seed-simulator run-openaq run-multisource poll-multisource-once export-cold export-cold-demo run-streamlit run-streamlit-compose stop logs clean
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z_-]+:.*##/ {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -79,7 +79,14 @@ cloud-check: ## Validate cloud-readiness scaffold without contacting GCP
 	@test -x infra/cloud/scripts/artifact_registry_list.sh
 	@test -x infra/cloud/scripts/docker_tag_release.sh
 	@test -x infra/cloud/scripts/docker_push.sh
+	@test -x infra/cloud/scripts/terraform_check.sh
+	@test -x infra/cloud/scripts/terraform_init.sh
+	@test -x infra/cloud/scripts/terraform_validate.sh
+	@test -x infra/cloud/scripts/terraform_plan.sh
+	@test -x infra/cloud/scripts/terraform_show_plan.sh
+	@test -x infra/cloud/scripts/terraform_import_artifact_registry_preview.sh
 	@test -f docs/runbooks/artifact-registry-publish.md
+	@test -f docs/runbooks/terraform-plan-review.md
 	@for file in $$(find infra/cloud/k8s -name '*.yaml' -type f); do grep -q '^apiVersion:' "$$file"; grep -q '^kind:' "$$file"; done
 	@if command -v terraform >/dev/null 2>&1; then terraform fmt -check -recursive infra/cloud/terraform; else echo "terraform not installed; skipping terraform fmt"; fi
 	@if command -v kubectl >/dev/null 2>&1; then kubectl version --client=true >/dev/null; echo "kubectl installed; cluster dry-run intentionally skipped"; else echo "kubectl not installed; skipping kubernetes client check"; fi
@@ -103,6 +110,24 @@ artifact-registry-create: ## Enable Artifact Registry, create the Docker reposit
 
 artifact-registry-list: ## List published Artifact Registry images for the configured repository
 	infra/cloud/scripts/artifact_registry_list.sh
+
+terraform-check: ## Check Terraform CLI and local tfvars readiness without contacting GCP
+	infra/cloud/scripts/terraform_check.sh
+
+terraform-init: ## Initialize Terraform providers locally without applying resources
+	infra/cloud/scripts/terraform_init.sh
+
+terraform-validate: ## Validate Terraform configuration after init
+	infra/cloud/scripts/terraform_validate.sh
+
+terraform-plan: ## Create a local Terraform plan artifact without applying resources
+	infra/cloud/scripts/terraform_plan.sh
+
+terraform-show-plan: ## Show the saved local Terraform plan artifact
+	infra/cloud/scripts/terraform_show_plan.sh
+
+terraform-import-artifact-registry-preview: ## Print the import command for the Slice 12 Artifact Registry repository
+	infra/cloud/scripts/terraform_import_artifact_registry_preview.sh
 
 docker-build: docker-build-ingestor docker-build-writer docker-build-streamlit ## Build all application container images locally
 
