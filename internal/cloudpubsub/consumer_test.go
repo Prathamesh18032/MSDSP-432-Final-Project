@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/Prathamesh18032/MSDSP-432-Final-Project/internal/readings"
 )
@@ -97,5 +98,28 @@ func TestHandleMessageNacksWriteFailure(t *testing.T) {
 	}
 	if nacks != 1 {
 		t.Fatalf("nacks=%d", nacks)
+	}
+}
+
+func TestHandleMessageAcceptsDelayedButValidReading(t *testing.T) {
+	reading := testReading()
+	reading.Time = time.Date(2026, 5, 24, 12, 0, 0, 0, time.UTC)
+	reading.IngestedAt = reading.Time.Add(2 * time.Hour)
+	data, _, err := EncodeReading(reading)
+	if err != nil {
+		t.Fatalf("EncodeReading() error = %v", err)
+	}
+
+	acks := 0
+	writer := &captureWriter{}
+	err = HandleMessage(context.Background(), Message{
+		Data: data,
+		Ack:  func() { acks++ },
+	}, writer)
+	if err != nil {
+		t.Fatalf("HandleMessage() error = %v", err)
+	}
+	if acks != 1 {
+		t.Fatalf("acks=%d", acks)
 	}
 }

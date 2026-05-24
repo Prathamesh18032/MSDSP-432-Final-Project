@@ -49,6 +49,9 @@ make terraform-validate
 make terraform-plan
 make terraform-show-plan
 make terraform-import-artifact-registry-preview
+make terraform-import-artifact-registry
+ALLOW_TERRAFORM_APPLY_CORE=yes make terraform-apply-core
+make gcp-core-check
 make pubsub-check
 ```
 
@@ -57,3 +60,5 @@ make pubsub-check
 The Terraform targets support Slice 13 plan review only. They initialize, validate, and save a local plan artifact, but they do not apply resources. The existing Artifact Registry repository from Slice 12 must be imported before any later apply.
 
 `make pubsub-check` verifies that the configured topic and subscription already exist. It is read-only and intentionally does not create Pub/Sub resources.
+
+Slice 15 adds the first guarded apply path for low-cost core resources. `make terraform-apply-core` requires `ALLOW_TERRAFORM_APPLY_CORE=yes`, imports must be handled first, and the current Terraform config still excludes GKE, Cloud SQL, remote state, service account keys, and Workload Identity bindings. Workload Identity bindings stay disabled until a GKE identity pool exists.

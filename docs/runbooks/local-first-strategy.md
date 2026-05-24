@@ -32,6 +32,9 @@ make docker-smoke
 make docker-tag-release
 make docker-push
 make artifact-registry-list
+make terraform-import-artifact-registry
+make terraform-apply-core
+make gcp-core-check
 make pubsub-check
 make run-local
 make seed-simulator
@@ -39,7 +42,9 @@ make run-openaq
 make poll-multisource-once
 make run-multisource
 make consume-pubsub
+make consume-pubsub-once
 make pubsub-smoke
+make pubsub-hotpath-smoke
 make export-cold-demo
 make run-streamlit
 make run-streamlit-compose
