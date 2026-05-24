@@ -102,7 +102,7 @@ Expected secret keys:
 1. Run `make cloud-check`.
 2. Replace Terraform example values with real project values.
 3. Run `terraform fmt -check -recursive infra/cloud/terraform`.
-4. Run `terraform init` only after backend/state ownership is agreed.
+4. For Slice 13, use local state only and run the Terraform plan review workflow in `docs/runbooks/terraform-plan-review.md`.
 5. Run `terraform plan` and review resource count, IAM changes, and costs.
 6. Publish container images.
 7. Create runtime secrets.
