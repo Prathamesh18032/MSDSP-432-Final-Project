@@ -41,6 +41,9 @@ func TestLoadConfigUsesDefaults(t *testing.T) {
 	if cfg.queue.BatchSize != 100 {
 		t.Fatalf("queue batch size = %d", cfg.queue.BatchSize)
 	}
+	if cfg.ingestionSink != sinkLocal {
+		t.Fatalf("ingestion sink = %q", cfg.ingestionSink)
+	}
 }
 
 func TestLoadConfigRejectsInvalidRadius(t *testing.T) {
@@ -58,5 +61,35 @@ func TestLoadConfigRejectsInvalidQueueConfig(t *testing.T) {
 
 	if _, err := loadConfig(); err == nil {
 		t.Fatal("expected invalid queue config error")
+	}
+}
+
+func TestLoadConfigRejectsInvalidIngestionSink(t *testing.T) {
+	t.Setenv("OPENAQ_API_KEY", "test-key")
+	t.Setenv("INGESTION_SINK", "unknown")
+
+	if _, err := loadConfig(); err == nil {
+		t.Fatal("expected invalid ingestion sink error")
+	}
+}
+
+func TestLoadConfigAllowsPubSubSink(t *testing.T) {
+	t.Setenv("OPENAQ_API_KEY", "test-key")
+	t.Setenv("INGESTION_SINK", sinkPubSub)
+	t.Setenv("GCP_PROJECT_ID", "smartcity-project")
+	t.Setenv("GCP_PUBSUB_TOPIC", "")
+
+	cfg, err := loadConfig()
+	if err != nil {
+		t.Fatalf("loadConfig() error = %v", err)
+	}
+	if cfg.ingestionSink != sinkPubSub {
+		t.Fatalf("ingestion sink = %q", cfg.ingestionSink)
+	}
+	if cfg.pubsub.projectID != "smartcity-project" {
+		t.Fatalf("project ID = %q", cfg.pubsub.projectID)
+	}
+	if cfg.pubsub.topicID == "" {
+		t.Fatal("expected default topic ID")
 	}
 }

@@ -1,4 +1,4 @@
-FROM golang:1.22-bookworm AS build
+FROM golang:1.23-bookworm AS build
 
 WORKDIR /src
 
@@ -14,6 +14,12 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
     -o /out/export-cold \
     ./services/writer/cmd/export-cold
 
+RUN CGO_ENABLED=0 GOOS=linux go build \
+    -trimpath \
+    -ldflags="-s -w" \
+    -o /out/consume-pubsub \
+    ./services/writer/cmd/consume-pubsub
+
 FROM alpine:3.20
 
 LABEL org.opencontainers.image.title="smartcity-writer" \
@@ -25,6 +31,7 @@ RUN apk add --no-cache ca-certificates \
     && adduser -S -G smartcity -u 10001 smartcity
 
 COPY --from=build /out/export-cold /usr/local/bin/export-cold
+COPY --from=build /out/consume-pubsub /usr/local/bin/consume-pubsub
 
 USER smartcity
 
