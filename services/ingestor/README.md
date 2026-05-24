@@ -29,6 +29,7 @@ make run-local
 make run-openaq
 make poll-multisource-once
 make run-multisource
+make pubsub-smoke
 make docker-build-ingestor
 ```
 
@@ -49,6 +50,9 @@ Useful optional environment:
 - `GBFS_STATION_LIMIT`
 - `USGS_SITE_IDS`
 - `USGS_PARAMETER_CODES`
+- `INGESTION_SINK`
+- `GCP_PROJECT_ID`
+- `GCP_PUBSUB_TOPIC`
 - `BACKPRESSURE_CHANNEL_CAPACITY`
 - `QUEUE_BATCH_SIZE`
 - `QUEUE_FLUSH_INTERVAL_MS`
@@ -62,7 +66,16 @@ The multi-source poller makes the local MVP feel like a practical city operation
 - USGS reads the Chicago River at Columbus Drive gage height as `water_gage_height`.
 - OpenAQ is included when `OPENAQ_API_KEY` is present.
 
-All source pollers publish valid readings through the same local queue and TimescaleDB writer. A failure in one live source is logged but does not stop the remaining sources in that polling cycle.
+All source pollers publish valid readings through the same writer interface. The default `INGESTION_SINK=local` path uses the bounded local queue and TimescaleDB writer. The cloud-ready `INGESTION_SINK=pubsub` path publishes validated readings to the configured Pub/Sub topic as JSON messages with `schema_version`, `source`, `metric`, `sensor_id`, and `dedup_key` attributes. A failure in one live source is logged but does not stop the remaining sources in that polling cycle.
+
+Pub/Sub mode requires existing GCP resources; this service does not create topics or subscriptions:
+
+```sh
+export INGESTION_SINK=pubsub
+export GCP_PROJECT_ID=smartcity-zero-disk-iot-pa
+export GCP_PUBSUB_TOPIC=smartcity-readings
+make pubsub-smoke
+```
 
 ## Container Image
 

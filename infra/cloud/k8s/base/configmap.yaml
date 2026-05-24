@@ -10,6 +10,9 @@ data:
   GCP_REGION: asia-south1
   GCP_PUBSUB_TOPIC: smartcity-readings
   GCP_PUBSUB_DLQ_TOPIC: smartcity-dlq
+  GCP_PUBSUB_SUBSCRIPTION: smartcity-hot-writer
+  INGESTION_SINK: pubsub
+  PUBSUB_MAX_MESSAGES: "100"
   GCS_BUCKET: replace-me-smartcity-iot
   BIGQUERY_DATASET: smartcity_iot
   OPENAQ_COORDINATES: "41.8781,-87.6298"

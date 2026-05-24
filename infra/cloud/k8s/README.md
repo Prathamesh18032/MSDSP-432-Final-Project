@@ -9,7 +9,8 @@ They are not ready to apply as-is. Replace placeholder values such as `replace-m
 - Namespace and a small quota guardrail.
 - Kubernetes service accounts annotated for GKE Workload Identity Federation.
 - Shared runtime ConfigMap.
-- Deployment placeholder for the multi-source ingestor.
+- Deployment placeholder for the multi-source ingestor publishing to Pub/Sub.
+- Deployment placeholder for the Pub/Sub hot writer consuming into TimescaleDB.
 - CronJob placeholder for cold Parquet export.
 - Streamlit and Grafana deployment/service placeholders.
 
@@ -31,3 +32,5 @@ make cloud-check
 ```
 
 The app image references use the same default local naming convention as `make docker-build`, but images are not pushed to Artifact Registry until a later slice.
+
+The ingestor uses `INGESTION_SINK=pubsub` in the shared ConfigMap. The hot writer deployment runs `/usr/local/bin/consume-pubsub`, but these manifests should not be applied until the Pub/Sub resources, runtime secrets, and target hot database are ready.

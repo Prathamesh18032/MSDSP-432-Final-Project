@@ -12,14 +12,20 @@ import (
 	"time"
 
 	"github.com/Prathamesh18032/MSDSP-432-Final-Project/internal/buffer"
+	"github.com/Prathamesh18032/MSDSP-432-Final-Project/internal/cloudpubsub"
 	"github.com/Prathamesh18032/MSDSP-432-Final-Project/internal/gbfs"
 	"github.com/Prathamesh18032/MSDSP-432-Final-Project/internal/openaq"
 	"github.com/Prathamesh18032/MSDSP-432-Final-Project/internal/openmeteo"
+	"github.com/Prathamesh18032/MSDSP-432-Final-Project/internal/readings"
 	"github.com/Prathamesh18032/MSDSP-432-Final-Project/internal/timescale"
 	"github.com/Prathamesh18032/MSDSP-432-Final-Project/internal/usgs"
 )
 
 const defaultTimescaleDSN = "postgres://smartcity:smartcity_dev_password@localhost:5432/smartcity_hot?sslmode=disable"
+const (
+	sinkLocal  = "local"
+	sinkPubSub = "pubsub"
+)
 
 func main() {
 	logger := log.New(os.Stdout, "multisource-poller ", log.LstdFlags|log.LUTC)
@@ -34,37 +40,19 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	writer, err := timescale.Connect(ctx, cfg.timescaleDSN)
+	sink, err := buildReadingSink(ctx, cfg, logger)
 	if err != nil {
-		logger.Fatalf("connect to TimescaleDB: %v", err)
+		logger.Fatalf("create reading sink: %v", err)
 	}
-	defer writer.Close()
+	defer sink.close()
 
-	queue, err := buffer.NewQueue(writer, writer, cfg.queue)
-	if err != nil {
-		logger.Fatalf("create local buffer: %v", err)
-	}
-	queue.Start(context.Background())
-	defer func() {
-		closeCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if err := queue.Close(closeCtx); err != nil {
-			logger.Printf("flush local buffer: %v", err)
-		}
-	}()
-
-	pollers, err := buildPollers(cfg, queue, logger)
+	pollers, err := buildPollers(cfg, sink.writer, logger)
 	if err != nil {
 		logger.Fatalf("create source pollers: %v", err)
 	}
 
-	logger.Printf("starting multi-source polling sources=%d interval=%s", len(pollers), cfg.pollInterval)
-	logger.Printf(
-		"local buffer capacity=%d batch_size=%d flush_interval=%s",
-		cfg.queue.Capacity,
-		cfg.queue.BatchSize,
-		cfg.queue.FlushInterval,
-	)
+	logger.Printf("starting multi-source polling sources=%d interval=%s sink=%s", len(pollers), cfg.pollInterval, cfg.ingestionSink)
+	logger.Print(sink.description)
 
 	runAll(ctx, pollers, logger)
 	if *once {
@@ -90,14 +78,31 @@ type sourcePoller struct {
 	run  func(context.Context) (string, error)
 }
 
+type readingWriter interface {
+	InsertReadings(ctx context.Context, batch []readings.SensorReading) error
+}
+
+type readingSink struct {
+	writer      readingWriter
+	description string
+	close       func()
+}
+
 type config struct {
-	timescaleDSN string
-	pollInterval time.Duration
-	queue        buffer.Config
-	openAQ       openAQConfig
-	openMeteo    openMeteoConfig
-	gbfs         gbfsConfig
-	usgs         usgsConfig
+	timescaleDSN  string
+	ingestionSink string
+	pollInterval  time.Duration
+	queue         buffer.Config
+	pubsub        pubsubConfig
+	openAQ        openAQConfig
+	openMeteo     openMeteoConfig
+	gbfs          gbfsConfig
+	usgs          usgsConfig
+}
+
+type pubsubConfig struct {
+	projectID string
+	topicID   string
 }
 
 type openAQConfig struct {
@@ -158,15 +163,25 @@ func loadConfig() (config, error) {
 		return config{}, fmt.Errorf("GBFS_STATION_LIMIT cannot be negative")
 	}
 
+	ingestionSink := envOrDefault("INGESTION_SINK", sinkLocal)
+	if ingestionSink != sinkLocal && ingestionSink != sinkPubSub {
+		return config{}, fmt.Errorf("INGESTION_SINK must be %q or %q", sinkLocal, sinkPubSub)
+	}
+
 	queueConfig, err := loadQueueConfig()
 	if err != nil {
 		return config{}, err
 	}
 
 	return config{
-		timescaleDSN: envOrDefault("TIMESCALE_DSN", defaultTimescaleDSN),
-		pollInterval: time.Duration(pollSeconds) * time.Second,
-		queue:        queueConfig,
+		timescaleDSN:  envOrDefault("TIMESCALE_DSN", defaultTimescaleDSN),
+		ingestionSink: ingestionSink,
+		pollInterval:  time.Duration(pollSeconds) * time.Second,
+		queue:         queueConfig,
+		pubsub: pubsubConfig{
+			projectID: os.Getenv("GCP_PROJECT_ID"),
+			topicID:   envOrDefault("GCP_PUBSUB_TOPIC", cloudpubsub.DefaultTopicID),
+		},
 		openAQ: openAQConfig{
 			apiKey:        os.Getenv("OPENAQ_API_KEY"),
 			baseURL:       envOrDefault("OPENAQ_BASE_URL", openaq.DefaultBaseURL),
@@ -191,7 +206,61 @@ func loadConfig() (config, error) {
 	}, nil
 }
 
-func buildPollers(cfg config, queue *buffer.Queue, logger *log.Logger) ([]sourcePoller, error) {
+func buildReadingSink(ctx context.Context, cfg config, logger *log.Logger) (*readingSink, error) {
+	switch cfg.ingestionSink {
+	case sinkLocal:
+		writer, err := timescale.Connect(ctx, cfg.timescaleDSN)
+		if err != nil {
+			return nil, fmt.Errorf("connect to TimescaleDB: %w", err)
+		}
+
+		queue, err := buffer.NewQueue(writer, writer, cfg.queue)
+		if err != nil {
+			writer.Close()
+			return nil, fmt.Errorf("create local buffer: %w", err)
+		}
+		queue.Start(context.Background())
+
+		return &readingSink{
+			writer: queue,
+			description: fmt.Sprintf(
+				"local buffer capacity=%d batch_size=%d flush_interval=%s",
+				cfg.queue.Capacity,
+				cfg.queue.BatchSize,
+				cfg.queue.FlushInterval,
+			),
+			close: func() {
+				closeCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+				defer cancel()
+				if err := queue.Close(closeCtx); err != nil {
+					logger.Printf("flush local buffer: %v", err)
+				}
+				writer.Close()
+			},
+		}, nil
+	case sinkPubSub:
+		publisher, err := cloudpubsub.NewPublisher(ctx, cloudpubsub.PublisherConfig{
+			ProjectID: cfg.pubsub.projectID,
+			TopicID:   cfg.pubsub.topicID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		return &readingSink{
+			writer:      publisher,
+			description: fmt.Sprintf("pubsub publisher project=%s topic=%s", cfg.pubsub.projectID, cfg.pubsub.topicID),
+			close: func() {
+				if err := publisher.Close(); err != nil {
+					logger.Printf("close pubsub publisher: %v", err)
+				}
+			},
+		}, nil
+	default:
+		return nil, fmt.Errorf("unsupported ingestion sink %q", cfg.ingestionSink)
+	}
+}
+
+func buildPollers(cfg config, writer readingWriter, logger *log.Logger) ([]sourcePoller, error) {
 	pollers := make([]sourcePoller, 0, 4)
 
 	if cfg.openAQ.apiKey == "" {
@@ -201,7 +270,7 @@ func buildPollers(cfg config, queue *buffer.Queue, logger *log.Logger) ([]source
 		if err != nil {
 			return nil, err
 		}
-		poller, err := openaq.NewPoller(client, queue, openaq.PollConfig{
+		poller, err := openaq.NewPoller(client, writer, openaq.PollConfig{
 			Coordinates:   cfg.openAQ.coordinates,
 			RadiusMeters:  cfg.openAQ.radiusMeters,
 			LocationLimit: cfg.openAQ.locationLimit,
@@ -219,7 +288,7 @@ func buildPollers(cfg config, queue *buffer.Queue, logger *log.Logger) ([]source
 	if err != nil {
 		return nil, err
 	}
-	openMeteoPoller, err := openmeteo.NewPoller(openMeteoClient, queue, openmeteo.PollConfig{Coordinates: cfg.openMeteo.coordinates}, logger)
+	openMeteoPoller, err := openmeteo.NewPoller(openMeteoClient, writer, openmeteo.PollConfig{Coordinates: cfg.openMeteo.coordinates}, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +301,7 @@ func buildPollers(cfg config, queue *buffer.Queue, logger *log.Logger) ([]source
 	if err != nil {
 		return nil, err
 	}
-	gbfsPoller, err := gbfs.NewPoller(gbfsClient, queue, gbfs.PollConfig{StationLimit: cfg.gbfs.stationLimit}, logger)
+	gbfsPoller, err := gbfs.NewPoller(gbfsClient, writer, gbfs.PollConfig{StationLimit: cfg.gbfs.stationLimit}, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -245,7 +314,7 @@ func buildPollers(cfg config, queue *buffer.Queue, logger *log.Logger) ([]source
 	if err != nil {
 		return nil, err
 	}
-	usgsPoller, err := usgs.NewPoller(usgsClient, queue, usgs.PollConfig{
+	usgsPoller, err := usgs.NewPoller(usgsClient, writer, usgs.PollConfig{
 		SiteIDs:        cfg.usgs.siteIDs,
 		ParameterCodes: cfg.usgs.parameterCodes,
 	}, logger)

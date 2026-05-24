@@ -20,7 +20,6 @@ spec:
         - name: ingestor
           image: asia-south1-docker.pkg.dev/replace-me-project/smartcity/smartcity-ingestor:local
           imagePullPolicy: IfNotPresent
-          args: ["poll-multisource"]
           envFrom:
             - configMapRef:
                 name: smartcity-config
@@ -31,6 +30,46 @@ spec:
                   name: smartcity-runtime-secrets
                   key: OPENAQ_API_KEY
                   optional: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smartcity-hot-writer
+  namespace: smartcity
+  labels:
+    app.kubernetes.io/name: smartcity-hot-writer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: smartcity-hot-writer
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: smartcity-hot-writer
+    spec:
+      serviceAccountName: smartcity-writer
+      containers:
+        - name: writer
+          image: asia-south1-docker.pkg.dev/replace-me-project/smartcity/smartcity-writer:local
+          imagePullPolicy: IfNotPresent
+          command: ["/usr/local/bin/consume-pubsub"]
+          envFrom:
+            - configMapRef:
+                name: smartcity-config
+          env:
+            - name: TIMESCALE_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: smartcity-runtime-secrets
+                  key: TIMESCALE_DSN
           resources:
             requests:
               cpu: 100m
@@ -61,7 +100,6 @@ spec:
             - name: writer
               image: asia-south1-docker.pkg.dev/replace-me-project/smartcity/smartcity-writer:local
               imagePullPolicy: IfNotPresent
-              args: ["export-cold"]
               envFrom:
                 - configMapRef:
                     name: smartcity-config
