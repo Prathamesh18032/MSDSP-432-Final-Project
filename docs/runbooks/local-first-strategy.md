@@ -25,8 +25,13 @@ make cloud-check
 make gcp-bootstrap-check
 make gcp-cost-guard-check
 make artifact-registry-preview
+make artifact-registry-create
+make artifact-registry-check
 make docker-build
 make docker-smoke
+make docker-tag-release
+make docker-push
+make artifact-registry-list
 make run-local
 make seed-simulator
 make run-openaq
@@ -53,7 +58,9 @@ If the local TimescaleDB volume already exists from an earlier schema, run `make
 
 `make gcp-bootstrap-check`, `make gcp-cost-guard-check`, and `make artifact-registry-preview` prepare local GCP settings safely for a fresh account. They do not create resources or push images.
 
-`make docker-build` builds the local ingestor, writer, and Streamlit images. `make docker-smoke` verifies those images exist and start with clear local behavior. These commands do not push images or contact GCP.
+`make artifact-registry-create` is the first controlled live cloud command. It enables Artifact Registry, creates one Docker repository in `asia-south1` if missing, and configures Docker auth. `make artifact-registry-check` and `make artifact-registry-list` verify the repository and published images.
+
+`make docker-build` builds the local ingestor, writer, and Streamlit images. `make docker-smoke` verifies those images exist and start with clear local behavior. `make docker-tag-release` applies the configured release tag when needed, and `make docker-push` publishes the images to Artifact Registry. These commands do not deploy workloads.
 
 ## Parallel Workstreams
 
