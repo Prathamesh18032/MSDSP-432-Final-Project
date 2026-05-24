@@ -7,6 +7,7 @@ This directory contains cloud-ready scaffolding for the Smart City Zero-Disk IoT
 - `terraform/`: GCP resource scaffold for Pub/Sub, dead-letter routing, GCS cold storage, BigQuery external analytics, Artifact Registry, service accounts, and Workload Identity IAM bindings.
 - `k8s/`: GKE manifest scaffold for the multi-source ingestor, cold export writer job, Streamlit, and Grafana.
 - Local container image packaging uses the same Artifact Registry naming convention through `make docker-build`, `make docker-tag-release`, and `make docker-push`.
+- Terraform plan review uses local, ignored `terraform.tfvars` and `smartcity.tfplan` artifacts.
 
 ## What Is Not Included Yet
 
@@ -20,7 +21,7 @@ This directory contains cloud-ready scaffolding for the Smart City Zero-Disk IoT
 
 1. Complete the web-console bootstrap in `docs/runbooks/gcp-console-bootstrap.md`: project, billing, IAM, and budget alerts.
 2. Enable required APIs and authenticate Terraform locally or through CI.
-3. Replace placeholder values in `terraform.tfvars`.
+3. Create local `infra/cloud/terraform/terraform.tfvars`.
 4. Run `terraform fmt`, `terraform init`, and `terraform plan` for review.
 5. Publish ingestor, writer, and Streamlit images to Artifact Registry.
 6. Create Kubernetes runtime secrets outside the repository.
@@ -42,6 +43,14 @@ make docker-build IMAGE_TAG=<tag>
 make docker-tag-release IMAGE_TAG=<tag>
 make docker-push IMAGE_TAG=<tag>
 make artifact-registry-list
+make terraform-check
+make terraform-init
+make terraform-validate
+make terraform-plan
+make terraform-show-plan
+make terraform-import-artifact-registry-preview
 ```
 
 `cloud-check` validates expected cloud files and runs optional Terraform/Kubernetes checks only when the related tools are installed. The bootstrap preview targets verify local configuration and print future commands. `artifact-registry-create` is the only Slice 12 setup target that creates a live cloud resource: one Artifact Registry Docker repository in `asia-south1`, after enabling the Artifact Registry API. The image push targets publish containers only; they do not deploy workloads or run Terraform.
+
+The Terraform targets support Slice 13 plan review only. They initialize, validate, and save a local plan artifact, but they do not apply resources. The existing Artifact Registry repository from Slice 12 must be imported before any later apply.
