@@ -1,13 +1,17 @@
 package coldstore
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strings"
 	"time"
 
+	"cloud.google.com/go/storage"
 	"github.com/apache/arrow-go/v18/arrow"
 	"github.com/apache/arrow-go/v18/arrow/array"
 	"github.com/apache/arrow-go/v18/arrow/memory"
@@ -20,6 +24,13 @@ import (
 type FileResult struct {
 	Path string
 	Rows int
+}
+
+type UploadResult struct {
+	LocalPath string
+	Object    string
+	URI       string
+	Rows      int
 }
 
 var partitionSafePattern = regexp.MustCompile(`[^A-Za-z0-9._-]+`)
@@ -89,6 +100,58 @@ func PartitionPath(reading readings.SensorReading) string {
 	)
 }
 
+func GCSObjectName(root string, localPath string) (string, error) {
+	if root == "" {
+		return "", fmt.Errorf("cold storage root is required")
+	}
+	if localPath == "" {
+		return "", fmt.Errorf("local path is required")
+	}
+
+	relative, err := filepath.Rel(root, localPath)
+	if err != nil {
+		return "", fmt.Errorf("calculate GCS object name: %w", err)
+	}
+	if relative == "." || relative == "" || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("local path %q must be inside cold storage root %q", localPath, root)
+	}
+	return filepath.ToSlash(relative), nil
+}
+
+func UploadSensorReadingFiles(ctx context.Context, root string, bucketName string, files []FileResult) ([]UploadResult, error) {
+	if bucketName == "" {
+		return nil, fmt.Errorf("GCS bucket is required")
+	}
+	if len(files) == 0 {
+		return nil, nil
+	}
+
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("create GCS client: %w", err)
+	}
+	defer client.Close()
+
+	bucket := client.Bucket(bucketName)
+	results := make([]UploadResult, 0, len(files))
+	for _, file := range files {
+		objectName, err := GCSObjectName(root, file.Path)
+		if err != nil {
+			return nil, err
+		}
+		if err := uploadFile(ctx, bucket, objectName, file.Path); err != nil {
+			return nil, err
+		}
+		results = append(results, UploadResult{
+			LocalPath: file.Path,
+			Object:    objectName,
+			URI:       fmt.Sprintf("gs://%s/%s", bucketName, objectName),
+			Rows:      file.Rows,
+		})
+	}
+	return results, nil
+}
+
 func groupByPartition(batch []readings.SensorReading) map[string][]readings.SensorReading {
 	groups := make(map[string][]readings.SensorReading)
 	for _, reading := range batch {
@@ -96,6 +159,25 @@ func groupByPartition(batch []readings.SensorReading) map[string][]readings.Sens
 		groups[key] = append(groups[key], reading)
 	}
 	return groups
+}
+
+func uploadFile(ctx context.Context, bucket *storage.BucketHandle, objectName string, localPath string) error {
+	source, err := os.Open(localPath)
+	if err != nil {
+		return fmt.Errorf("open local Parquet file %s: %w", localPath, err)
+	}
+	defer source.Close()
+
+	writer := bucket.Object(objectName).NewWriter(ctx)
+	writer.ContentType = "application/octet-stream"
+	if _, err := io.Copy(writer, source); err != nil {
+		_ = writer.Close()
+		return fmt.Errorf("upload %s to GCS object %s: %w", localPath, objectName, err)
+	}
+	if err := writer.Close(); err != nil {
+		return fmt.Errorf("close GCS object %s: %w", objectName, err)
+	}
+	return nil
 }
 
 func writeParquetFile(path string, batch []readings.SensorReading) error {
