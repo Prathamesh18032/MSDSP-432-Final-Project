@@ -1,6 +1,7 @@
 package coldstore
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -60,6 +61,43 @@ func TestWriteSensorReadingsEmptyBatch(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dir, "sensor_readings")); !os.IsNotExist(err) {
 		t.Fatalf("expected no sensor_readings directory, stat error = %v", err)
+	}
+}
+
+func TestGCSObjectName(t *testing.T) {
+	root := filepath.Join("data", "cold")
+	localPath := filepath.Join(root, "sensor_readings", "source=simulator", "metric=PM2.5", "year=2026", "month=05", "day=21", "part-20260521T070000.000000Z.parquet")
+
+	got, err := GCSObjectName(root, localPath)
+	if err != nil {
+		t.Fatalf("GCSObjectName() error = %v", err)
+	}
+	want := "sensor_readings/source=simulator/metric=PM2.5/year=2026/month=05/day=21/part-20260521T070000.000000Z.parquet"
+	if got != want {
+		t.Fatalf("GCSObjectName() = %q, want %q", got, want)
+	}
+}
+
+func TestGCSObjectNameRejectsPathOutsideRoot(t *testing.T) {
+	if _, err := GCSObjectName(filepath.Join("data", "cold"), filepath.Join("data", "other", "file.parquet")); err == nil {
+		t.Fatal("expected path outside root error")
+	}
+}
+
+func TestUploadSensorReadingFilesEmptyBatch(t *testing.T) {
+	results, err := UploadSensorReadingFiles(context.Background(), "data/cold", "smartcity-cold", nil)
+	if err != nil {
+		t.Fatalf("UploadSensorReadingFiles() error = %v", err)
+	}
+	if len(results) != 0 {
+		t.Fatalf("len(results) = %d, want 0", len(results))
+	}
+}
+
+func TestUploadSensorReadingFilesRequiresBucket(t *testing.T) {
+	_, err := UploadSensorReadingFiles(context.Background(), "data/cold", "", []FileResult{{Path: "data/cold/file.parquet", Rows: 1}})
+	if err == nil {
+		t.Fatal("expected missing bucket error")
 	}
 }
 

@@ -46,6 +46,8 @@ make consume-pubsub-once
 make pubsub-smoke
 make pubsub-hotpath-smoke
 make export-cold-demo
+make export-cold-gcs
+make cloud-cold-smoke
 make run-streamlit
 make run-streamlit-compose
 ```
@@ -58,7 +60,7 @@ If the local TimescaleDB volume already exists from an earlier schema, run `make
 
 `make poll-multisource-once` validates all configured live city sources in one run. `make run-multisource` keeps them running continuously. The unified poller includes Open-Meteo, Divvy GBFS, USGS, and OpenAQ when `OPENAQ_API_KEY` is present. If OpenAQ is not configured, it is skipped while the public no-secret sources still run.
 
-`make export-cold` exports retention-eligible readings into local Parquet files under `data/cold`. `make export-cold-demo` exports current rows for immediate validation. Local cold exports do not delete TimescaleDB rows yet.
+`make export-cold` exports retention-eligible readings into local Parquet files under `data/cold`. `make export-cold-demo` exports current rows for immediate validation. `make export-cold-gcs` preserves the local Parquet export and uploads the same partition layout to the configured GCS bucket. Cold exports do not delete TimescaleDB rows yet.
 
 `make run-streamlit` starts the local reports app after Python dependencies are installed. `make run-streamlit-compose` starts the profiled Docker Compose Streamlit service at port `8501`.
 
@@ -71,6 +73,8 @@ If the local TimescaleDB volume already exists from an earlier schema, run `make
 `make docker-build` builds the local ingestor, writer, and Streamlit images. `make docker-smoke` verifies those images exist and start with clear local behavior. `make docker-tag-release` applies the configured release tag when needed, and `make docker-push` publishes the images to Artifact Registry. These commands do not deploy workloads.
 
 `INGESTION_SINK=local` is the default producer path. `INGESTION_SINK=pubsub` switches source pollers to publish `SensorReading` JSON messages to an existing Pub/Sub topic. `make pubsub-check`, `make pubsub-smoke`, and `make consume-pubsub` are readiness commands only; they do not create topics or subscriptions.
+
+`COLD_STORAGE_TARGET=local` is the default cold path. `COLD_STORAGE_TARGET=gcs` uploads exported Parquet files to `GCS_BUCKET`, and `make bigquery-cold-check` validates the external table over those objects.
 
 ## Parallel Workstreams
 

@@ -20,6 +20,8 @@ const (
 	defaultColdRoot      = "data/cold"
 	defaultRetentionHour = 72
 	defaultBatchSize     = 1000
+	storageTargetLocal   = "local"
+	storageTargetGCS     = "gcs"
 )
 
 type config struct {
@@ -28,6 +30,9 @@ type config struct {
 	mode           string
 	retentionHours int
 	batchSize      int
+	storageTarget  string
+	gcsBucket      string
+	keepLocal      bool
 }
 
 func main() {
@@ -73,6 +78,25 @@ func main() {
 	for _, result := range results {
 		fmt.Printf("- %s (%d rows)\n", result.Path, result.Rows)
 	}
+
+	if cfg.storageTarget == storageTargetGCS {
+		uploadStarted := time.Now().UTC()
+		uploads, err := coldstore.UploadSensorReadingFiles(ctx, cfg.root, cfg.gcsBucket, results)
+		if err != nil {
+			log.Fatalf("upload cold Parquet files to GCS: %v", err)
+		}
+		fmt.Printf("Uploaded %d Parquet file(s) to gs://%s in %s.\n", len(uploads), cfg.gcsBucket, time.Since(uploadStarted).Round(time.Millisecond))
+		for _, upload := range uploads {
+			fmt.Printf("- %s (%d rows)\n", upload.URI, upload.Rows)
+		}
+		if !cfg.keepLocal {
+			for _, upload := range uploads {
+				if err := os.Remove(upload.LocalPath); err != nil {
+					log.Printf("remove local cold export file %s: %v", upload.LocalPath, err)
+				}
+			}
+		}
+	}
 }
 
 func loadConfig() (config, error) {
@@ -107,6 +131,9 @@ func loadConfigFromArgs(args []string) (config, error) {
 		mode:           mode,
 		retentionHours: retentionHours,
 		batchSize:      batchSize,
+		storageTarget:  envOrDefault("COLD_STORAGE_TARGET", storageTargetLocal),
+		gcsBucket:      os.Getenv("GCS_BUCKET"),
+		keepLocal:      envBool("CLOUD_COLD_EXPORT_KEEP_LOCAL", true),
 	}
 
 	flags := flag.NewFlagSet("export-cold", flag.ContinueOnError)
@@ -115,6 +142,8 @@ func loadConfigFromArgs(args []string) (config, error) {
 	flags.StringVar(&cfg.mode, "mode", cfg.mode, "cold export mode: retention or all")
 	flags.IntVar(&cfg.retentionHours, "retention-hours", cfg.retentionHours, "hot retention window in hours for retention mode")
 	flags.IntVar(&cfg.batchSize, "batch-size", cfg.batchSize, "maximum readings to export in one run")
+	flags.StringVar(&cfg.storageTarget, "target", cfg.storageTarget, "cold storage target: local or gcs")
+	flags.StringVar(&cfg.gcsBucket, "gcs-bucket", cfg.gcsBucket, "GCS bucket for cloud cold storage uploads")
 	if err := flags.Parse(args); err != nil {
 		return config{}, err
 	}
@@ -130,6 +159,12 @@ func loadConfigFromArgs(args []string) (config, error) {
 	}
 	if cfg.root == "" {
 		return config{}, fmt.Errorf("cold storage root is required")
+	}
+	if cfg.storageTarget != storageTargetLocal && cfg.storageTarget != storageTargetGCS {
+		return config{}, fmt.Errorf("target must be %q or %q", storageTargetLocal, storageTargetGCS)
+	}
+	if cfg.storageTarget == storageTargetGCS && cfg.gcsBucket == "" {
+		return config{}, fmt.Errorf("GCS_BUCKET is required when COLD_STORAGE_TARGET=gcs")
 	}
 
 	return cfg, nil
@@ -153,4 +188,16 @@ func envInt(name string, fallback int) (int, error) {
 		return 0, fmt.Errorf("%s must be an integer: %w", name, err)
 	}
 	return parsed, nil
+}
+
+func envBool(name string, fallback bool) bool {
+	value := os.Getenv(name)
+	if value == "" {
+		return fallback
+	}
+	parsed, err := strconv.ParseBool(value)
+	if err != nil {
+		return fallback
+	}
+	return parsed
 }
