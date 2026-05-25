@@ -53,6 +53,7 @@ make terraform-import-artifact-registry
 ALLOW_TERRAFORM_APPLY_CORE=yes make terraform-apply-core
 make gcp-core-check
 make pubsub-check
+make bigquery-cold-check
 ```
 
 `cloud-check` validates expected cloud files and runs optional Terraform/Kubernetes checks only when the related tools are installed. The bootstrap preview targets verify local configuration and print future commands. `artifact-registry-create` is the only Slice 12 setup target that creates a live cloud resource: one Artifact Registry Docker repository in `asia-south1`, after enabling the Artifact Registry API. The image push targets publish containers only; they do not deploy workloads or run Terraform.
@@ -62,3 +63,5 @@ The Terraform targets support Slice 13 plan review only. They initialize, valida
 `make pubsub-check` verifies that the configured topic and subscription already exist. It is read-only and intentionally does not create Pub/Sub resources.
 
 Slice 15 adds the first guarded apply path for low-cost core resources. `make terraform-apply-core` requires `ALLOW_TERRAFORM_APPLY_CORE=yes`, imports must be handled first, and the current Terraform config still excludes GKE, Cloud SQL, remote state, service account keys, and Workload Identity bindings. Workload Identity bindings stay disabled until a GKE identity pool exists.
+
+Slice 16 adds the first cloud cold-path validation. `make export-cold-gcs` uploads Parquet files to the existing GCS bucket, and `make bigquery-cold-check` verifies the external table is queryable. These commands do not create additional infrastructure.

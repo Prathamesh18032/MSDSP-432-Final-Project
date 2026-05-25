@@ -94,6 +94,19 @@ make pubsub-hotpath-smoke
 
 This still does not create GKE, Cloud SQL, service account keys, remote Terraform state, Workload Identity bindings, or always-on workloads.
 
+## Cloud Cold Path Validation
+
+Slice 16 uses the GCS bucket and BigQuery external table from the core apply:
+
+```sh
+make run-local
+make seed-simulator
+COLD_EXPORT_MODE=all make export-cold-gcs
+CLOUD_COLD_MIN_ROWS=1 make bigquery-cold-check
+```
+
+This uploads Parquet files only and runs a bounded BigQuery row-count query. It does not delete hot TimescaleDB rows or create new cloud resources.
+
 ## Required APIs
 
 The Terraform scaffold includes API enablement for:
