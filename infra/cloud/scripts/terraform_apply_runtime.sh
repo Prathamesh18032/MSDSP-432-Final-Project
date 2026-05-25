@@ -3,12 +3,12 @@ set -euo pipefail
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 tf_dir="${root_dir}/infra/cloud/terraform"
-plan_file="${TF_PLAN_FILE:-smartcity.tfplan}"
+plan_file="${TF_RUNTIME_PLAN_FILE:-smartcity-runtime.tfplan}"
 
-if [[ "${ALLOW_TERRAFORM_APPLY_CORE:-}" != "yes" ]]; then
-  echo "ERROR: Refusing to apply Terraform without ALLOW_TERRAFORM_APPLY_CORE=yes." >&2
-  echo "This target creates low-cost core GCP resources: Pub/Sub, GCS, BigQuery, IAM/service accounts, and API enablement." >&2
-  echo "It does not create GKE, Cloud SQL, service account keys, or remote Terraform state." >&2
+if [[ "${ALLOW_TERRAFORM_APPLY_RUNTIME:-}" != "yes" ]]; then
+  echo "ERROR: Refusing to apply runtime Terraform without ALLOW_TERRAFORM_APPLY_RUNTIME=yes." >&2
+  echo "This target can create ongoing-cost runtime resources such as a GKE Autopilot cluster." >&2
+  echo "It does not create Cloud SQL, external Timescale services, service account keys, or public ingress." >&2
   exit 1
 fi
 
@@ -31,10 +31,13 @@ fi
 
 terraform validate
 
-echo "Creating a fresh core apply plan at ${tf_dir}/${plan_file}."
-terraform plan -var-file=terraform.tfvars -out="${plan_file}"
+echo "Creating a fresh runtime apply plan at ${tf_dir}/${plan_file}."
+terraform plan \
+  -var-file=terraform.tfvars \
+  -var=enable_runtime_resources=true \
+  -out="${plan_file}"
 
 terraform apply "${plan_file}"
 
 echo
-echo "Core Terraform apply complete. GKE runtime resources remain disabled unless the runtime apply target is used."
+echo "Runtime Terraform apply complete. GKE runtime resources are enabled; TimescaleDB is deployed later through Kubernetes manifests."

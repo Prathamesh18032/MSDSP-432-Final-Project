@@ -1,18 +1,19 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: smartcity
+  name: __GKE_NAMESPACE__
   labels:
     app.kubernetes.io/name: smartcity-zero-disk
     app.kubernetes.io/part-of: smartcity-zero-disk
+    app.kubernetes.io/managed-by: codex
 ---
 apiVersion: v1
 kind: ResourceQuota
 metadata:
-  name: smartcity-readiness-quota
-  namespace: smartcity
+  name: smartcity-runtime-quota
+  namespace: __GKE_NAMESPACE__
 spec:
   hard:
     pods: "20"
-    requests.cpu: "8"
-    requests.memory: 16Gi
+    requests.cpu: "6"
+    requests.memory: 12Gi

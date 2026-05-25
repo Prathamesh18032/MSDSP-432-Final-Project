@@ -203,7 +203,7 @@ resource "google_bigquery_dataset_iam_member" "analytics_dataset_viewer" {
 }
 
 resource "google_service_account_iam_member" "ingestor_workload_identity" {
-  count = var.enable_workload_identity_bindings ? 1 : 0
+  count = var.enable_workload_identity_bindings || var.enable_runtime_resources ? 1 : 0
 
   service_account_id = google_service_account.ingestor.name
   role               = "roles/iam.workloadIdentityUser"
@@ -211,7 +211,7 @@ resource "google_service_account_iam_member" "ingestor_workload_identity" {
 }
 
 resource "google_service_account_iam_member" "writer_workload_identity" {
-  count = var.enable_workload_identity_bindings ? 1 : 0
+  count = var.enable_workload_identity_bindings || var.enable_runtime_resources ? 1 : 0
 
   service_account_id = google_service_account.writer.name
   role               = "roles/iam.workloadIdentityUser"
@@ -219,9 +219,31 @@ resource "google_service_account_iam_member" "writer_workload_identity" {
 }
 
 resource "google_service_account_iam_member" "analytics_workload_identity" {
-  count = var.enable_workload_identity_bindings ? 1 : 0
+  count = var.enable_workload_identity_bindings || var.enable_runtime_resources ? 1 : 0
 
   service_account_id = google_service_account.analytics.name
   role               = "roles/iam.workloadIdentityUser"
   member             = local.workload_identity_members.analytics
+}
+
+resource "google_container_cluster" "runtime" {
+  count = var.enable_runtime_resources ? 1 : 0
+
+  name                = var.gke_cluster_name
+  location            = var.gcp_region
+  enable_autopilot    = true
+  deletion_protection = false
+
+  workload_identity_config {
+    workload_pool = "${var.gcp_project_id}.svc.id.goog"
+  }
+
+  release_channel {
+    channel = "REGULAR"
+  }
+
+  ip_allocation_policy {}
+  resource_labels = local.labels
+
+  depends_on = [google_project_service.required]
 }
