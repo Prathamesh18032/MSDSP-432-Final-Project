@@ -12,7 +12,10 @@ include .env
 export
 endif
 
-.PHONY: help check test streamlit-check cloud-check gcp-bootstrap-check gcp-cost-guard-check artifact-registry-preview artifact-registry-check artifact-registry-create artifact-registry-list terraform-check terraform-init terraform-validate terraform-plan terraform-show-plan terraform-import-artifact-registry-preview terraform-import-artifact-registry terraform-apply-core gcp-core-check pubsub-check docker-build docker-build-ingestor docker-build-writer docker-build-streamlit docker-smoke docker-tag-release docker-push run run-local seed-simulator run-openaq run-multisource poll-multisource-once consume-pubsub consume-pubsub-once pubsub-smoke pubsub-hotpath-smoke export-cold export-cold-demo run-streamlit run-streamlit-compose stop logs clean
+TFVARS_GCS_BUCKET := $(shell awk -F= '/^[[:space:]]*gcs_bucket[[:space:]]*=/ {gsub(/[ "	]/, "", $$2); print $$2}' infra/cloud/terraform/terraform.tfvars 2>/dev/null)
+CLOUD_COLD_BUCKET ?= $(if $(TFVARS_GCS_BUCKET),$(TFVARS_GCS_BUCKET),$(GCS_BUCKET))
+
+.PHONY: help check test streamlit-check cloud-check gcp-bootstrap-check gcp-cost-guard-check artifact-registry-preview artifact-registry-check artifact-registry-create artifact-registry-list terraform-check terraform-init terraform-validate terraform-plan terraform-show-plan terraform-import-artifact-registry-preview terraform-import-artifact-registry terraform-apply-core gcp-core-check pubsub-check bigquery-cold-check docker-build docker-build-ingestor docker-build-writer docker-build-streamlit docker-smoke docker-tag-release docker-push run run-local seed-simulator run-openaq run-multisource poll-multisource-once consume-pubsub consume-pubsub-once pubsub-smoke pubsub-hotpath-smoke export-cold export-cold-demo export-cold-gcs cloud-cold-smoke run-streamlit run-streamlit-compose stop logs clean
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z_-]+:.*##/ {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -92,10 +95,12 @@ cloud-check: ## Validate cloud-readiness scaffold without contacting GCP
 	@test -x infra/cloud/scripts/terraform_apply_core.sh
 	@test -x infra/cloud/scripts/gcp_core_check.sh
 	@test -x infra/cloud/scripts/pubsub_check.sh
+	@test -x infra/cloud/scripts/bigquery_cold_check.sh
 	@test -f docs/runbooks/artifact-registry-publish.md
 	@test -f docs/runbooks/terraform-plan-review.md
 	@test -f docs/runbooks/pubsub-adapter-readiness.md
 	@test -f docs/runbooks/core-cloud-apply.md
+	@test -f docs/runbooks/cloud-cold-path.md
 	@for file in $$(find infra/cloud/k8s -name '*.yaml' -type f); do grep -q '^apiVersion:' "$$file"; grep -q '^kind:' "$$file"; done
 	@if command -v terraform >/dev/null 2>&1; then terraform fmt -check -recursive infra/cloud/terraform; else echo "terraform not installed; skipping terraform fmt"; fi
 	@if command -v kubectl >/dev/null 2>&1; then kubectl version --client=true >/dev/null; echo "kubectl installed; cluster dry-run intentionally skipped"; else echo "kubectl not installed; skipping kubernetes client check"; fi
@@ -149,6 +154,9 @@ gcp-core-check: ## Verify core GCP resources after controlled Terraform apply
 
 pubsub-check: ## Verify existing Pub/Sub topic/subscription readiness without creating resources
 	infra/cloud/scripts/pubsub_check.sh
+
+bigquery-cold-check: ## Verify the GCS-backed BigQuery external table is queryable
+	infra/cloud/scripts/bigquery_cold_check.sh
 
 docker-build: docker-build-ingestor docker-build-writer docker-build-streamlit ## Build all application container images locally
 
@@ -214,6 +222,16 @@ export-cold: ## Export retention-eligible TimescaleDB readings to local Parquet 
 
 export-cold-demo: ## Export current local TimescaleDB readings to local Parquet cold storage
 	$(GO_TEST_ENV) go run ./services/writer/cmd/export-cold -mode all
+
+export-cold-gcs: ## Export TimescaleDB readings to local Parquet and upload them to GCS
+	GCS_BUCKET="$(CLOUD_COLD_BUCKET)" COLD_STORAGE_TARGET=gcs COLD_EXPORT_MODE=$${COLD_EXPORT_MODE:-all} $(GO_TEST_ENV) go run ./services/writer/cmd/export-cold
+
+cloud-cold-smoke: ## Seed local data, export Parquet to GCS, and verify BigQuery sees rows
+	$(MAKE) gcp-core-check
+	$(MAKE) run-local
+	$(MAKE) seed-simulator
+	GCS_BUCKET="$(CLOUD_COLD_BUCKET)" COLD_STORAGE_TARGET=gcs COLD_EXPORT_MODE=all $(GO_TEST_ENV) go run ./services/writer/cmd/export-cold
+	CLOUD_COLD_MIN_ROWS=$${CLOUD_COLD_MIN_ROWS:-1} $(MAKE) bigquery-cold-check
 
 run-streamlit: ## Run the Streamlit reports app locally
 	python3 -m streamlit run apps/streamlit/app.py --server.port $${STREAMLIT_PORT:-8501} --server.headless true --browser.gatherUsageStats false
