@@ -24,10 +24,20 @@ output "artifact_registry_repository" {
 }
 
 output "workload_service_accounts" {
-  description = "Google service account emails for future GKE Workload Identity bindings."
+  description = "Google service account emails for GKE Workload Identity bindings."
   value = {
     ingestor  = google_service_account.ingestor.email
     writer    = google_service_account.writer.email
     analytics = google_service_account.analytics.email
   }
+}
+
+output "gke_cluster_name" {
+  description = "GKE Autopilot cluster name when runtime resources are enabled."
+  value       = var.enable_runtime_resources ? google_container_cluster.runtime[0].name : null
+}
+
+output "gke_cluster_location" {
+  description = "GKE cluster location when runtime resources are enabled."
+  value       = var.enable_runtime_resources ? google_container_cluster.runtime[0].location : null
 }

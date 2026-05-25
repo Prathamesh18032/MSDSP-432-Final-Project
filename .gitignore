@@ -51,6 +51,9 @@ override.tf.json
 *_override.tf
 *_override.tf.json
 
+# Rendered Kubernetes runtime artifacts
+infra/cloud/k8s/rendered/
+
 # Editor/IDE
 # .idea/
 # .vscode/
