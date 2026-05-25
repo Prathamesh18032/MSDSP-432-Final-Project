@@ -10,7 +10,9 @@ pubsub_max_delivery_attempts = 5
 gcs_bucket                  = "smartcity-zero-disk-iot-pa-cold"
 cold_storage_retention_days = 365
 
-bigquery_dataset             = "smartcity_iot"
-artifact_registry_repository = "smartcity"
-gke_namespace                = "smartcity"
+bigquery_dataset                  = "smartcity_iot"
+artifact_registry_repository      = "smartcity"
+gke_namespace                     = "smartcity"
 enable_workload_identity_bindings = false
+enable_runtime_resources          = false
+gke_cluster_name                  = "smartcity-autopilot"

@@ -1,36 +1,63 @@
-# GKE Manifest Scaffold
+# GKE Runtime Manifests
 
-These manifests describe the future GKE Autopilot workload shape for the Smart City Zero-Disk IoT project.
-
-They are not ready to apply as-is. Replace placeholder values such as `replace-me-project`, publish real container images, update image tags, and create `smartcity-runtime-secrets` out of band before deployment.
+These manifests describe the first cloud runtime for the Smart City Zero-Disk IoT project. They are templates under `base/` and must be rendered before apply so project, region, namespace, bucket, image registry, image tag, and Workload Identity values come from local config.
 
 ## Included
 
-- Namespace and a small quota guardrail.
+- Namespace and quota guardrail.
 - Kubernetes service accounts annotated for GKE Workload Identity Federation.
 - Shared runtime ConfigMap.
-- Deployment placeholder for the multi-source ingestor publishing to Pub/Sub.
-- Deployment placeholder for the Pub/Sub hot writer consuming into TimescaleDB.
-- CronJob placeholder for cold Parquet export.
-- Streamlit and Grafana deployment/service placeholders.
+- Internal TimescaleDB StatefulSet, PVC, and ClusterIP service for the hot store.
+- TimescaleDB schema init ConfigMap generated from `infra/local/timescaledb/init/001_schema.sql`.
+- Multi-source ingestor publishing readings to Pub/Sub.
+- Pub/Sub hot writer consuming readings into TimescaleDB.
+- Cold export CronJob writing Parquet to GCS.
+- Streamlit internal service reading TimescaleDB.
 
-## Runtime Secrets
+Grafana remains local/demo-only for now and is not deployed in the cloud runtime.
 
-Do not commit secret values. Create `smartcity-runtime-secrets` through your chosen secret-management workflow with keys such as:
-
-- `OPENAQ_API_KEY`
-- `TIMESCALE_DSN`
-- `GRAFANA_ADMIN_USER`
-- `GRAFANA_ADMIN_PASSWORD`
-
-## Validation
+## Render And Apply
 
 Run from the repository root:
 
 ```sh
-make cloud-check
+make k8s-render
+K8S_TIMESCALE_PASSWORD=<strong-password> make k8s-apply
+make k8s-status
+make k8s-smoke
+make k8s-port-forward-streamlit
 ```
 
-The app image references use the same default local naming convention as `make docker-build`, but images are not pushed to Artifact Registry until a later slice.
+Rendered files are written to `infra/cloud/k8s/rendered/` and are ignored by Git. Do not edit rendered files directly; update the templates or renderer instead.
 
-The ingestor uses `INGESTION_SINK=pubsub` in the shared ConfigMap. The hot writer deployment runs `/usr/local/bin/consume-pubsub`, but these manifests should not be applied until the Pub/Sub resources, runtime secrets, and target hot database are ready.
+## Runtime Secrets
+
+Do not commit secret values. `make k8s-apply` creates `smartcity-runtime-secrets` when it is missing and `K8S_TIMESCALE_PASSWORD` is set. The secret contains:
+
+- `TIMESCALE_PASSWORD`
+- `TIMESCALE_DSN`
+- optional `OPENAQ_API_KEY`
+
+The TimescaleDB service is internal only:
+
+```text
+smartcity-timescaledb.<namespace>.svc.cluster.local:5432
+```
+
+## Validation
+
+```sh
+make cloud-check
+make runtime-check
+make k8s-render
+```
+
+After a real cluster exists and credentials are configured, use:
+
+```sh
+make k8s-apply
+make k8s-status
+make k8s-smoke
+```
+
+Set `RUN_COLD_EXPORT_SMOKE=yes` with `make k8s-smoke` to trigger one cold-export Job from the CronJob as part of runtime validation.

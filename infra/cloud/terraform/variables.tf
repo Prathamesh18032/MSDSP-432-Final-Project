@@ -75,3 +75,15 @@ variable "enable_workload_identity_bindings" {
   type        = bool
   default     = false
 }
+
+variable "enable_runtime_resources" {
+  description = "Enable gated GKE Autopilot runtime resources."
+  type        = bool
+  default     = false
+}
+
+variable "gke_cluster_name" {
+  description = "GKE Autopilot cluster name for cloud runtime workloads."
+  type        = string
+  default     = "smartcity-autopilot"
+}

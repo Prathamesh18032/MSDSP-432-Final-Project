@@ -1,8 +1,101 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: smartcity-timescaledb
+  namespace: __GKE_NAMESPACE__
+  labels:
+    app.kubernetes.io/name: smartcity-timescaledb
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: smartcity-timescaledb
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: smartcity-timescaledb
+  namespace: __GKE_NAMESPACE__
+  labels:
+    app.kubernetes.io/name: smartcity-timescaledb
+spec:
+  serviceName: smartcity-timescaledb
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: smartcity-timescaledb
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: smartcity-timescaledb
+    spec:
+      containers:
+        - name: timescaledb
+          image: __K8S_TIMESCALE_IMAGE__
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: postgres
+              containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: smartcity-config
+                  key: K8S_TIMESCALE_DB
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: smartcity-config
+                  key: K8S_TIMESCALE_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: smartcity-runtime-secrets
+                  key: TIMESCALE_PASSWORD
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "__K8S_TIMESCALE_USER__", "-d", "__K8S_TIMESCALE_DB__"]
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "__K8S_TIMESCALE_USER__", "-d", "__K8S_TIMESCALE_DB__"]
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 250m
+              memory: 1Gi
+            limits:
+              cpu: "1"
+              memory: 2Gi
+          volumeMounts:
+            - name: timescale-data
+              mountPath: /var/lib/postgresql/data
+            - name: timescale-init
+              mountPath: /docker-entrypoint-initdb.d/001_schema.sql
+              subPath: 001_schema.sql
+      volumes:
+        - name: timescale-init
+          configMap:
+            name: smartcity-timescale-init
+  volumeClaimTemplates:
+    - metadata:
+        name: timescale-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: __K8S_TIMESCALE_STORAGE_SIZE__
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: smartcity-ingestor
-  namespace: smartcity
+  namespace: __GKE_NAMESPACE__
   labels:
     app.kubernetes.io/name: smartcity-ingestor
 spec:
@@ -18,7 +111,7 @@ spec:
       serviceAccountName: smartcity-ingestor
       containers:
         - name: ingestor
-          image: asia-south1-docker.pkg.dev/replace-me-project/smartcity/smartcity-ingestor:local
+          image: __IMAGE_REGISTRY__/smartcity-ingestor:__RUNTIME_IMAGE_TAG__
           imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
@@ -42,7 +135,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: smartcity-hot-writer
-  namespace: smartcity
+  namespace: __GKE_NAMESPACE__
   labels:
     app.kubernetes.io/name: smartcity-hot-writer
 spec:
@@ -58,7 +151,7 @@ spec:
       serviceAccountName: smartcity-writer
       containers:
         - name: writer
-          image: asia-south1-docker.pkg.dev/replace-me-project/smartcity/smartcity-writer:local
+          image: __IMAGE_REGISTRY__/smartcity-writer:__RUNTIME_IMAGE_TAG__
           imagePullPolicy: IfNotPresent
           command: ["/usr/local/bin/consume-pubsub"]
           envFrom:
@@ -82,7 +175,7 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: smartcity-cold-export
-  namespace: smartcity
+  namespace: __GKE_NAMESPACE__
   labels:
     app.kubernetes.io/name: smartcity-cold-export
 spec:
@@ -98,7 +191,7 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: writer
-              image: asia-south1-docker.pkg.dev/replace-me-project/smartcity/smartcity-writer:local
+              image: __IMAGE_REGISTRY__/smartcity-writer:__RUNTIME_IMAGE_TAG__
               imagePullPolicy: IfNotPresent
               envFrom:
                 - configMapRef:
@@ -121,7 +214,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: smartcity-streamlit
-  namespace: smartcity
+  namespace: __GKE_NAMESPACE__
   labels:
     app.kubernetes.io/name: smartcity-streamlit
 spec:
@@ -137,7 +230,7 @@ spec:
       serviceAccountName: smartcity-analytics
       containers:
         - name: streamlit
-          image: asia-south1-docker.pkg.dev/replace-me-project/smartcity/smartcity-streamlit:local
+          image: __IMAGE_REGISTRY__/smartcity-streamlit:__RUNTIME_IMAGE_TAG__
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -163,7 +256,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: smartcity-streamlit
-  namespace: smartcity
+  namespace: __GKE_NAMESPACE__
 spec:
   type: ClusterIP
   selector:
@@ -171,64 +264,4 @@ spec:
   ports:
     - name: http
       port: 8501
-      targetPort: http
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: smartcity-grafana
-  namespace: smartcity
-  labels:
-    app.kubernetes.io/name: smartcity-grafana
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: smartcity-grafana
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: smartcity-grafana
-    spec:
-      serviceAccountName: smartcity-analytics
-      containers:
-        - name: grafana
-          image: grafana/grafana-oss:latest
-          imagePullPolicy: IfNotPresent
-          ports:
-            - name: http
-              containerPort: 3000
-          env:
-            - name: GF_SECURITY_ADMIN_USER
-              valueFrom:
-                secretKeyRef:
-                  name: smartcity-runtime-secrets
-                  key: GRAFANA_ADMIN_USER
-                  optional: true
-            - name: GF_SECURITY_ADMIN_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: smartcity-runtime-secrets
-                  key: GRAFANA_ADMIN_PASSWORD
-                  optional: true
-          resources:
-            requests:
-              cpu: 100m
-              memory: 256Mi
-            limits:
-              cpu: 500m
-              memory: 1Gi
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: smartcity-grafana
-  namespace: smartcity
-spec:
-  type: ClusterIP
-  selector:
-    app.kubernetes.io/name: smartcity-grafana
-  ports:
-    - name: http
-      port: 3000
       targetPort: http
