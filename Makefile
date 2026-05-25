@@ -15,7 +15,7 @@ endif
 TFVARS_GCS_BUCKET := $(shell awk -F= '/^[[:space:]]*gcs_bucket[[:space:]]*=/ {gsub(/[ "	]/, "", $$2); print $$2}' infra/cloud/terraform/terraform.tfvars 2>/dev/null)
 CLOUD_COLD_BUCKET ?= $(if $(TFVARS_GCS_BUCKET),$(TFVARS_GCS_BUCKET),$(GCS_BUCKET))
 
-.PHONY: help check test streamlit-check cloud-check gcp-bootstrap-check gcp-cost-guard-check artifact-registry-preview artifact-registry-check artifact-registry-create artifact-registry-list terraform-check terraform-init terraform-validate terraform-plan terraform-show-plan terraform-import-artifact-registry-preview terraform-import-artifact-registry terraform-apply-core gcp-core-check pubsub-check bigquery-cold-check docker-build docker-build-ingestor docker-build-writer docker-build-streamlit docker-smoke docker-tag-release docker-push run run-local seed-simulator run-openaq run-multisource poll-multisource-once consume-pubsub consume-pubsub-once pubsub-smoke pubsub-hotpath-smoke export-cold export-cold-demo export-cold-gcs cloud-cold-smoke run-streamlit run-streamlit-compose stop logs clean
+.PHONY: help check test streamlit-check cloud-check gcp-bootstrap-check gcp-cost-guard-check artifact-registry-preview artifact-registry-check artifact-registry-create artifact-registry-list terraform-check terraform-init terraform-validate terraform-plan terraform-show-plan terraform-import-artifact-registry-preview terraform-import-artifact-registry terraform-apply-core terraform-plan-runtime terraform-apply-runtime gcp-core-check pubsub-check bigquery-cold-check gke-get-credentials k8s-render k8s-apply k8s-status k8s-smoke k8s-port-forward-streamlit runtime-check docker-build docker-build-ingestor docker-build-writer docker-build-streamlit docker-smoke docker-tag-release docker-push run run-local seed-simulator run-openaq run-multisource poll-multisource-once consume-pubsub consume-pubsub-once pubsub-smoke pubsub-hotpath-smoke export-cold export-cold-demo export-cold-gcs cloud-cold-smoke run-streamlit run-streamlit-compose stop logs clean
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z_-]+:.*##/ {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -93,14 +93,24 @@ cloud-check: ## Validate cloud-readiness scaffold without contacting GCP
 	@test -x infra/cloud/scripts/terraform_import_artifact_registry_preview.sh
 	@test -x infra/cloud/scripts/terraform_import_artifact_registry.sh
 	@test -x infra/cloud/scripts/terraform_apply_core.sh
+	@test -x infra/cloud/scripts/terraform_plan_runtime.sh
+	@test -x infra/cloud/scripts/terraform_apply_runtime.sh
+	@test -x infra/cloud/scripts/gke_get_credentials.sh
 	@test -x infra/cloud/scripts/gcp_core_check.sh
 	@test -x infra/cloud/scripts/pubsub_check.sh
 	@test -x infra/cloud/scripts/bigquery_cold_check.sh
+	@test -x infra/cloud/scripts/k8s_render.sh
+	@test -x infra/cloud/scripts/k8s_apply.sh
+	@test -x infra/cloud/scripts/k8s_status.sh
+	@test -x infra/cloud/scripts/k8s_smoke.sh
+	@test -x infra/cloud/scripts/k8s_port_forward_streamlit.sh
+	@test -x infra/cloud/scripts/runtime_check.sh
 	@test -f docs/runbooks/artifact-registry-publish.md
 	@test -f docs/runbooks/terraform-plan-review.md
 	@test -f docs/runbooks/pubsub-adapter-readiness.md
 	@test -f docs/runbooks/core-cloud-apply.md
 	@test -f docs/runbooks/cloud-cold-path.md
+	@test -f docs/runbooks/gke-runtime.md
 	@for file in $$(find infra/cloud/k8s -name '*.yaml' -type f); do grep -q '^apiVersion:' "$$file"; grep -q '^kind:' "$$file"; done
 	@if command -v terraform >/dev/null 2>&1; then terraform fmt -check -recursive infra/cloud/terraform; else echo "terraform not installed; skipping terraform fmt"; fi
 	@if command -v kubectl >/dev/null 2>&1; then kubectl version --client=true >/dev/null; echo "kubectl installed; cluster dry-run intentionally skipped"; else echo "kubectl not installed; skipping kubernetes client check"; fi
@@ -149,6 +159,12 @@ terraform-import-artifact-registry: ## Import the existing Artifact Registry rep
 terraform-apply-core: ## Apply low-cost core GCP resources with ALLOW_TERRAFORM_APPLY_CORE=yes
 	infra/cloud/scripts/terraform_apply_core.sh
 
+terraform-plan-runtime: ## Create a gated runtime Terraform plan for GKE without applying resources
+	infra/cloud/scripts/terraform_plan_runtime.sh
+
+terraform-apply-runtime: ## Apply runtime GKE resources with ALLOW_TERRAFORM_APPLY_RUNTIME=yes
+	infra/cloud/scripts/terraform_apply_runtime.sh
+
 gcp-core-check: ## Verify core GCP resources after controlled Terraform apply
 	infra/cloud/scripts/gcp_core_check.sh
 
@@ -157,6 +173,27 @@ pubsub-check: ## Verify existing Pub/Sub topic/subscription readiness without cr
 
 bigquery-cold-check: ## Verify the GCS-backed BigQuery external table is queryable
 	infra/cloud/scripts/bigquery_cold_check.sh
+
+gke-get-credentials: ## Configure kubectl for the configured GKE runtime cluster
+	infra/cloud/scripts/gke_get_credentials.sh
+
+k8s-render: ## Render Kubernetes runtime manifests with local project/image values
+	infra/cloud/scripts/k8s_render.sh
+
+k8s-apply: ## Apply rendered Kubernetes runtime manifests and create runtime secrets when env is set
+	infra/cloud/scripts/k8s_apply.sh
+
+k8s-status: ## Show Kubernetes runtime workload status
+	infra/cloud/scripts/k8s_status.sh
+
+k8s-smoke: ## Validate GKE runtime pods and internal TimescaleDB readiness
+	infra/cloud/scripts/k8s_smoke.sh
+
+k8s-port-forward-streamlit: ## Port-forward Streamlit from the GKE runtime namespace
+	infra/cloud/scripts/k8s_port_forward_streamlit.sh
+
+runtime-check: ## Validate runtime prerequisites and render manifests without applying them
+	infra/cloud/scripts/runtime_check.sh
 
 docker-build: docker-build-ingestor docker-build-writer docker-build-streamlit ## Build all application container images locally
 

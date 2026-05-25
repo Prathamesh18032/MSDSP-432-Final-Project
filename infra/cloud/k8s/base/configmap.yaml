@@ -2,19 +2,21 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: smartcity-config
-  namespace: smartcity
+  namespace: __GKE_NAMESPACE__
 data:
   APP_ENV: cloud
   LOG_LEVEL: info
-  GCP_PROJECT_ID: replace-me-project
-  GCP_REGION: asia-south1
-  GCP_PUBSUB_TOPIC: smartcity-readings
-  GCP_PUBSUB_DLQ_TOPIC: smartcity-dlq
-  GCP_PUBSUB_SUBSCRIPTION: smartcity-hot-writer
+  GCP_PROJECT_ID: __GCP_PROJECT_ID__
+  GCP_REGION: __GCP_REGION__
+  GCP_PUBSUB_TOPIC: __GCP_PUBSUB_TOPIC__
+  GCP_PUBSUB_DLQ_TOPIC: __GCP_PUBSUB_DLQ_TOPIC__
+  GCP_PUBSUB_SUBSCRIPTION: __GCP_PUBSUB_SUBSCRIPTION__
   INGESTION_SINK: pubsub
   PUBSUB_MAX_MESSAGES: "100"
-  GCS_BUCKET: replace-me-smartcity-iot
-  BIGQUERY_DATASET: smartcity_iot
+  PUBSUB_CONSUME_LIMIT: "0"
+  GCS_BUCKET: __GCS_BUCKET__
+  BIGQUERY_DATASET: __BIGQUERY_DATASET__
+  BIGQUERY_EXTERNAL_TABLE: sensor_readings_external
   OPENAQ_COORDINATES: "41.8781,-87.6298"
   OPENAQ_RADIUS_METERS: "25000"
   OPENAQ_LOCATION_LIMIT: "5"
@@ -27,8 +29,12 @@ data:
   USGS_BASE_URL: https://waterservices.usgs.gov
   USGS_SITE_IDS: "05536123"
   USGS_PARAMETER_CODES: "00065"
-  COLD_STORAGE_ROOT: gs://replace-me-smartcity-iot
+  COLD_STORAGE_ROOT: /tmp/smartcity-cold
+  COLD_STORAGE_TARGET: gcs
   COLD_EXPORT_HOT_RETENTION_HOURS: "72"
   COLD_EXPORT_BATCH_SIZE: "1000"
   COLD_EXPORT_MODE: retention
-  STREAMLIT_COLD_STORAGE_ROOT: gs://replace-me-smartcity-iot
+  CLOUD_COLD_EXPORT_KEEP_LOCAL: "false"
+  STREAMLIT_COLD_STORAGE_ROOT: /tmp/smartcity-cold
+  K8S_TIMESCALE_DB: __K8S_TIMESCALE_DB__
+  K8S_TIMESCALE_USER: __K8S_TIMESCALE_USER__
