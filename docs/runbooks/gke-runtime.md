@@ -91,7 +91,15 @@ make k8s-backup-once
 make k8s-backup-check
 ```
 
-7. View Streamlit locally through port-forward:
+7. Test backup restore in an isolated namespace:
+
+```sh
+make k8s-restore-test
+make k8s-restore-check
+make k8s-restore-clean
+```
+
+8. View Streamlit locally through port-forward:
 
 ```sh
 make k8s-port-forward-streamlit
@@ -115,10 +123,7 @@ TimescaleDB is exposed only inside the Kubernetes cluster through `smartcity-tim
 For a temporary demo, scale application workloads down first:
 
 ```sh
-kubectl scale deploy/smartcity-ingestor --replicas=0 -n smartcity
-kubectl scale deploy/smartcity-hot-writer --replicas=0 -n smartcity
-kubectl scale deploy/smartcity-streamlit --replicas=0 -n smartcity
-kubectl patch cronjob/smartcity-cold-export -n smartcity -p '{"spec":{"suspend":true}}'
+make runtime-scale-down
 ```
 
 To remove Kubernetes workloads while keeping the GKE cluster:

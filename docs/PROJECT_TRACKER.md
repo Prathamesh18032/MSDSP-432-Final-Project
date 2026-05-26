@@ -1,6 +1,6 @@
 # Project Tracker
 
-Last updated: 2026-05-25
+Last updated: 2026-05-26
 
 This file is the repo-level project memory for Group 4. Read it at the start of each work session before choosing the next slice.
 
@@ -9,10 +9,10 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 - Project: Smart City Zero-Disk IoT Infrastructure.
 - Strategy: local-first MVP, cloud-ready architecture.
 - Current branch of record: `main`.
-- Latest merged slice: Slice 17, GKE runtime with self-hosted TimescaleDB hot store.
-- Active slice: Slice 18, Live GKE runtime, CI/CD image publishing, observability, and TimescaleDB backups.
-- Next planned slice after this PR merges: Slice 19, runtime reliability, restore testing, and demo polish.
-- Current working capability: deterministic Go simulator, OpenAQ, Open-Meteo, Divvy GBFS, and USGS pollers can generate or fetch smart-city readings, publish through a local queue buffer or Pub/Sub, insert into local TimescaleDB, export Parquet cold-storage files, upload cloud cold-storage files to GCS, record ingestion metrics, visualize readings through Grafana dashboards, run local Streamlit reports, build local deployable container images, publish those images to Artifact Registry in `asia-south1`, run safe GCP bootstrap checks, produce reviewable Terraform plans, apply low-cost core GCP resources, consume Pub/Sub readings into the local hot store, validate BigQuery external-table visibility over GCS Parquet files, prepare a gated GKE Autopilot runtime that self-hosts TimescaleDB as the cloud hot store, and add the first live runtime hardening layer for CI/CD, observability, and backups.
+- Latest merged slice: Slice 18, Live GKE runtime, CI/CD image publishing, observability, and TimescaleDB backups.
+- Active slice: Slice 19, runtime reliability, restore testing, cost controls, and demo polish.
+- Next planned slice after this PR merges: Slice 20, presentation/demo package and final report evidence.
+- Current working capability: deterministic Go simulator, OpenAQ, Open-Meteo, Divvy GBFS, and USGS pollers can generate or fetch smart-city readings, publish through a local queue buffer or Pub/Sub, insert into local TimescaleDB, export Parquet cold-storage files, upload cloud cold-storage files to GCS, record ingestion metrics, visualize readings through Grafana dashboards, run local Streamlit reports, build local deployable container images, publish those images to Artifact Registry in `asia-south1`, run safe GCP bootstrap checks, produce reviewable Terraform plans, apply low-cost core GCP resources, consume Pub/Sub readings into the local hot store, validate BigQuery external-table visibility over GCS Parquet files, run a live GKE Autopilot runtime with self-hosted TimescaleDB, publish images from GitHub Actions through OIDC, run runtime observability checks, and automate TimescaleDB backups to GCS.
 - Local checks expected to pass on `main`: `make check`, `make test`.
 - Known blocker: GitHub branch protection for private repositories requires GitHub Pro or making the repo public. Direct-push protection is deferred.
 - Operational note: Docker Compose stack is not assumed to be running. Start it with `make run-local` when needed.
@@ -38,23 +38,24 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 | 15 | Controlled core cloud apply and Pub/Sub hot-path smoke | [#20](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/20) | Merged into `main` | `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `make gcp-bootstrap-check`, `make gcp-cost-guard-check`, `make terraform-check`, `make terraform-init`, `make terraform-import-artifact-registry`, `make terraform-validate`, `make terraform-plan`, `ALLOW_TERRAFORM_APPLY_CORE=yes make terraform-apply-core`, `make gcp-core-check`, `make pubsub-check`, `make docker-build IMAGE_TAG=slice15`, `make docker-smoke IMAGE_TAG=slice15`, `make docker-push IMAGE_TAG=slice15`, `make artifact-registry-list`, `make pubsub-hotpath-smoke`, `docker compose config`, `git diff --check` |
 | 16 | Cloud cold path to GCS and BigQuery analytics validation | [#21](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/21) | Merged into `main` | `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `make gcp-bootstrap-check`, `make gcp-cost-guard-check`, `make gcp-core-check`, `make run-local`, `make seed-simulator`, `make export-cold-gcs`, `make bigquery-cold-check`, `make cloud-cold-smoke`, `docker compose config`, `git diff --check` |
 | 17 | GKE runtime with self-hosted TimescaleDB hot store | [#22](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/22) | Merged into `main` | `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `make k8s-render`, `make runtime-check`, `make terraform-validate`, `make terraform-plan-runtime`, `make docker-build IMAGE_TAG=slice17`, `make docker-smoke IMAGE_TAG=slice17`, `docker compose config`, `git diff --check` |
-| 18 | Live GKE runtime, CI/CD image publishing, observability, and TimescaleDB backups | This PR | Completes on merge | `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `make ci-cd-check`, `make docker-build IMAGE_TAG=slice18`, `make docker-smoke IMAGE_TAG=slice18`, `make docker-push IMAGE_TAG=slice18`, `make terraform-plan-runtime`, `ALLOW_TERRAFORM_APPLY_RUNTIME=yes make terraform-apply-runtime`, `make k8s-apply`, `make runtime-live-smoke`, `make observability-check`, `make k8s-backup-once`, `make k8s-backup-check`, `docker compose config`, `git diff --check` |
+| 18 | Live GKE runtime, CI/CD image publishing, observability, and TimescaleDB backups | [#23](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/23) | Merged into `main` | `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `make ci-cd-check`, `make docker-build IMAGE_TAG=slice18`, `make docker-smoke IMAGE_TAG=slice18`, `make docker-push IMAGE_TAG=slice18`, `make terraform-plan-runtime`, `ALLOW_TERRAFORM_APPLY_RUNTIME=yes make terraform-apply-runtime`, `make k8s-apply`, `make runtime-live-smoke`, `make observability-check`, `make k8s-backup-once`, `make k8s-backup-check`, `docker compose config`, `git diff --check`; PR #24 fixed post-merge CD Artifact Registry publish auth |
+| 19 | Runtime reliability, restore testing, cost controls, and demo polish | This PR | Completes on merge | `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `make ci-cd-check`, `make ci-publish-check`, `make runtime-health`, `make observability-check`, `make runtime-live-smoke`, `RUN_COLD_EXPORT_SMOKE=yes make k8s-smoke`, `make k8s-backup-once`, `make k8s-backup-check`, `make k8s-restore-test`, `make k8s-restore-check`, `make k8s-restore-clean`, `make demo-live-start`, `docker compose config`, `git diff --check` |
 
 ## Next Planned Slices
 
 | Slice | Goal | Status | Default Owner |
 | --- | --- | --- | --- |
-| 19 | Runtime reliability, restore testing, and demo polish | Backlog | DevOps / Analytics workstreams |
+| 20 | Presentation/demo package and final report evidence | Backlog | DevOps / Analytics workstreams |
 
 ## Team Work Board
 
 ### Backlog
 
-- Slice 19: Runtime reliability, restore testing, and demo polish.
+- Slice 20: Presentation/demo package and final report evidence.
 
 ### In Progress
 
-- Slice 18: Live GKE runtime, CI/CD image publishing, observability, and TimescaleDB backups, branch `codex/slice-18-runtime-hardening`.
+- Slice 19: Runtime reliability, restore testing, cost controls, and demo polish, branch `codex/slice-19-runtime-reliability`.
 
 ### In Review
 
@@ -79,14 +80,14 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 - Slice 15: Controlled core cloud apply and Pub/Sub hot-path smoke, PR #20.
 - Slice 16: Cloud cold path to GCS and BigQuery analytics validation, PR #21.
 - Slice 17: GKE runtime with self-hosted TimescaleDB hot store, PR #22.
-- Slice 18: Live GKE runtime, CI/CD image publishing, observability, and TimescaleDB backups, this PR after merge.
+- Slice 18: Live GKE runtime, CI/CD image publishing, observability, and TimescaleDB backups, PR #23.
 
 ## Workstreams
 
 - Go ingestion: OpenAQ, Open-Meteo, GBFS, USGS, simulator, validator, retry/backoff, quality flags.
 - Storage: TimescaleDB schema, inserts, aggregates, retention flush, Parquet path.
 - Dashboards and analytics: Grafana provisioning, Streamlit reports, data-quality views.
-- DevOps and cloud readiness: Compose, container images, GCP bootstrap checks, Artifact Registry publish workflow, GitHub Actions OIDC image publishing, Terraform plan/apply workflow, Pub/Sub adapter readiness, gated GKE Autopilot runtime, Workload Identity, backups, observability checks, CI, Makefile, Kubernetes manifests, setup docs.
+- DevOps and cloud readiness: Compose, container images, GCP bootstrap checks, Artifact Registry publish workflow, GitHub Actions OIDC image publishing, Terraform plan/apply workflow, Pub/Sub adapter readiness, gated GKE Autopilot runtime, Workload Identity, backups, restore tests, observability checks, cost controls, demo runbooks, CI, Makefile, Kubernetes manifests, setup docs.
 
 ## Update Protocol
 
@@ -122,3 +123,4 @@ Then read this tracker, pick the next `Backlog` slice, create a `codex/<slice-na
 - 2026-05-24: Completed and merged Slice 15 / PR #20. Started Slice 16 cloud cold path on branch `codex/slice-16-cloud-cold-path`. Slice 16 uploads Parquet files to the existing GCS bucket and validates BigQuery external-table visibility without deleting TimescaleDB rows.
 - 2026-05-25: Completed and merged Slice 16 / PR #21. Started Slice 17 GKE runtime with self-hosted TimescaleDB on branch `codex/slice-17-enterprise-runtime`. Slice 17 keeps TimescaleDB as the hot store by deploying it internally on GKE rather than switching to Cloud SQL or an external managed Timescale service.
 - 2026-05-25: Completed and merged Slice 17 / PR #22. Started Slice 18 runtime hardening on branch `codex/slice-18-runtime-hardening`. Slice 18 creates and validates the live GKE runtime, adds GitHub Actions image publishing through OIDC, adds runtime observability scripts, and automates TimescaleDB backups to GCS.
+- 2026-05-26: Completed and merged Slice 18 / PR #23. PR #24 fixed the post-merge `Publish Images` CD workflow by using the correct Google auth `access_token`; the main-branch CD pipeline passed and published `latest-main` plus short-SHA images. Started Slice 19 runtime reliability and demo polish on branch `codex/slice-19-runtime-reliability`.
