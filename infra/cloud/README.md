@@ -62,6 +62,11 @@ make k8s-render
 make k8s-apply
 make k8s-status
 make k8s-smoke
+make k8s-logs
+make k8s-backup-once
+make k8s-backup-check
+make observability-check
+make runtime-live-smoke
 make k8s-port-forward-streamlit
 make runtime-check
 ```
@@ -77,3 +82,5 @@ Slice 15 adds the first guarded apply path for low-cost core resources. `make te
 Slice 16 adds the first cloud cold-path validation. `make export-cold-gcs` uploads Parquet files to the existing GCS bucket, and `make bigquery-cold-check` verifies the external table is queryable. These commands do not create additional infrastructure.
 
 Slice 17 adds the first gated runtime path. `make terraform-plan-runtime` reviews GKE Autopilot and Workload Identity changes. `ALLOW_TERRAFORM_APPLY_RUNTIME=yes make terraform-apply-runtime` creates runtime infrastructure only when intentionally allowed. TimescaleDB remains the hot store and is deployed as an internal Kubernetes StatefulSet with a PVC; Grafana stays local/demo-only for now.
+
+Slice 18 adds live runtime hardening. Runtime Terraform also provisions GitHub Actions Workload Identity Federation for image publishing. Kubernetes manifests include a TimescaleDB backup CronJob, and operations scripts validate logs, workload health, Pub/Sub, GCS, BigQuery, and backup presence.

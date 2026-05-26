@@ -10,6 +10,7 @@ locals {
     "bigquery.googleapis.com",
     "container.googleapis.com",
     "iam.googleapis.com",
+    "iamcredentials.googleapis.com",
     "pubsub.googleapis.com",
     "storage.googleapis.com",
   ])
@@ -208,6 +209,8 @@ resource "google_service_account_iam_member" "ingestor_workload_identity" {
   service_account_id = google_service_account.ingestor.name
   role               = "roles/iam.workloadIdentityUser"
   member             = local.workload_identity_members.ingestor
+
+  depends_on = [google_container_cluster.runtime]
 }
 
 resource "google_service_account_iam_member" "writer_workload_identity" {
@@ -216,6 +219,8 @@ resource "google_service_account_iam_member" "writer_workload_identity" {
   service_account_id = google_service_account.writer.name
   role               = "roles/iam.workloadIdentityUser"
   member             = local.workload_identity_members.writer
+
+  depends_on = [google_container_cluster.runtime]
 }
 
 resource "google_service_account_iam_member" "analytics_workload_identity" {
@@ -224,6 +229,8 @@ resource "google_service_account_iam_member" "analytics_workload_identity" {
   service_account_id = google_service_account.analytics.name
   role               = "roles/iam.workloadIdentityUser"
   member             = local.workload_identity_members.analytics
+
+  depends_on = [google_container_cluster.runtime]
 }
 
 resource "google_container_cluster" "runtime" {
@@ -246,4 +253,77 @@ resource "google_container_cluster" "runtime" {
   resource_labels = local.labels
 
   depends_on = [google_project_service.required]
+}
+
+resource "google_project_iam_member" "gke_node_artifact_registry_reader" {
+  count = var.enable_runtime_resources ? 1 : 0
+
+  project = var.gcp_project_id
+  role    = "roles/artifactregistry.reader"
+  member  = "serviceAccount:${data.google_project.current.number}-compute@developer.gserviceaccount.com"
+
+  depends_on = [google_container_cluster.runtime]
+}
+
+resource "google_service_account" "github_actions" {
+  count = var.enable_ci_cd_resources ? 1 : 0
+
+  account_id   = var.github_actions_service_account_id
+  display_name = "Smart City GitHub Actions"
+  description  = "Publishes Smart City service images to Artifact Registry from GitHub Actions."
+}
+
+resource "google_project_iam_member" "github_actions_artifact_registry_writer" {
+  count = var.enable_ci_cd_resources ? 1 : 0
+
+  project = var.gcp_project_id
+  role    = "roles/artifactregistry.writer"
+  member  = google_service_account.github_actions[0].member
+}
+
+resource "google_iam_workload_identity_pool" "github_actions" {
+  count = var.enable_ci_cd_resources ? 1 : 0
+
+  workload_identity_pool_id = var.github_actions_pool_id
+  display_name              = "GitHub Actions"
+  description               = "OIDC trust pool for Smart City GitHub Actions image publishing."
+
+  depends_on = [google_project_service.required]
+}
+
+resource "google_iam_workload_identity_pool_provider" "github_actions" {
+  count = var.enable_ci_cd_resources ? 1 : 0
+
+  workload_identity_pool_id          = google_iam_workload_identity_pool.github_actions[0].workload_identity_pool_id
+  workload_identity_pool_provider_id = var.github_actions_provider_id
+  display_name                       = "GitHub"
+  description                        = "Allows main-branch GitHub Actions runs to publish Smart City images."
+
+  attribute_mapping = {
+    "google.subject"       = "assertion.sub"
+    "attribute.repository" = "assertion.repository"
+    "attribute.ref"        = "assertion.ref"
+  }
+
+  attribute_condition = "attribute.repository == \"${var.github_repository}\" && attribute.ref == \"refs/heads/main\""
+
+  oidc {
+    issuer_uri = "https://token.actions.githubusercontent.com"
+  }
+}
+
+resource "google_service_account_iam_member" "github_actions_workload_identity" {
+  count = var.enable_ci_cd_resources ? 1 : 0
+
+  service_account_id = google_service_account.github_actions[0].name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_actions[0].name}/attribute.repository/${var.github_repository}"
+}
+
+resource "google_service_account_iam_member" "github_actions_token_creator" {
+  count = var.enable_ci_cd_resources ? 1 : 0
+
+  service_account_id = google_service_account.github_actions[0].name
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github_actions[0].name}/attribute.repository/${var.github_repository}"
 }

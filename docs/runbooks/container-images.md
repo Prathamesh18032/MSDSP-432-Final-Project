@@ -9,6 +9,8 @@ make docker-build
 make docker-smoke
 ```
 
+Images default to `DOCKER_PLATFORM=linux/amd64` so pushed runtime tags work on GKE Autopilot nodes. Override `DOCKER_PLATFORM` only for local-only experiments.
+
 Default image names:
 
 ```text
