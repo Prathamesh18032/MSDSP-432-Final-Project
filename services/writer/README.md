@@ -42,6 +42,16 @@ When uploaded to GCS, the object path preserves the `sensor_readings/...` suffix
 gs://<GCS_BUCKET>/sensor_readings/source=<source>/metric=<metric>/year=YYYY/month=MM/day=DD/part-<timestamp>.parquet
 ```
 
+## TimescaleDB Backups
+
+The writer image also includes `backup-timescale`, which runs `pg_dump` against `TIMESCALE_DSN` and uploads a custom-format dump to GCS:
+
+```text
+gs://<GCS_BUCKET>/backups/timescaledb/year=YYYY/month=MM/day=DD/smartcity_hot-<timestamp>.dump
+```
+
+The GKE runtime uses this command from the `smartcity-timescale-backup` CronJob. Local restore testing is documented in `docs/runbooks/cloud-operations.md`.
+
 ## Container Image
 
 Build the deployable writer image locally:

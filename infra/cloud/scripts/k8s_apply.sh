@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [[ -d "/opt/homebrew/share/google-cloud-sdk/bin" ]]; then
+  export PATH="$PATH:/opt/homebrew/share/google-cloud-sdk/bin"
+fi
+
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 rendered_dir="${root_dir}/infra/cloud/k8s/rendered"
 db="${K8S_TIMESCALE_DB:-smartcity_hot}"

@@ -21,6 +21,7 @@ terraform validate
 terraform plan \
   -var-file=terraform.tfvars \
   -var=enable_runtime_resources=true \
+  -var=enable_ci_cd_resources=true \
   -out="${plan_file}"
 
 echo

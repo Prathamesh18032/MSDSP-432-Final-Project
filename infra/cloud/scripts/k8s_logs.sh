@@ -8,7 +8,15 @@ fi
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 rendered_namespace="$(awk '/^  name: / {print $2; exit}' "${root_dir}/infra/cloud/k8s/rendered/namespace.yaml" 2>/dev/null || true)"
 namespace="${GKE_NAMESPACE:-${rendered_namespace:-smartcity}}"
-port="${STREAMLIT_PORT:-8501}"
+tail_lines="${K8S_LOG_TAIL_LINES:-80}"
 
-echo "Forwarding http://localhost:${port} to smartcity-streamlit in namespace ${namespace}."
-kubectl port-forward -n "${namespace}" service/smartcity-streamlit "${port}:8501"
+for workload in \
+  deploy/smartcity-ingestor \
+  deploy/smartcity-hot-writer \
+  deploy/smartcity-streamlit \
+  statefulset/smartcity-timescaledb
+do
+  echo
+  echo "== ${workload} =="
+  kubectl logs -n "${namespace}" "${workload}" --tail="${tail_lines}" --all-containers=true || true
+done

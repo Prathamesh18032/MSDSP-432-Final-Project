@@ -23,7 +23,8 @@ if [[ ! -d ".terraform" ]]; then
   exit 1
 fi
 
-if ! terraform state list 2>/dev/null | grep -qx "google_artifact_registry_repository.services"; then
+state_list="$(terraform state list 2>/dev/null || true)"
+if ! grep -qx "google_artifact_registry_repository.services" <<<"${state_list}"; then
   echo "ERROR: Existing Artifact Registry repository is not imported into Terraform state." >&2
   echo "Run: make terraform-import-artifact-registry" >&2
   exit 1
@@ -35,9 +36,10 @@ echo "Creating a fresh runtime apply plan at ${tf_dir}/${plan_file}."
 terraform plan \
   -var-file=terraform.tfvars \
   -var=enable_runtime_resources=true \
+  -var=enable_ci_cd_resources=true \
   -out="${plan_file}"
 
 terraform apply "${plan_file}"
 
 echo
-echo "Runtime Terraform apply complete. GKE runtime resources are enabled; TimescaleDB is deployed later through Kubernetes manifests."
+echo "Runtime Terraform apply complete. GKE runtime and GitHub Actions OIDC resources are enabled; TimescaleDB is deployed later through Kubernetes manifests."
