@@ -65,6 +65,14 @@ make k8s-smoke
 make k8s-logs
 make k8s-backup-once
 make k8s-backup-check
+make k8s-restore-test
+make k8s-restore-check
+make k8s-restore-clean
+make runtime-health
+make runtime-cost-check
+make ci-publish-check
+make demo-live-start
+make demo-live-stop
 make observability-check
 make runtime-live-smoke
 make k8s-port-forward-streamlit
@@ -84,3 +92,5 @@ Slice 16 adds the first cloud cold-path validation. `make export-cold-gcs` uploa
 Slice 17 adds the first gated runtime path. `make terraform-plan-runtime` reviews GKE Autopilot and Workload Identity changes. `ALLOW_TERRAFORM_APPLY_RUNTIME=yes make terraform-apply-runtime` creates runtime infrastructure only when intentionally allowed. TimescaleDB remains the hot store and is deployed as an internal Kubernetes StatefulSet with a PVC; Grafana stays local/demo-only for now.
 
 Slice 18 adds live runtime hardening. Runtime Terraform also provisions GitHub Actions Workload Identity Federation for image publishing. Kubernetes manifests include a TimescaleDB backup CronJob, and operations scripts validate logs, workload health, Pub/Sub, GCS, BigQuery, and backup presence.
+
+Slice 19 adds reliability and demo polish. Restore tests run only in a disposable namespace, runtime health checks surface failed jobs/restarts/PVCs/latest objects/image tags, and scale/demo commands help reduce cost after presentations without deleting the hot TimescaleDB PVC.
