@@ -1,6 +1,6 @@
 # Cloud Operations Runbook
 
-This runbook covers Slice 18 runtime operations for the Smart City Zero-Disk IoT cloud environment.
+This runbook covers Slice 18 and Slice 19 runtime operations for the Smart City Zero-Disk IoT cloud environment.
 
 ## Daily Health Check
 
@@ -11,10 +11,11 @@ make gcp-bootstrap-check
 make gcp-cost-guard-check
 make gcp-core-check
 make k8s-status
+make runtime-health
 make observability-check
 ```
 
-The observability check verifies Kubernetes workload readiness, recent logs, Pub/Sub subscription reachability, GCS cold-object visibility, and BigQuery external-table queryability.
+The runtime health and observability checks verify Kubernetes workload readiness, restart counts, failed jobs, PVC status, Pub/Sub reachability/backlog when available, GCS cold/backup object visibility, BigQuery external-table queryability, current runtime images, and recent logs.
 
 ## Live Runtime Smoke
 
@@ -52,7 +53,25 @@ make k8s-backup-once
 make k8s-backup-check
 ```
 
-Restore is intentionally manual in this slice. For a future restore test, create a temporary TimescaleDB instance or namespace, download the selected `.dump`, and run `pg_restore` against the temporary database before touching the live hot store.
+## Restore Test
+
+Restore testing is isolated from the live `smartcity` namespace. It creates a disposable namespace, restores the selected backup into a temporary TimescaleDB StatefulSet, validates restored tables and nonzero readings, then can be cleaned up:
+
+```sh
+make k8s-restore-test
+make k8s-restore-check
+make k8s-restore-clean
+```
+
+Defaults:
+
+```text
+RESTORE_TEST_NAMESPACE=smartcity-restore-test
+RESTORE_TEST_STORAGE_SIZE=5Gi
+RESTORE_TEST_BACKUP_URI=latest
+```
+
+Never set `RESTORE_TEST_NAMESPACE` to the live runtime namespace.
 
 ## CI/CD Image Publishing
 
@@ -65,8 +84,26 @@ GCP_WORKLOAD_IDENTITY_PROVIDER=<terraform output github_actions_workload_identit
 GCP_CI_SERVICE_ACCOUNT=<terraform output github_actions_service_account>
 ```
 
-CI publishes short-SHA and `latest-main` tags. Runtime deployment remains manual through `make k8s-render` and `make k8s-apply`.
+CI publishes short-SHA and `latest-main` tags. Validate published tags with:
+
+```sh
+make ci-publish-check
+```
+
+Runtime deployment remains manual:
+
+```sh
+RUNTIME_IMAGE_TAG=latest-main make k8s-render
+make k8s-apply
+```
 
 ## Cost Watch
 
 GKE Autopilot, persistent volumes, Artifact Registry storage, GCS, and BigQuery queries can incur cost. Keep the budget alert active and scale down or delete nonessential workloads after demos.
+
+```sh
+make runtime-cost-check
+make runtime-scale-down
+```
+
+`runtime-scale-down` scales ingestor, writer, and Streamlit to zero replicas. It does not delete TimescaleDB, PVCs, backups, Pub/Sub, GCS, BigQuery, Artifact Registry, or Terraform-managed resources.
