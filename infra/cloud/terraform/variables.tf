@@ -87,3 +87,33 @@ variable "gke_cluster_name" {
   type        = string
   default     = "smartcity-autopilot"
 }
+
+variable "enable_ci_cd_resources" {
+  description = "Enable GitHub Actions Workload Identity Federation resources for Artifact Registry image publishing."
+  type        = bool
+  default     = false
+}
+
+variable "github_repository" {
+  description = "GitHub repository allowed to publish images through Workload Identity Federation."
+  type        = string
+  default     = "Prathamesh18032/MSDSP-432-Final-Project"
+}
+
+variable "github_actions_pool_id" {
+  description = "Workload Identity Pool ID for GitHub Actions."
+  type        = string
+  default     = "github-actions"
+}
+
+variable "github_actions_provider_id" {
+  description = "Workload Identity Pool Provider ID for GitHub Actions OIDC."
+  type        = string
+  default     = "github"
+}
+
+variable "github_actions_service_account_id" {
+  description = "Service account ID used by GitHub Actions to publish container images."
+  type        = string
+  default     = "smartcity-github-actions"
+}

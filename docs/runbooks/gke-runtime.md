@@ -31,10 +31,12 @@ The runtime path does not create public ingress, service account keys, Cloud SQL
 Recommended image tag:
 
 ```sh
-make docker-build IMAGE_TAG=slice17
-make docker-smoke IMAGE_TAG=slice17
-make docker-push IMAGE_TAG=slice17
+make docker-build IMAGE_TAG=slice18
+make docker-smoke IMAGE_TAG=slice18
+make docker-push IMAGE_TAG=slice18
 ```
+
+`make docker-build` defaults to `DOCKER_PLATFORM=linux/amd64` because GKE Autopilot schedules these workloads on AMD64 nodes.
 
 ## Apply Order
 
@@ -60,13 +62,13 @@ make gke-get-credentials
 4. Render Kubernetes manifests:
 
 ```sh
-RUNTIME_IMAGE_TAG=slice17 make k8s-render
+RUNTIME_IMAGE_TAG=slice18 make k8s-render
 ```
 
 5. Apply runtime manifests and create the runtime secret:
 
 ```sh
-K8S_TIMESCALE_PASSWORD=<strong-password> RUNTIME_IMAGE_TAG=slice17 make k8s-apply
+K8S_TIMESCALE_PASSWORD=<strong-password> RUNTIME_IMAGE_TAG=slice18 make k8s-apply
 ```
 
 6. Check status:
@@ -82,6 +84,13 @@ To include one cold-export CronJob execution in the smoke:
 RUN_COLD_EXPORT_SMOKE=yes make k8s-smoke
 ```
 
+To trigger and verify one TimescaleDB backup:
+
+```sh
+make k8s-backup-once
+make k8s-backup-check
+```
+
 7. View Streamlit locally through port-forward:
 
 ```sh
@@ -95,6 +104,7 @@ Open `http://localhost:8501`.
 ```text
 multi-source ingestor -> Pub/Sub -> hot writer -> internal TimescaleDB StatefulSet
 internal TimescaleDB -> cold export CronJob -> GCS Parquet -> BigQuery external table
+internal TimescaleDB -> backup CronJob -> GCS pg_dump backup
 internal TimescaleDB -> Streamlit service -> local port-forward
 ```
 
