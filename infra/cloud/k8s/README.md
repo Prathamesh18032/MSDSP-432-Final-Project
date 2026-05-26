@@ -28,6 +28,9 @@ make k8s-status
 make k8s-smoke
 make k8s-backup-once
 make k8s-backup-check
+make k8s-restore-test
+make k8s-restore-check
+make k8s-restore-clean
 make k8s-port-forward-streamlit
 ```
 
@@ -64,3 +67,5 @@ make k8s-smoke
 ```
 
 Set `RUN_COLD_EXPORT_SMOKE=yes` with `make k8s-smoke` to trigger one cold-export Job from the CronJob as part of runtime validation.
+
+Use `make k8s-restore-test` only for isolated restore validation. It creates a temporary namespace from `RESTORE_TEST_NAMESPACE` and refuses to run against the live runtime namespace.
