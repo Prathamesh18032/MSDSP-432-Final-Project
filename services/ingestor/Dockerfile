@@ -1,4 +1,7 @@
-FROM golang:1.23-bookworm AS build
+FROM --platform=$BUILDPLATFORM golang:1.23-bookworm AS build
+
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
 
 WORKDIR /src
 
@@ -8,7 +11,7 @@ RUN go mod download
 COPY internal ./internal
 COPY services/ingestor ./services/ingestor
 
-RUN CGO_ENABLED=0 GOOS=linux go build \
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
     -trimpath \
     -ldflags="-s -w" \
     -o /out/poll-multisource \

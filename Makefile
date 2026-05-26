@@ -3,6 +3,7 @@ SHELL := /bin/bash
 GO_TEST_ENV := GOCACHE="$(CURDIR)/.cache/go-build"
 IMAGE_REGISTRY ?= asia-south1-docker.pkg.dev/replace-me-project/smartcity
 IMAGE_TAG ?= local
+DOCKER_PLATFORM ?= linux/amd64
 INGESTOR_IMAGE = $(IMAGE_REGISTRY)/smartcity-ingestor:$(IMAGE_TAG)
 WRITER_IMAGE = $(IMAGE_REGISTRY)/smartcity-writer:$(IMAGE_TAG)
 STREAMLIT_IMAGE = $(IMAGE_REGISTRY)/smartcity-streamlit:$(IMAGE_TAG)
@@ -15,7 +16,7 @@ endif
 TFVARS_GCS_BUCKET := $(shell awk -F= '/^[[:space:]]*gcs_bucket[[:space:]]*=/ {gsub(/[ "	]/, "", $$2); print $$2}' infra/cloud/terraform/terraform.tfvars 2>/dev/null)
 CLOUD_COLD_BUCKET ?= $(if $(TFVARS_GCS_BUCKET),$(TFVARS_GCS_BUCKET),$(GCS_BUCKET))
 
-.PHONY: help check test streamlit-check cloud-check gcp-bootstrap-check gcp-cost-guard-check artifact-registry-preview artifact-registry-check artifact-registry-create artifact-registry-list terraform-check terraform-init terraform-validate terraform-plan terraform-show-plan terraform-import-artifact-registry-preview terraform-import-artifact-registry terraform-apply-core terraform-plan-runtime terraform-apply-runtime gcp-core-check pubsub-check bigquery-cold-check gke-get-credentials k8s-render k8s-apply k8s-status k8s-smoke k8s-port-forward-streamlit runtime-check docker-build docker-build-ingestor docker-build-writer docker-build-streamlit docker-smoke docker-tag-release docker-push run run-local seed-simulator run-openaq run-multisource poll-multisource-once consume-pubsub consume-pubsub-once pubsub-smoke pubsub-hotpath-smoke export-cold export-cold-demo export-cold-gcs cloud-cold-smoke run-streamlit run-streamlit-compose stop logs clean
+.PHONY: help check test streamlit-check cloud-check ci-cd-check gcp-bootstrap-check gcp-cost-guard-check artifact-registry-preview artifact-registry-check artifact-registry-create artifact-registry-list terraform-check terraform-init terraform-validate terraform-plan terraform-show-plan terraform-import-artifact-registry-preview terraform-import-artifact-registry terraform-apply-core terraform-plan-runtime terraform-apply-runtime gcp-core-check pubsub-check bigquery-cold-check gke-get-credentials k8s-render k8s-apply k8s-status k8s-smoke k8s-logs k8s-backup-once k8s-backup-check k8s-port-forward-streamlit observability-check runtime-check runtime-live-smoke docker-build docker-build-ingestor docker-build-writer docker-build-streamlit docker-smoke docker-tag-release docker-push run run-local seed-simulator run-openaq run-multisource poll-multisource-once consume-pubsub consume-pubsub-once pubsub-smoke pubsub-hotpath-smoke export-cold export-cold-demo export-cold-gcs cloud-cold-smoke run-streamlit run-streamlit-compose stop logs clean
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z_-]+:.*##/ {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -49,6 +50,7 @@ check: ## Validate the repo foundation scaffold
 	@test -f internal/coldstore/parquet.go
 	@test -f services/writer/cmd/export-cold/main.go
 	@test -f services/writer/cmd/consume-pubsub/main.go
+	@test -f services/writer/cmd/backup-timescale/main.go
 	@test -f services/writer/Dockerfile
 	@test -f apps/streamlit/app.py
 	@test -f apps/streamlit/requirements.txt
@@ -61,6 +63,9 @@ test: ## Run Go tests
 streamlit-check: ## Run lightweight Streamlit app syntax checks
 	python3 -m py_compile apps/streamlit/app.py apps/streamlit/smartcity/*.py
 
+ci-cd-check: ## Validate GitHub Actions image publishing workflow
+	infra/cloud/scripts/ci_cd_check.sh
+
 cloud-check: ## Validate cloud-readiness scaffold without contacting GCP
 	@test -f infra/cloud/README.md
 	@test -f docs/runbooks/gcp-readiness.md
@@ -70,6 +75,7 @@ cloud-check: ## Validate cloud-readiness scaffold without contacting GCP
 	@test -f infra/cloud/terraform/main.tf
 	@test -f infra/cloud/terraform/outputs.tf
 	@test -f infra/cloud/terraform/terraform.tfvars.example
+	@test -f .github/workflows/publish-images.yml
 	@test -f infra/cloud/k8s/README.md
 	@test -f infra/cloud/k8s/base/namespace.yaml
 	@test -f infra/cloud/k8s/base/serviceaccounts.yaml
@@ -103,14 +109,21 @@ cloud-check: ## Validate cloud-readiness scaffold without contacting GCP
 	@test -x infra/cloud/scripts/k8s_apply.sh
 	@test -x infra/cloud/scripts/k8s_status.sh
 	@test -x infra/cloud/scripts/k8s_smoke.sh
+	@test -x infra/cloud/scripts/k8s_logs.sh
+	@test -x infra/cloud/scripts/k8s_backup_once.sh
+	@test -x infra/cloud/scripts/k8s_backup_check.sh
 	@test -x infra/cloud/scripts/k8s_port_forward_streamlit.sh
+	@test -x infra/cloud/scripts/observability_check.sh
 	@test -x infra/cloud/scripts/runtime_check.sh
+	@test -x infra/cloud/scripts/runtime_live_smoke.sh
+	@test -x infra/cloud/scripts/ci_cd_check.sh
 	@test -f docs/runbooks/artifact-registry-publish.md
 	@test -f docs/runbooks/terraform-plan-review.md
 	@test -f docs/runbooks/pubsub-adapter-readiness.md
 	@test -f docs/runbooks/core-cloud-apply.md
 	@test -f docs/runbooks/cloud-cold-path.md
 	@test -f docs/runbooks/gke-runtime.md
+	@test -f docs/runbooks/cloud-operations.md
 	@for file in $$(find infra/cloud/k8s -name '*.yaml' -type f); do grep -q '^apiVersion:' "$$file"; grep -q '^kind:' "$$file"; done
 	@if command -v terraform >/dev/null 2>&1; then terraform fmt -check -recursive infra/cloud/terraform; else echo "terraform not installed; skipping terraform fmt"; fi
 	@if command -v kubectl >/dev/null 2>&1; then kubectl version --client=true >/dev/null; echo "kubectl installed; cluster dry-run intentionally skipped"; else echo "kubectl not installed; skipping kubernetes client check"; fi
@@ -189,22 +202,37 @@ k8s-status: ## Show Kubernetes runtime workload status
 k8s-smoke: ## Validate GKE runtime pods and internal TimescaleDB readiness
 	infra/cloud/scripts/k8s_smoke.sh
 
+k8s-logs: ## Show recent GKE runtime logs
+	infra/cloud/scripts/k8s_logs.sh
+
+k8s-backup-once: ## Trigger one TimescaleDB backup job in GKE
+	infra/cloud/scripts/k8s_backup_once.sh
+
+k8s-backup-check: ## Verify at least one TimescaleDB backup exists in GCS
+	infra/cloud/scripts/k8s_backup_check.sh
+
 k8s-port-forward-streamlit: ## Port-forward Streamlit from the GKE runtime namespace
 	infra/cloud/scripts/k8s_port_forward_streamlit.sh
+
+observability-check: ## Validate cloud runtime health, logs, Pub/Sub, GCS, and BigQuery visibility
+	infra/cloud/scripts/observability_check.sh
 
 runtime-check: ## Validate runtime prerequisites and render manifests without applying them
 	infra/cloud/scripts/runtime_check.sh
 
+runtime-live-smoke: ## Publish one batch and verify the GKE Pub/Sub writer inserts into TimescaleDB
+	infra/cloud/scripts/runtime_live_smoke.sh
+
 docker-build: docker-build-ingestor docker-build-writer docker-build-streamlit ## Build all application container images locally
 
 docker-build-ingestor: ## Build the multi-source ingestor image locally
-	docker build -f services/ingestor/Dockerfile -t $(INGESTOR_IMAGE) .
+	docker build --platform $(DOCKER_PLATFORM) -f services/ingestor/Dockerfile -t $(INGESTOR_IMAGE) .
 
 docker-build-writer: ## Build the cold export writer image locally
-	docker build -f services/writer/Dockerfile -t $(WRITER_IMAGE) .
+	docker build --platform $(DOCKER_PLATFORM) -f services/writer/Dockerfile -t $(WRITER_IMAGE) .
 
 docker-build-streamlit: ## Build the Streamlit reports image locally
-	docker build -f apps/streamlit/Dockerfile -t $(STREAMLIT_IMAGE) .
+	docker build --platform $(DOCKER_PLATFORM) -f apps/streamlit/Dockerfile -t $(STREAMLIT_IMAGE) .
 
 docker-smoke: ## Smoke-test locally built images without pushing or contacting GCP
 	@docker image inspect $(INGESTOR_IMAGE) >/dev/null

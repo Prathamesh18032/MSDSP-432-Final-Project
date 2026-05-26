@@ -11,6 +11,7 @@ These manifests describe the first cloud runtime for the Smart City Zero-Disk Io
 - TimescaleDB schema init ConfigMap generated from `infra/local/timescaledb/init/001_schema.sql`.
 - Multi-source ingestor publishing readings to Pub/Sub.
 - Pub/Sub hot writer consuming readings into TimescaleDB.
+- TimescaleDB backup CronJob writing `pg_dump` files to GCS.
 - Cold export CronJob writing Parquet to GCS.
 - Streamlit internal service reading TimescaleDB.
 
@@ -25,6 +26,8 @@ make k8s-render
 K8S_TIMESCALE_PASSWORD=<strong-password> make k8s-apply
 make k8s-status
 make k8s-smoke
+make k8s-backup-once
+make k8s-backup-check
 make k8s-port-forward-streamlit
 ```
 

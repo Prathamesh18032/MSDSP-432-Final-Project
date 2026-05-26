@@ -41,3 +41,13 @@ output "gke_cluster_location" {
   description = "GKE cluster location when runtime resources are enabled."
   value       = var.enable_runtime_resources ? google_container_cluster.runtime[0].location : null
 }
+
+output "github_actions_workload_identity_provider" {
+  description = "Workload Identity Provider resource name for GitHub Actions image publishing."
+  value       = var.enable_ci_cd_resources ? google_iam_workload_identity_pool_provider.github_actions[0].name : null
+}
+
+output "github_actions_service_account" {
+  description = "GitHub Actions service account email for Artifact Registry publishing."
+  value       = var.enable_ci_cd_resources ? google_service_account.github_actions[0].email : null
+}

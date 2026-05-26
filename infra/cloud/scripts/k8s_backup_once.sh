@@ -8,7 +8,10 @@ fi
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 rendered_namespace="$(awk '/^  name: / {print $2; exit}' "${root_dir}/infra/cloud/k8s/rendered/namespace.yaml" 2>/dev/null || true)"
 namespace="${GKE_NAMESPACE:-${rendered_namespace:-smartcity}}"
-port="${STREAMLIT_PORT:-8501}"
+job_name="smartcity-timescale-backup-manual-$(date +%Y%m%d%H%M%S)"
 
-echo "Forwarding http://localhost:${port} to smartcity-streamlit in namespace ${namespace}."
-kubectl port-forward -n "${namespace}" service/smartcity-streamlit "${port}:8501"
+kubectl create job -n "${namespace}" --from=cronjob/smartcity-timescale-backup "${job_name}"
+kubectl wait -n "${namespace}" --for=condition=complete "job/${job_name}" --timeout="${TIMESCALE_BACKUP_JOB_TIMEOUT:-600s}"
+kubectl logs -n "${namespace}" "job/${job_name}" --all-containers=true
+
+echo "Manual TimescaleDB backup job completed: ${job_name}"

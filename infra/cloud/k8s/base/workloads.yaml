@@ -40,6 +40,8 @@ spec:
             - name: postgres
               containerPort: 5432
           env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
             - name: POSTGRES_DB
               valueFrom:
                 configMapKeyRef:
@@ -170,6 +172,46 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: smartcity-timescale-backup
+  namespace: __GKE_NAMESPACE__
+  labels:
+    app.kubernetes.io/name: smartcity-timescale-backup
+spec:
+  schedule: "__TIMESCALE_BACKUP_SCHEDULE__"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: smartcity-writer
+          restartPolicy: OnFailure
+          containers:
+            - name: writer
+              image: __IMAGE_REGISTRY__/smartcity-writer:__RUNTIME_IMAGE_TAG__
+              imagePullPolicy: IfNotPresent
+              command: ["/usr/local/bin/backup-timescale"]
+              envFrom:
+                - configMapRef:
+                    name: smartcity-config
+              env:
+                - name: TIMESCALE_DSN
+                  valueFrom:
+                    secretKeyRef:
+                      name: smartcity-runtime-secrets
+                      key: TIMESCALE_DSN
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
 ---
 apiVersion: batch/v1
 kind: CronJob

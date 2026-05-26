@@ -55,6 +55,9 @@ jobs:
       - name: Validate cloud scaffold
         run: make cloud-check
 
+      - name: Validate CI/CD workflow
+        run: make ci-cd-check
+
   container-images:
     name: Container image build
     runs-on: ubuntu-latest

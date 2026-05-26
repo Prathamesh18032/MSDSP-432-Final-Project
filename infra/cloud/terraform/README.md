@@ -13,6 +13,7 @@ This Terraform models the GCP deployment in two controlled layers. Core resource
 - IAM bindings for Pub/Sub, GCS, BigQuery, and GKE Workload Identity Federation.
 - Pub/Sub service-agent IAM for future dead-letter routing.
 - Gated GKE Autopilot runtime cluster when `enable_runtime_resources = true`.
+- GitHub Actions Workload Identity Federation resources when `enable_ci_cd_resources = true`.
 
 ## Safe Local Check
 
@@ -80,3 +81,10 @@ ALLOW_TERRAFORM_APPLY_RUNTIME=yes make terraform-apply-runtime
 ```
 
 The runtime Terraform does not create Cloud SQL, external TimescaleDB services, service account keys, public ingress, or a remote backend. TimescaleDB is deployed later as an internal Kubernetes StatefulSet by `make k8s-apply`.
+
+The same runtime plan also enables GitHub Actions OIDC resources for image publishing. After apply, set these GitHub repository variables from Terraform outputs:
+
+```text
+GCP_WORKLOAD_IDENTITY_PROVIDER=github_actions_workload_identity_provider
+GCP_CI_SERVICE_ACCOUNT=github_actions_service_account
+```
