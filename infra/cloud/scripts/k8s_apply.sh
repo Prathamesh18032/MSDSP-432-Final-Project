@@ -38,6 +38,9 @@ if ! kubectl get secret smartcity-runtime-secrets -n "${namespace}" >/dev/null 2
   if [[ -n "${OPENAQ_API_KEY:-}" ]]; then
     args+=(--from-literal "OPENAQ_API_KEY=${OPENAQ_API_KEY}")
   fi
+  if [[ -n "${STREAMLIT_DEMO_PASSWORD:-}" ]]; then
+    args+=(--from-literal "STREAMLIT_DEMO_PASSWORD=${STREAMLIT_DEMO_PASSWORD}")
+  fi
 
   kubectl "${args[@]}" --dry-run=client -o yaml | kubectl apply -f -
 fi

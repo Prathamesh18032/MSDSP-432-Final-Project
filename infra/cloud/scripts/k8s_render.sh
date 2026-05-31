@@ -24,7 +24,7 @@ topic="$(tfvar pubsub_topic_name || true)"; topic="${topic:-${GCP_PUBSUB_TOPIC:-
 dlq_topic="$(tfvar pubsub_dlq_topic_name || true)"; dlq_topic="${dlq_topic:-${GCP_PUBSUB_DLQ_TOPIC:-smartcity-dlq}}"
 subscription="$(tfvar pubsub_subscription_name || true)"; subscription="${subscription:-${GCP_PUBSUB_SUBSCRIPTION:-smartcity-hot-writer}}"
 image_registry="${IMAGE_REGISTRY:-${region}-docker.pkg.dev/${project}/${repository}}"
-runtime_tag="${RUNTIME_IMAGE_TAG:-slice18}"
+runtime_tag="${RUNTIME_IMAGE_TAG:-latest-main}"
 timescale_db="${K8S_TIMESCALE_DB:-smartcity_hot}"
 timescale_user="${K8S_TIMESCALE_USER:-smartcity}"
 timescale_storage="${K8S_TIMESCALE_STORAGE_SIZE:-10Gi}"
@@ -32,6 +32,8 @@ timescale_image="${K8S_TIMESCALE_IMAGE:-timescale/timescaledb:latest-pg15}"
 backup_schedule="${TIMESCALE_BACKUP_SCHEDULE:-0 */6 * * *}"
 backup_prefix="${TIMESCALE_BACKUP_PREFIX:-backups/timescaledb}"
 backup_retention_days="${TIMESCALE_BACKUP_RETENTION_DAYS:-14}"
+public_demo_enabled="${PUBLIC_DEMO_ENABLED:-false}"
+public_demo_domain="${PUBLIC_DEMO_DOMAIN:-}"
 backup_schedule="${backup_schedule%\"}"
 backup_schedule="${backup_schedule#\"}"
 
@@ -63,6 +65,8 @@ render_file() {
     -e "s|__TIMESCALE_BACKUP_SCHEDULE__|${backup_schedule}|g" \
     -e "s|__TIMESCALE_BACKUP_PREFIX__|${backup_prefix}|g" \
     -e "s|__TIMESCALE_BACKUP_RETENTION_DAYS__|${backup_retention_days}|g" \
+    -e "s|__PUBLIC_DEMO_ENABLED__|${public_demo_enabled}|g" \
+    -e "s|__PUBLIC_DEMO_DOMAIN__|${public_demo_domain}|g" \
     "${source}" > "${target}"
 }
 

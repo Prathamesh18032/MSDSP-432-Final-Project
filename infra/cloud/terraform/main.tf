@@ -8,6 +8,7 @@ locals {
   required_services = toset([
     "artifactregistry.googleapis.com",
     "bigquery.googleapis.com",
+    "compute.googleapis.com",
     "container.googleapis.com",
     "iam.googleapis.com",
     "iamcredentials.googleapis.com",
@@ -201,6 +202,12 @@ resource "google_bigquery_dataset_iam_member" "analytics_dataset_viewer" {
   dataset_id = google_bigquery_dataset.analytics.dataset_id
   role       = "roles/bigquery.dataViewer"
   member     = google_service_account.analytics.member
+}
+
+resource "google_project_iam_member" "analytics_bigquery_job_user" {
+  project = var.gcp_project_id
+  role    = "roles/bigquery.jobUser"
+  member  = google_service_account.analytics.member
 }
 
 resource "google_service_account_iam_member" "ingestor_workload_identity" {

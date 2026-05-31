@@ -8,7 +8,7 @@ plan_file="${TF_RUNTIME_PLAN_FILE:-smartcity-runtime.tfplan}"
 if [[ "${ALLOW_TERRAFORM_APPLY_RUNTIME:-}" != "yes" ]]; then
   echo "ERROR: Refusing to apply runtime Terraform without ALLOW_TERRAFORM_APPLY_RUNTIME=yes." >&2
   echo "This target can create ongoing-cost runtime resources such as a GKE Autopilot cluster." >&2
-  echo "It does not create Cloud SQL, external Timescale services, service account keys, or public ingress." >&2
+  echo "It does not create Cloud SQL, external Timescale services, service account keys, or Streamlit public ingress." >&2
   exit 1
 fi
 

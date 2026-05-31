@@ -18,7 +18,7 @@ Do not run the runtime apply unless the team is ready to create GKE Autopilot re
 ALLOW_TERRAFORM_APPLY_RUNTIME=yes make terraform-apply-runtime
 ```
 
-The runtime path does not create public ingress, service account keys, Cloud SQL, external TimescaleDB, or remote Terraform state.
+The runtime path does not create service account keys, Cloud SQL, external TimescaleDB, or remote Terraform state. Public Streamlit access is handled separately by the guarded public demo workflow.
 
 ## Prerequisites
 
@@ -31,9 +31,9 @@ The runtime path does not create public ingress, service account keys, Cloud SQL
 Recommended image tag:
 
 ```sh
-make docker-build IMAGE_TAG=slice18
-make docker-smoke IMAGE_TAG=slice18
-make docker-push IMAGE_TAG=slice18
+make docker-build IMAGE_TAG=latest-main
+make docker-smoke IMAGE_TAG=latest-main
+make docker-push IMAGE_TAG=latest-main
 ```
 
 `make docker-build` defaults to `DOCKER_PLATFORM=linux/amd64` because GKE Autopilot schedules these workloads on AMD64 nodes.
@@ -62,13 +62,13 @@ make gke-get-credentials
 4. Render Kubernetes manifests:
 
 ```sh
-RUNTIME_IMAGE_TAG=slice18 make k8s-render
+RUNTIME_IMAGE_TAG=latest-main make k8s-render
 ```
 
 5. Apply runtime manifests and create the runtime secret:
 
 ```sh
-K8S_TIMESCALE_PASSWORD=<strong-password> RUNTIME_IMAGE_TAG=slice18 make k8s-apply
+K8S_TIMESCALE_PASSWORD=<strong-password> RUNTIME_IMAGE_TAG=latest-main make k8s-apply
 ```
 
 6. Check status:
@@ -107,13 +107,15 @@ make k8s-port-forward-streamlit
 
 Open `http://localhost:8501`.
 
+For a shareable reviewer URL, use `make public-demo-apply` with `ALLOW_PUBLIC_INGRESS=yes` and `STREAMLIT_DEMO_PASSWORD` set. See [public-demo.md](public-demo.md).
+
 ## Expected Runtime Flow
 
 ```text
 multi-source ingestor -> Pub/Sub -> hot writer -> internal TimescaleDB StatefulSet
 internal TimescaleDB -> cold export CronJob -> GCS Parquet -> BigQuery external table
 internal TimescaleDB -> backup CronJob -> GCS pg_dump backup
-internal TimescaleDB -> Streamlit service -> local port-forward
+internal TimescaleDB -> Streamlit service -> local port-forward or guarded public demo ingress
 ```
 
 TimescaleDB is exposed only inside the Kubernetes cluster through `smartcity-timescaledb.<namespace>.svc.cluster.local:5432`.

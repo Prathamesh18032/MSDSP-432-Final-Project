@@ -14,6 +14,7 @@ These manifests describe the first cloud runtime for the Smart City Zero-Disk Io
 - TimescaleDB backup CronJob writing `pg_dump` files to GCS.
 - Cold export CronJob writing Parquet to GCS.
 - Streamlit internal service reading TimescaleDB.
+- Optional Streamlit-only public demo ingress templates.
 
 Grafana remains local/demo-only for now and is not deployed in the cloud runtime.
 
@@ -34,6 +35,20 @@ make k8s-restore-clean
 make k8s-port-forward-streamlit
 ```
 
+To expose Streamlit temporarily for reviewers:
+
+```sh
+export STREAMLIT_DEMO_PASSWORD=<share-with-reviewers>
+ALLOW_PUBLIC_INGRESS=yes make public-demo-apply
+make public-demo-url
+```
+
+Disable the public endpoint after review:
+
+```sh
+make public-demo-disable
+```
+
 Rendered files are written to `infra/cloud/k8s/rendered/` and are ignored by Git. Do not edit rendered files directly; update the templates or renderer instead.
 
 ## Runtime Secrets
@@ -43,6 +58,7 @@ Do not commit secret values. `make k8s-apply` creates `smartcity-runtime-secrets
 - `TIMESCALE_PASSWORD`
 - `TIMESCALE_DSN`
 - optional `OPENAQ_API_KEY`
+- optional `STREAMLIT_DEMO_PASSWORD`
 
 The TimescaleDB service is internal only:
 
