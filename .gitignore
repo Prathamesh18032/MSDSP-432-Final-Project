@@ -39,6 +39,9 @@ venv/
 # Local cold-storage runtime artifacts
 data/
 artifacts/
+dist/
+outputs/
+docs/final/artifact-build-manifest.json
 
 # Terraform local state and provider artifacts
 .terraform/
