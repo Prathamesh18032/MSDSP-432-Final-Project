@@ -1,0 +1,31 @@
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: smartcity-streamlit-backend
+  namespace: __GKE_NAMESPACE__
+spec:
+  timeoutSec: 3600
+  healthCheck:
+    type: HTTP
+    requestPath: /_stcore/health
+    port: 8501
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: smartcity-streamlit-public
+  namespace: __GKE_NAMESPACE__
+  annotations:
+    kubernetes.io/ingress.class: gce
+    kubernetes.io/ingress.global-static-ip-name: __PUBLIC_DEMO_STATIC_IP_NAME__
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: smartcity-streamlit
+                port:
+                  number: 8501

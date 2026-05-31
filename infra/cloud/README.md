@@ -5,7 +5,7 @@ This directory contains the cloud-ready foundation for the Smart City Zero-Disk 
 ## What Is Included
 
 - `terraform/`: GCP resources for Pub/Sub, dead-letter routing, GCS cold storage, BigQuery external analytics, Artifact Registry, service accounts, and gated GKE Autopilot runtime.
-- `k8s/`: renderable GKE manifests for self-hosted TimescaleDB, the multi-source ingestor, Pub/Sub hot writer, cold export CronJob, and Streamlit.
+- `k8s/`: renderable GKE manifests for self-hosted TimescaleDB, the multi-source ingestor, Pub/Sub hot writer, cold export CronJob, Streamlit, and guarded Streamlit-only public demo ingress.
 - Local container image packaging uses the same Artifact Registry naming convention through `make docker-build`, `make docker-tag-release`, and `make docker-push`.
 - Terraform plan review uses local, ignored `terraform.tfvars` and `smartcity.tfplan` artifacts.
 
@@ -14,7 +14,7 @@ This directory contains the cloud-ready foundation for the Smart City Zero-Disk 
 - No Terraform backend or remote state configuration.
 - No cloud workload deployment pipeline.
 - No committed secrets, service account JSON keys, or OpenAQ API key.
-- No Cloud SQL, external Timescale service, public ingress, or GKE workload deployment without explicit commands.
+- No Cloud SQL, external Timescale service, or GKE workload deployment without explicit commands. Public ingress is Streamlit-only and requires `ALLOW_PUBLIC_INGRESS=yes`.
 - No remote Terraform backend yet; state and plan artifacts remain local and ignored.
 
 ## Future Rollout Order
@@ -70,7 +70,17 @@ make k8s-restore-check
 make k8s-restore-clean
 make runtime-health
 make runtime-cost-check
+make runtime-cost-report
+make runtime-cost-guard
+make runtime-promote-latest
+make runtime-release-check
 make ci-publish-check
+ALLOW_PUBLIC_INGRESS=yes make public-demo-render
+ALLOW_PUBLIC_INGRESS=yes make public-demo-apply
+make public-demo-status
+make public-demo-url
+make public-demo-smoke
+make public-demo-disable
 make demo-live-start
 make demo-live-stop
 make observability-check
@@ -94,3 +104,5 @@ Slice 17 adds the first gated runtime path. `make terraform-plan-runtime` review
 Slice 18 adds live runtime hardening. Runtime Terraform also provisions GitHub Actions Workload Identity Federation for image publishing. Kubernetes manifests include a TimescaleDB backup CronJob, and operations scripts validate logs, workload health, Pub/Sub, GCS, BigQuery, and backup presence.
 
 Slice 19 adds reliability and demo polish. Restore tests run only in a disposable namespace, runtime health checks surface failed jobs/restarts/PVCs/latest objects/image tags, and scale/demo commands help reduce cost after presentations without deleting the hot TimescaleDB PVC.
+
+Slice 20 adds public demo and enterprise operations. Public ingress exposes only Streamlit and requires a demo password. Release promotion targets deploy CI-published images manually, runtime modes make demo/idle transitions repeatable, and evidence targets capture sanitized validation output.

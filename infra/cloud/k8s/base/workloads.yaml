@@ -114,7 +114,7 @@ spec:
       containers:
         - name: ingestor
           image: __IMAGE_REGISTRY__/smartcity-ingestor:__RUNTIME_IMAGE_TAG__
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           envFrom:
             - configMapRef:
                 name: smartcity-config
@@ -154,7 +154,7 @@ spec:
       containers:
         - name: writer
           image: __IMAGE_REGISTRY__/smartcity-writer:__RUNTIME_IMAGE_TAG__
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           command: ["/usr/local/bin/consume-pubsub"]
           envFrom:
             - configMapRef:
@@ -194,7 +194,7 @@ spec:
           containers:
             - name: writer
               image: __IMAGE_REGISTRY__/smartcity-writer:__RUNTIME_IMAGE_TAG__
-              imagePullPolicy: IfNotPresent
+              imagePullPolicy: Always
               command: ["/usr/local/bin/backup-timescale"]
               envFrom:
                 - configMapRef:
@@ -234,7 +234,7 @@ spec:
           containers:
             - name: writer
               image: __IMAGE_REGISTRY__/smartcity-writer:__RUNTIME_IMAGE_TAG__
-              imagePullPolicy: IfNotPresent
+              imagePullPolicy: Always
               envFrom:
                 - configMapRef:
                     name: smartcity-config
@@ -273,7 +273,7 @@ spec:
       containers:
         - name: streamlit
           image: __IMAGE_REGISTRY__/smartcity-streamlit:__RUNTIME_IMAGE_TAG__
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 8501
@@ -286,6 +286,12 @@ spec:
                 secretKeyRef:
                   name: smartcity-runtime-secrets
                   key: TIMESCALE_DSN
+            - name: STREAMLIT_DEMO_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: smartcity-runtime-secrets
+                  key: STREAMLIT_DEMO_PASSWORD
+                  optional: true
           resources:
             requests:
               cpu: 100m
@@ -299,6 +305,9 @@ kind: Service
 metadata:
   name: smartcity-streamlit
   namespace: __GKE_NAMESPACE__
+  annotations:
+    cloud.google.com/backend-config: '{"default":"smartcity-streamlit-backend"}'
+    cloud.google.com/neg: '{"ingress": true}'
 spec:
   type: ClusterIP
   selector:

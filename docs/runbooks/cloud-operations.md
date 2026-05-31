@@ -1,6 +1,6 @@
 # Cloud Operations Runbook
 
-This runbook covers Slice 18 and Slice 19 runtime operations for the Smart City Zero-Disk IoT cloud environment.
+This runbook covers Slice 18 through Slice 20 runtime operations for the Smart City Zero-Disk IoT cloud environment.
 
 ## Daily Health Check
 
@@ -17,12 +17,50 @@ make observability-check
 
 The runtime health and observability checks verify Kubernetes workload readiness, restart counts, failed jobs, PVC status, Pub/Sub reachability/backlog when available, GCS cold/backup object visibility, BigQuery external-table queryability, current runtime images, and recent logs.
 
+## Release Promotion
+
+Main-branch CI publishes `latest-main` and short-SHA image tags. Deployment remains manual:
+
+```sh
+make runtime-promote-latest
+make runtime-release-check
+```
+
+To promote a specific short SHA:
+
+```sh
+IMAGE_TAG=<short-sha> make runtime-promote-sha
+RUNTIME_EXPECTED_IMAGE_TAG=<short-sha> make runtime-release-check
+```
+
+## Runtime Modes
+
+Use demo mode before a review window:
+
+```sh
+make runtime-demo-mode
+```
+
+Use idle mode after demos to reduce spend while preserving recoverability:
+
+```sh
+make runtime-idle-mode
+```
+
+Resume from idle:
+
+```sh
+make runtime-resume-mode
+```
+
+`runtime-idle-mode` disables public ingress, suspends backup/cold-export CronJobs, and scales optional deployments down. It preserves PVCs, GCS, Pub/Sub, BigQuery, Artifact Registry, backups, and Terraform resources.
+
 ## Live Runtime Smoke
 
 Use this after deploying new images or applying runtime manifests:
 
 ```sh
-RUNTIME_IMAGE_TAG=slice18 make k8s-render
+RUNTIME_IMAGE_TAG=latest-main make k8s-render
 make k8s-apply
 make runtime-live-smoke
 RUN_COLD_EXPORT_SMOKE=yes make k8s-smoke
@@ -93,9 +131,12 @@ make ci-publish-check
 Runtime deployment remains manual:
 
 ```sh
-RUNTIME_IMAGE_TAG=latest-main make k8s-render
-make k8s-apply
+make runtime-promote-latest
 ```
+
+## Public Demo
+
+Use the [public demo runbook](public-demo.md) when teammates, the professor, or reviewers need a URL. Only Streamlit is exposed publicly, and it requires `STREAMLIT_DEMO_PASSWORD`.
 
 ## Cost Watch
 
@@ -103,7 +144,19 @@ GKE Autopilot, persistent volumes, Artifact Registry storage, GCS, and BigQuery 
 
 ```sh
 make runtime-cost-check
+make runtime-cost-report
+RUNTIME_COST_ACK=true make runtime-cost-guard
 make runtime-scale-down
 ```
 
 `runtime-scale-down` scales ingestor, writer, and Streamlit to zero replicas. It does not delete TimescaleDB, PVCs, backups, Pub/Sub, GCS, BigQuery, Artifact Registry, or Terraform-managed resources.
+
+## Evidence Capture
+
+Capture sanitized runtime evidence:
+
+```sh
+make runtime-evidence
+```
+
+Evidence is written under `artifacts/evidence/` and is ignored by Git. Do not add `.env`, Terraform state, kubeconfig, tokens, or raw credentials to evidence bundles.
