@@ -16,10 +16,10 @@ endif
 TFVARS_GCS_BUCKET := $(shell awk -F= '/^[[:space:]]*gcs_bucket[[:space:]]*=/ {gsub(/[ "	]/, "", $$2); print $$2}' infra/cloud/terraform/terraform.tfvars 2>/dev/null)
 CLOUD_COLD_BUCKET ?= $(if $(TFVARS_GCS_BUCKET),$(TFVARS_GCS_BUCKET),$(GCS_BUCKET))
 
-.PHONY: help check test streamlit-check cloud-check ci-cd-check gcp-bootstrap-check gcp-cost-guard-check artifact-registry-preview artifact-registry-check artifact-registry-create artifact-registry-list ci-publish-check terraform-check terraform-init terraform-validate terraform-plan terraform-show-plan terraform-import-artifact-registry-preview terraform-import-artifact-registry terraform-apply-core terraform-plan-runtime terraform-apply-runtime gcp-core-check pubsub-check bigquery-cold-check gke-get-credentials k8s-render k8s-apply k8s-status k8s-smoke k8s-logs k8s-backup-once k8s-backup-check k8s-restore-test k8s-restore-check k8s-restore-clean k8s-port-forward-streamlit public-demo-render public-demo-apply public-demo-status public-demo-url public-demo-smoke public-demo-disable observability-check runtime-check runtime-health runtime-cost-check runtime-scale-down runtime-scale-up runtime-demo-mode runtime-idle-mode runtime-resume-mode runtime-promote-latest runtime-promote-sha runtime-image-check runtime-release-check runtime-cost-report runtime-cost-guard runtime-evidence runtime-live-smoke demo-live-start demo-live-stop docker-build docker-build-ingestor docker-build-writer docker-build-streamlit docker-smoke docker-tag-release docker-push run run-local seed-simulator grafana-demo-ready run-openaq run-multisource poll-multisource-once consume-pubsub consume-pubsub-once pubsub-smoke pubsub-hotpath-smoke export-cold export-cold-demo export-cold-gcs cloud-cold-smoke run-streamlit run-streamlit-compose stop logs clean
+.PHONY: help check test streamlit-check cloud-check ci-cd-check phase3-check phase3-package phase3-package-list gcp-bootstrap-check gcp-cost-guard-check artifact-registry-preview artifact-registry-check artifact-registry-create artifact-registry-list ci-publish-check terraform-check terraform-init terraform-validate terraform-plan terraform-show-plan terraform-import-artifact-registry-preview terraform-import-artifact-registry terraform-apply-core terraform-plan-runtime terraform-apply-runtime gcp-core-check pubsub-check bigquery-cold-check gke-get-credentials k8s-render k8s-apply k8s-status k8s-smoke k8s-logs k8s-backup-once k8s-backup-check k8s-restore-test k8s-restore-check k8s-restore-clean k8s-port-forward-streamlit public-demo-render public-demo-apply public-demo-status public-demo-url public-demo-smoke public-demo-disable observability-check runtime-check runtime-health runtime-cost-check runtime-scale-down runtime-scale-up runtime-demo-mode runtime-idle-mode runtime-resume-mode runtime-promote-latest runtime-promote-sha runtime-image-check runtime-release-check runtime-cost-report runtime-cost-guard runtime-evidence runtime-live-smoke demo-live-start demo-live-stop docker-build docker-build-ingestor docker-build-writer docker-build-streamlit docker-smoke docker-tag-release docker-push run run-local seed-simulator grafana-demo-ready run-openaq run-multisource poll-multisource-once consume-pubsub consume-pubsub-once pubsub-smoke pubsub-hotpath-smoke export-cold export-cold-demo export-cold-gcs cloud-cold-smoke run-streamlit run-streamlit-compose stop logs clean
 
 help: ## Show available commands
-	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z_-]+:.*##/ {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z0-9_-]+:.*##/ {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 check: ## Validate the repo foundation scaffold
 	@test -f README.md
@@ -65,6 +65,15 @@ streamlit-check: ## Run lightweight Streamlit app syntax checks
 
 ci-cd-check: ## Validate GitHub Actions image publishing workflow
 	infra/cloud/scripts/ci_cd_check.sh
+
+phase3-check: ## Validate final Phase 3 submission files and package safety
+	scripts/phase3_check.sh
+
+phase3-package: ## Build dist/Project_Phase_3_Group4.zip from package-safe project files
+	scripts/phase3_package.sh
+
+phase3-package-list: ## List contents of the Phase 3 submission zip
+	scripts/phase3_package_list.sh
 
 cloud-check: ## Validate cloud-readiness scaffold without contacting GCP
 	@test -f infra/cloud/README.md

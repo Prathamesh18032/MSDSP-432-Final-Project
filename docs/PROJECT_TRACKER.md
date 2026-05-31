@@ -9,14 +9,22 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 - Project: Smart City Zero-Disk IoT Infrastructure.
 - Strategy: local-first MVP, cloud-ready architecture.
 - Current branch of record: `main`.
-- Latest merged slice: Slice 21, enterprise Streamlit command center redesign and public demo operations.
+- Latest merged slice: Slice 22, enterprise Grafana operations dashboard, PR #28.
 - Latest merged fix: PR #27, manual GKE runtime promotion workflow.
-- Active slice: Slice 22, enterprise Grafana operations dashboard, branch `codex/slice-22-enterprise-grafana`.
-- Next planned slice after this PR merges: Slice 23, Phase 3 final submission package and presentation evidence.
+- Active slice: Slice 23, Phase 3 final submission package and presentation evidence, branch `codex/slice-23-phase3-final-package`.
+- Next planned slice after this PR merges: refresh Phase 3 deliverables if teammate AI Agent work lands before submission.
 - Current working capability: deterministic Go simulator, OpenAQ, Open-Meteo, Divvy GBFS, and USGS pollers can generate or fetch smart-city readings, publish through a local queue buffer or Pub/Sub, insert into local TimescaleDB, export Parquet cold-storage files, upload cloud cold-storage files to GCS, record ingestion metrics, visualize readings through Grafana dashboards, run a polished Streamlit command center, build local deployable container images, publish those images to Artifact Registry in `asia-south1`, run safe GCP bootstrap checks, produce reviewable Terraform plans, apply low-cost core GCP resources, consume Pub/Sub readings into the local hot store, validate BigQuery external-table visibility over GCS Parquet files, run a live GKE Autopilot runtime with self-hosted TimescaleDB, publish images from GitHub Actions through OIDC, manually promote CI-published images to GKE, run runtime observability checks, automate TimescaleDB backups to GCS, and restore-test backups in a disposable namespace.
 - Local checks expected to pass on `main`: `make check`, `make test`.
 - Known blocker: GitHub branch protection for private repositories requires GitHub Pro or making the repo public. Direct-push protection is deferred.
 - Operational note: Docker Compose stack is not assumed to be running. Start it with `make run-local` when needed, or use `make grafana-demo-ready` for the local reviewer-grade Grafana path.
+
+## Phase 3 Final Assignment
+
+- Due: Monday, June 8, 2026 at 10:29am.
+- Total: 60 points.
+- Code submission: 45 points. Submit all project code as `Project_Phase_3_GroupName.zip`; Group 4 should submit `Project_Phase_3_Group4.zip`.
+- Presentation: 15 points. Week 10 sync-session presentation showing the implemented backend/data engineering pipeline and reports.
+- Phase 3 narrative should prioritize implementation proof, reporting value, operational readiness, and reviewer confidence. AI Agents in Smart City IoT, safety, privacy, and security should be addressed as narrative/future-scope topics unless implementation code lands before the final package is rebuilt.
 
 ## Completed Slices
 
@@ -43,23 +51,23 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 | 19 | Runtime reliability, restore testing, cost controls, and demo polish | [#25](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/25) | Merged into `main` | `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `make ci-cd-check`, `make ci-publish-check`, `make runtime-health`, `make observability-check`, `make runtime-live-smoke`, `RUN_COLD_EXPORT_SMOKE=yes make k8s-smoke`, `make k8s-backup-once`, `make k8s-backup-check`, `make k8s-restore-test`, `make k8s-restore-check`, `make k8s-restore-clean`, `make demo-live-start`, `docker compose config`, `git diff --check` |
 | 20 | Enterprise public demo, operations, cost governance, and release promotion | [#26](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/26) | Merged into `main` | `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `make ci-cd-check`, `make public-demo-render`, `make public-demo-status`, `make public-demo-url`, `make public-demo-smoke`, `make runtime-release-check`, `make runtime-cost-report`, `make runtime-evidence`, `docker compose config`, `git diff --check` |
 | 21 | Enterprise Streamlit command center redesign | [#26](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/26) | Merged into `main` | `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `make ci-cd-check`, `make docker-build IMAGE_TAG=slice21`, `make docker-smoke IMAGE_TAG=slice21`, `make docker-push IMAGE_TAG=slice21`, `make runtime-promote-sha IMAGE_TAG=slice21`, `make runtime-release-check RUNTIME_EXPECTED_IMAGE_TAG=slice21`, `make runtime-health`, `make public-demo-smoke`, `docker compose config`, `git diff --check` |
-| 22 | Enterprise Grafana operations dashboard | This PR | Completes on merge | `jq empty infra/local/grafana/provisioning/dashboards/smart-city-operations.json`, `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `docker compose config`, `git diff --check`, `make grafana-demo-ready` when live source validation is available |
+| 22 | Enterprise Grafana operations dashboard | [#28](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/28) | Merged into `main` | `jq empty infra/local/grafana/provisioning/dashboards/smart-city-operations.json`, `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `docker compose config`, `git diff --check`, `make grafana-demo-ready` |
 
 ## Next Planned Slices
 
 | Slice | Goal | Status | Default Owner |
 | --- | --- | --- | --- |
-| 23 | Phase 3 final submission package and presentation evidence | Backlog | DevOps / Analytics workstreams |
+| 23 | Phase 3 final submission package and presentation evidence | In Progress | DevOps / Analytics workstreams |
 
 ## Team Work Board
 
 ### Backlog
 
-- Slice 23: Phase 3 final submission package and presentation evidence.
+- Refresh Phase 3 deliverables if teammate AI Agent implementation merges before the final June 8 submission.
 
 ### In Progress
 
-- Slice 22: Enterprise Grafana operations dashboard, branch `codex/slice-22-enterprise-grafana`.
+- Slice 23: Phase 3 final submission package and presentation evidence, branch `codex/slice-23-phase3-final-package`.
 
 ### In Review
 
@@ -88,6 +96,7 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 - Slice 19: Runtime reliability, restore testing, cost controls, and demo polish, PR #25.
 - Slice 20: Enterprise public demo, operations, cost governance, and release promotion, PR #26.
 - Slice 21: Enterprise Streamlit command center redesign, PR #26.
+- Slice 22: Enterprise Grafana operations dashboard, PR #28.
 
 ## Workstreams
 
@@ -95,6 +104,7 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 - Storage: TimescaleDB schema, inserts, aggregates, retention flush, Parquet path.
 - Dashboards and analytics: enterprise Grafana provisioning, Streamlit command center, data-quality views.
 - DevOps and cloud readiness: Compose, container images, GCP bootstrap checks, Artifact Registry publish workflow, GitHub Actions OIDC image publishing, Terraform plan/apply workflow, Pub/Sub adapter readiness, gated GKE Autopilot runtime, Workload Identity, backups, restore tests, observability checks, cost controls, public demo ingress, release promotion, demo runbooks, CI, Makefile, Kubernetes manifests, setup docs.
+- Phase 3 finalization: submission zip, final presentation, demo script, evidence guide, AI Agent future scope, and safety/privacy/security narrative.
 
 ## Update Protocol
 
@@ -134,3 +144,4 @@ Then read this tracker, pick the next `Backlog` slice, create a `codex/<slice-na
 - 2026-05-26: Completed and merged Slice 19 / PR #25. Started Slice 20 public demo and enterprise operations on branch `codex/slice-20-public-demo-ops`. Slice 20 exposes only Streamlit through guarded public ingress with a demo password; backend services remain private.
 - 2026-05-26: Started Slice 21 enterprise Streamlit command center redesign on the same public-demo branch so the shareable URL becomes reviewer/client ready before Phase 3 packaging.
 - 2026-05-31: Completed and merged Slice 20 and Slice 21 / PR #26. PR #27 added the manual GKE runtime promotion workflow after the public demo merge. Started Slice 22 enterprise Grafana operations dashboard on branch `codex/slice-22-enterprise-grafana`. Phase 3 final zip, deck, and evidence package move to Slice 23.
+- 2026-05-31: Completed and merged Slice 22 / PR #28. Started Slice 23 Phase 3 final submission package on branch `codex/slice-23-phase3-final-package`; final deliverables must include the official rubric, `Project_Phase_3_Group4.zip`, PPTX/PDF presentation, Phase 2 reference artifacts, and safety/privacy/security plus AI Agent future-scope narrative.
