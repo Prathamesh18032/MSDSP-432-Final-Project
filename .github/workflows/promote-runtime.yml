@@ -1,0 +1,96 @@
+name: Promote Runtime
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Published image tag to deploy to GKE"
+        required: true
+        default: "latest-main"
+      run_public_smoke:
+        description: "Run public Streamlit URL smoke check after promotion"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: promote-runtime
+  cancel-in-progress: false
+
+env:
+  GCP_PROJECT_ID: smartcity-zero-disk-iot-pa
+  GCP_REGION: asia-south1
+  GKE_CLUSTER_NAME: smartcity-autopilot
+  GKE_NAMESPACE: smartcity
+  ARTIFACT_REGISTRY_REPOSITORY: smartcity
+  IMAGE_REGISTRY: asia-south1-docker.pkg.dev/smartcity-zero-disk-iot-pa/smartcity
+  GCS_BUCKET: smartcity-zero-disk-iot-pa-cold
+  BIGQUERY_DATASET: smartcity_iot
+  BIGQUERY_EXTERNAL_TABLE: sensor_readings_external
+  K8S_TIMESCALE_DB: smartcity_hot
+  K8S_TIMESCALE_USER: smartcity
+  PUBLIC_DEMO_ENABLED: "true"
+  STREAMLIT_PRODUCT_MODE: "true"
+
+jobs:
+  promote:
+    name: Promote ${{ inputs.image_tag }} to GKE
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Require repository variables
+        run: |
+          test -n "${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}"
+          test -n "${{ vars.GCP_CI_SERVICE_ACCOUNT }}"
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_CI_SERVICE_ACCOUNT }}
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          install_components: gke-gcloud-auth-plugin
+
+      - name: Configure kubectl
+        uses: google-github-actions/get-gke-credentials@v3
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER_NAME }}
+          location: ${{ env.GCP_REGION }}
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Verify published image tags exist
+        run: RUNTIME_EXPECTED_IMAGE_TAG="${{ inputs.image_tag }}" make runtime-image-check
+
+      - name: Promote selected runtime image tag
+        env:
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          K8S_TIMESCALE_PASSWORD: ${{ secrets.K8S_TIMESCALE_PASSWORD }}
+          OPENAQ_API_KEY: ${{ secrets.OPENAQ_API_KEY }}
+          STREAMLIT_DEMO_PASSWORD: ${{ secrets.STREAMLIT_DEMO_PASSWORD }}
+        run: |
+          if [[ "${IMAGE_TAG}" == "latest-main" ]]; then
+            make runtime-promote-latest
+          else
+            make runtime-promote-sha IMAGE_TAG="${IMAGE_TAG}"
+          fi
+
+      - name: Verify runtime health
+        run: make runtime-health
+
+      - name: Verify public demo endpoint
+        if: ${{ inputs.run_public_smoke == 'true' }}
+        run: make public-demo-smoke
