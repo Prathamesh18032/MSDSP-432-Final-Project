@@ -16,7 +16,7 @@ endif
 TFVARS_GCS_BUCKET := $(shell awk -F= '/^[[:space:]]*gcs_bucket[[:space:]]*=/ {gsub(/[ "	]/, "", $$2); print $$2}' infra/cloud/terraform/terraform.tfvars 2>/dev/null)
 CLOUD_COLD_BUCKET ?= $(if $(TFVARS_GCS_BUCKET),$(TFVARS_GCS_BUCKET),$(GCS_BUCKET))
 
-.PHONY: help check test streamlit-check cloud-check ci-cd-check gcp-bootstrap-check gcp-cost-guard-check artifact-registry-preview artifact-registry-check artifact-registry-create artifact-registry-list ci-publish-check terraform-check terraform-init terraform-validate terraform-plan terraform-show-plan terraform-import-artifact-registry-preview terraform-import-artifact-registry terraform-apply-core terraform-plan-runtime terraform-apply-runtime gcp-core-check pubsub-check bigquery-cold-check gke-get-credentials k8s-render k8s-apply k8s-status k8s-smoke k8s-logs k8s-backup-once k8s-backup-check k8s-restore-test k8s-restore-check k8s-restore-clean k8s-port-forward-streamlit public-demo-render public-demo-apply public-demo-status public-demo-url public-demo-smoke public-demo-disable observability-check runtime-check runtime-health runtime-cost-check runtime-scale-down runtime-scale-up runtime-demo-mode runtime-idle-mode runtime-resume-mode runtime-promote-latest runtime-promote-sha runtime-image-check runtime-release-check runtime-cost-report runtime-cost-guard runtime-evidence runtime-live-smoke demo-live-start demo-live-stop docker-build docker-build-ingestor docker-build-writer docker-build-streamlit docker-smoke docker-tag-release docker-push run run-local seed-simulator run-openaq run-multisource poll-multisource-once consume-pubsub consume-pubsub-once pubsub-smoke pubsub-hotpath-smoke export-cold export-cold-demo export-cold-gcs cloud-cold-smoke run-streamlit run-streamlit-compose stop logs clean
+.PHONY: help check test streamlit-check cloud-check ci-cd-check gcp-bootstrap-check gcp-cost-guard-check artifact-registry-preview artifact-registry-check artifact-registry-create artifact-registry-list ci-publish-check terraform-check terraform-init terraform-validate terraform-plan terraform-show-plan terraform-import-artifact-registry-preview terraform-import-artifact-registry terraform-apply-core terraform-plan-runtime terraform-apply-runtime gcp-core-check pubsub-check bigquery-cold-check gke-get-credentials k8s-render k8s-apply k8s-status k8s-smoke k8s-logs k8s-backup-once k8s-backup-check k8s-restore-test k8s-restore-check k8s-restore-clean k8s-port-forward-streamlit public-demo-render public-demo-apply public-demo-status public-demo-url public-demo-smoke public-demo-disable observability-check runtime-check runtime-health runtime-cost-check runtime-scale-down runtime-scale-up runtime-demo-mode runtime-idle-mode runtime-resume-mode runtime-promote-latest runtime-promote-sha runtime-image-check runtime-release-check runtime-cost-report runtime-cost-guard runtime-evidence runtime-live-smoke demo-live-start demo-live-stop docker-build docker-build-ingestor docker-build-writer docker-build-streamlit docker-smoke docker-tag-release docker-push run run-local seed-simulator grafana-demo-ready run-openaq run-multisource poll-multisource-once consume-pubsub consume-pubsub-once pubsub-smoke pubsub-hotpath-smoke export-cold export-cold-demo export-cold-gcs cloud-cold-smoke run-streamlit run-streamlit-compose stop logs clean
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z_-]+:.*##/ {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -365,6 +365,12 @@ run-local: ## Start the local stack in the background
 
 seed-simulator: ## Insert deterministic simulator readings into local TimescaleDB
 	$(GO_TEST_ENV) go run ./services/writer/cmd/seed-simulator
+
+grafana-demo-ready: ## Start local stack and populate Grafana from simulator plus live sources
+	$(MAKE) run-local
+	$(MAKE) seed-simulator
+	$(MAKE) poll-multisource-once
+	@echo "Grafana demo data path complete. Open http://localhost:$${GRAFANA_PORT:-3000} and use admin / admin on fresh volumes."
 
 run-openaq: ## Continuously poll OpenAQ latest readings into local TimescaleDB
 	$(GO_TEST_ENV) go run ./services/ingestor/cmd/poll-openaq

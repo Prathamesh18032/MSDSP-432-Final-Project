@@ -17,73 +17,23 @@
   },
   "editable": true,
   "fiscalYearStartMonth": 0,
-  "graphTooltip": 0,
+  "graphTooltip": 1,
   "id": null,
   "links": [],
   "liveNow": false,
   "panels": [
     {
-      "datasource": {
-        "type": "postgres",
-        "uid": "timescaledb-hot"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
+      "collapsed": false,
       "gridPos": {
-        "h": 8,
-        "w": 12,
+        "h": 1,
+        "w": 24,
         "x": 0,
         "y": 0
       },
       "id": 1,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
-        "showHeader": true
-      },
-      "pluginVersion": "10.4.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "timescaledb-hot"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT DISTINCT ON (sensor_id, metric)\n  time,\n  sensor_id,\n  metric,\n  value,\n  unit,\n  quality_flag,\n  source\nFROM sensor_readings\nWHERE metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\nORDER BY sensor_id, metric, time DESC;",
-          "refId": "A"
-        }
-      ],
-      "title": "Latest Readings",
-      "type": "table"
+      "panels": [],
+      "title": "Executive Overview",
+      "type": "row"
     },
     {
       "datasource": {
@@ -93,39 +43,7 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "pointSize": 4,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
+            "mode": "thresholds"
           },
           "mappings": [],
           "thresholds": {
@@ -136,45 +54,46 @@
                 "value": null
               }
             ]
-          }
+          },
+          "unit": "short"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 0
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 1
       },
       "id": 2,
       "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
         },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
+        "textMode": "auto"
       },
-      "pluginVersion": "10.4.0",
       "targets": [
         {
           "datasource": {
             "type": "postgres",
             "uid": "timescaledb-hot"
           },
-          "editorMode": "code",
-          "format": "time_series",
+          "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  time AS \"time\",\n  sensor_id || ' ' || metric AS metric,\n  value\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\n  AND quality_flag = 1\nORDER BY time;",
+          "rawSql": "SELECT COUNT(*)::BIGINT AS \"Readings\"\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}';",
           "refId": "A"
         }
       ],
-      "title": "Reading Trends",
-      "type": "timeseries"
+      "title": "Readings In Window",
+      "type": "stat"
     },
     {
       "datasource": {
@@ -184,30 +103,14 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisPlacement": "auto",
-            "fillOpacity": 80,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineWidth": 1,
-            "scaleDistribution": {
-              "type": "linear"
-            }
+            "mode": "thresholds"
           },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "blue",
                 "value": null
               }
             ]
@@ -217,112 +120,40 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
-        "w": 8,
-        "x": 0,
-        "y": 8
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 1
       },
       "id": 3,
       "options": {
-        "barRadius": 0,
-        "barWidth": 0.8,
-        "fullHighlight": false,
-        "groupWidth": 0.7,
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": false
-        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
         "orientation": "auto",
-        "showValue": "auto",
-        "stacking": "none",
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        },
-        "xTickLabelRotation": 0,
-        "xTickLabelSpacing": 0
-      },
-      "pluginVersion": "10.4.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "timescaledb-hot"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  metric,\n  COUNT(*)::INTEGER AS readings\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\nGROUP BY metric\nORDER BY metric;",
-          "refId": "A"
-        }
-      ],
-      "title": "Reading Count by Metric",
-      "type": "barchart"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "timescaledb-hot"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 7,
-        "w": 8,
-        "x": 8,
-        "y": 8
-      },
-      "id": 4,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
           ],
-          "show": false
+          "fields": "",
+          "values": false
         },
-        "showHeader": true
+        "textMode": "auto"
       },
-      "pluginVersion": "10.4.0",
       "targets": [
         {
           "datasource": {
             "type": "postgres",
             "uid": "timescaledb-hot"
           },
-          "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  sensor_id,\n  MIN(latitude)::DOUBLE PRECISION AS latitude,\n  MIN(longitude)::DOUBLE PRECISION AS longitude,\n  COUNT(*)::INTEGER AS readings\nFROM sensor_readings\nWHERE metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\nGROUP BY sensor_id\nORDER BY sensor_id;",
+          "rawSql": "SELECT COUNT(DISTINCT sensor_id)::BIGINT AS \"Active Sensors\"\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}';",
           "refId": "A"
         }
       ],
-      "title": "Sensor Locations",
-      "type": "table"
+      "title": "Active Sensors",
+      "type": "stat"
     },
     {
       "datasource": {
@@ -332,30 +163,14 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisPlacement": "auto",
-            "fillOpacity": 80,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineWidth": 1,
-            "scaleDistribution": {
-              "type": "linear"
-            }
+            "mode": "thresholds"
           },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "purple",
                 "value": null
               }
             ]
@@ -365,140 +180,40 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
-        "w": 8,
-        "x": 16,
-        "y": 8
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 1
       },
-      "id": 5,
+      "id": 4,
       "options": {
-        "barRadius": 0,
-        "barWidth": 0.8,
-        "fullHighlight": false,
-        "groupWidth": 0.7,
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": false
-        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
         "orientation": "auto",
-        "showValue": "auto",
-        "stacking": "none",
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
         },
-        "xTickLabelRotation": 0,
-        "xTickLabelSpacing": 0
+        "textMode": "auto"
       },
-      "pluginVersion": "10.4.0",
       "targets": [
         {
           "datasource": {
             "type": "postgres",
             "uid": "timescaledb-hot"
           },
-          "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  CASE quality_flag\n    WHEN 1 THEN 'valid'\n    WHEN 0 THEN 'suspect'\n    ELSE 'invalid'\n  END AS quality,\n  COUNT(*)::INTEGER AS readings\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\nGROUP BY quality_flag\nORDER BY quality;",
+          "rawSql": "SELECT COUNT(DISTINCT source)::BIGINT AS \"Sources\"\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}';",
           "refId": "A"
         }
       ],
-      "title": "Quality Flag Distribution",
-      "type": "barchart"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "timescaledb-hot"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "pointSize": 4,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "rps"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 7,
-        "w": 8,
-        "x": 0,
-        "y": 15
-      },
-      "id": 6,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "10.4.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "postgres",
-            "uid": "timescaledb-hot"
-          },
-          "editorMode": "code",
-          "format": "time_series",
-          "rawQuery": true,
-          "rawSql": "SELECT\n  recorded_at AS \"time\",\n  readings_per_second\nFROM ingestion_metrics\nWHERE $__timeFilter(recorded_at)\nORDER BY recorded_at;",
-          "refId": "A"
-        }
-      ],
-      "title": "Ingestion Throughput",
-      "type": "timeseries"
+      "title": "Source Coverage",
+      "type": "stat"
     },
     {
       "datasource": {
@@ -517,16 +232,16 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
+                "color": "red",
                 "value": null
               },
               {
                 "color": "yellow",
-                "value": 70
+                "value": 95
               },
               {
-                "color": "red",
-                "value": 85
+                "color": "green",
+                "value": 99
               }
             ]
           },
@@ -535,16 +250,16 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
-        "w": 8,
-        "x": 8,
-        "y": 15
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 1
       },
-      "id": 7,
+      "id": 5,
       "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
@@ -555,21 +270,97 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "10.4.0",
       "targets": [
         {
           "datasource": {
             "type": "postgres",
             "uid": "timescaledb-hot"
           },
-          "editorMode": "code",
-          "format": "time_series",
+          "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  recorded_at AS \"time\",\n  channel_fill_pct\nFROM ingestion_metrics\nWHERE $__timeFilter(recorded_at)\nORDER BY recorded_at;",
+          "rawSql": "SELECT COALESCE(100.0 * SUM(CASE WHEN quality_flag = 1 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 0)::DOUBLE PRECISION AS \"Valid %\"\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}';",
           "refId": "A"
         }
       ],
-      "title": "Channel Fill",
+      "title": "Valid Reading Rate",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "No Data"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 60
+              },
+              {
+                "color": "red",
+                "value": 360
+              }
+            ]
+          },
+          "unit": "m"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 1
+      },
+      "id": 6,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT EXTRACT(EPOCH FROM (NOW() - MAX(time))) / 60.0 AS \"Latest Age\"\nFROM sensor_readings\nWHERE source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}';",
+          "refId": "A"
+        }
+      ],
+      "title": "Latest Reading Age",
       "type": "stat"
     },
     {
@@ -605,16 +396,16 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
-        "w": 8,
-        "x": 16,
-        "y": 15
+        "h": 4,
+        "w": 4,
+        "x": 20,
+        "y": 1
       },
-      "id": 8,
+      "id": 7,
       "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
@@ -625,22 +416,33 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "10.4.0",
       "targets": [
         {
           "datasource": {
             "type": "postgres",
             "uid": "timescaledb-hot"
           },
-          "editorMode": "code",
-          "format": "time_series",
+          "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  recorded_at AS \"time\",\n  dropped_readings_total\nFROM ingestion_metrics\nWHERE $__timeFilter(recorded_at)\nORDER BY recorded_at;",
+          "rawSql": "SELECT COALESCE((SELECT dropped_readings_total FROM ingestion_metrics ORDER BY recorded_at DESC LIMIT 1), 0)::BIGINT AS \"Dropped\"\n;",
           "refId": "A"
         }
       ],
       "title": "Dropped Readings",
       "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "id": 8,
+      "panels": [],
+      "title": "Live Ingestion Operations",
+      "type": "row"
     },
     {
       "datasource": {
@@ -659,22 +461,22 @@
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
+            "fillOpacity": 15,
+            "gradientMode": "opacity",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
             },
             "insertNulls": false,
-            "lineInterpolation": "linear",
+            "lineInterpolation": "smooth",
             "lineWidth": 2,
             "pointSize": 4,
             "scaleDistribution": {
               "type": "linear"
             },
-            "showPoints": "auto",
-            "spanNulls": false,
+            "showPoints": "never",
+            "spanNulls": true,
             "stacking": {
               "group": "A",
               "mode": "none"
@@ -693,21 +495,322 @@
               }
             ]
           },
-          "unit": "ms"
+          "unit": "rps"
         },
         "overrides": []
       },
       "gridPos": {
         "h": 7,
-        "w": 24,
+        "w": 8,
         "x": 0,
-        "y": 22
+        "y": 6
       },
       "id": 9,
       "options": {
         "legend": {
-          "calcs": [],
-          "displayMode": "list",
+          "calcs": [
+            "lastNotNull",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  recorded_at AS \"time\",\n  'Readings/sec' AS metric,\n  readings_per_second AS value\nFROM ingestion_metrics\nWHERE $__timeFilter(recorded_at)\nORDER BY recorded_at;",
+          "refId": "A"
+        }
+      ],
+      "title": "Queue Throughput",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 85
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 6
+      },
+      "id": 10,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  recorded_at AS \"time\",\n  'Channel Fill' AS metric,\n  channel_fill_pct AS value\nFROM ingestion_metrics\nWHERE $__timeFilter(recorded_at)\nORDER BY recorded_at;",
+          "refId": "A"
+        }
+      ],
+      "title": "Backpressure Channel Fill",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 6
+      },
+      "id": 11,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  recorded_at AS \"time\",\n  'Dropped Total' AS metric,\n  dropped_readings_total AS value\nFROM ingestion_metrics\nWHERE $__timeFilter(recorded_at)\nORDER BY recorded_at;",
+          "refId": "A"
+        }
+      ],
+      "title": "Dropped Readings Over Time",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 13
+      },
+      "id": 12,
+      "panels": [],
+      "title": "City Signal Domains",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 14
+      },
+      "id": 13,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "mean"
+          ],
+          "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
         },
@@ -716,33 +819,914 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "10.4.0",
       "targets": [
         {
           "datasource": {
             "type": "postgres",
             "uid": "timescaledb-hot"
           },
-          "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n  recorded_at AS \"time\",\n  pubsub_lag_ms,\n  gcs_write_latency_ms\nFROM ingestion_metrics\nWHERE $__timeFilter(recorded_at)\nORDER BY recorded_at;",
+          "rawSql": "SELECT\n  time_bucket('5 minutes', time) AS \"time\",\n  CASE metric\n    WHEN 'PM2.5' THEN 'PM2.5'\n    WHEN 'O3' THEN 'Ozone'\n    WHEN 'NO2' THEN 'Nitrogen Dioxide'\n    ELSE metric\n  END || ' · ' || CASE source\n    WHEN 'simulator' THEN 'City Sensor Network'\n    WHEN 'openaq' THEN 'Air Quality Network'\n    ELSE source\n  END AS metric,\n  AVG(value)::DOUBLE PRECISION AS value\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\n  AND metric IN ('PM2.5', 'O3', 'NO2')\n  AND quality_flag = 1\nGROUP BY 1, 2\nORDER BY 1;",
           "refId": "A"
         }
       ],
-      "title": "Pub/Sub Lag and GCS Write Latency",
+      "title": "Air Quality Trends",
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 14
+      },
+      "id": 14,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_bucket('5 minutes', time) AS \"time\",\n  CASE metric\n    WHEN 'temperature' THEN 'Temperature'\n    WHEN 'humidity' THEN 'Humidity'\n    WHEN 'wind_speed' THEN 'Wind Speed'\n    WHEN 'precipitation' THEN 'Precipitation'\n    WHEN 'water_gage_height' THEN 'River Gage Height'\n    ELSE metric\n  END || ' · ' || CASE source\n    WHEN 'simulator' THEN 'City Sensor Network'\n    WHEN 'openmeteo' THEN 'Chicago Weather Station'\n    WHEN 'usgs' THEN 'Chicago River Gauge'\n    ELSE source\n  END AS metric,\n  AVG(value)::DOUBLE PRECISION AS value\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\n  AND metric IN ('temperature', 'humidity', 'wind_speed', 'precipitation', 'water_gage_height')\n  AND quality_flag = 1\nGROUP BY 1, 2\nORDER BY 1;",
+          "refId": "A"
+        }
+      ],
+      "title": "Weather & Water Signals",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 14
+      },
+      "id": 15,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_bucket('5 minutes', time) AS \"time\",\n  CASE metric\n    WHEN 'bike_available_count' THEN 'Available Bikes'\n    WHEN 'dock_available_count' THEN 'Open Docks'\n    WHEN 'station_capacity' THEN 'Station Capacity'\n    ELSE metric\n  END AS metric,\n  SUM(value)::DOUBLE PRECISION AS value\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\n  AND metric IN ('bike_available_count', 'dock_available_count', 'station_capacity')\n  AND quality_flag = 1\nGROUP BY 1, 2\nORDER BY 1;",
+          "refId": "A"
+        }
+      ],
+      "title": "Mobility Capacity Signals",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 22
+      },
+      "id": 16,
+      "options": {
+        "barRadius": 0.05,
+        "barWidth": 0.82,
+        "fullHighlight": false,
+        "groupWidth": 0.72,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "orientation": "horizontal",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  CASE source\n    WHEN 'simulator' THEN 'City Sensor Network'\n    WHEN 'openaq' THEN 'Air Quality Network'\n    WHEN 'openmeteo' THEN 'Chicago Weather Station'\n    WHEN 'gbfs' THEN 'Divvy Bike Share'\n    WHEN 'usgs' THEN 'Chicago River Gauge'\n    ELSE source\n  END AS source,\n  COUNT(*)::INTEGER AS readings\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\nGROUP BY source\nORDER BY readings DESC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Readings by Source",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 22
+      },
+      "id": 17,
+      "options": {
+        "barRadius": 0.05,
+        "barWidth": 0.82,
+        "fullHighlight": false,
+        "groupWidth": 0.72,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "orientation": "horizontal",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  CASE metric\n    WHEN 'PM2.5' THEN 'PM2.5'\n    WHEN 'O3' THEN 'Ozone'\n    WHEN 'NO2' THEN 'Nitrogen Dioxide'\n    WHEN 'temperature' THEN 'Temperature'\n    WHEN 'humidity' THEN 'Humidity'\n    WHEN 'wind_speed' THEN 'Wind Speed'\n    WHEN 'precipitation' THEN 'Precipitation'\n    WHEN 'bike_available_count' THEN 'Available Bikes'\n    WHEN 'dock_available_count' THEN 'Open Docks'\n    WHEN 'station_capacity' THEN 'Station Capacity'\n    WHEN 'water_gage_height' THEN 'River Gage Height'\n    ELSE metric\n  END AS metric,\n  COUNT(*)::INTEGER AS readings\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\nGROUP BY metric\nORDER BY readings DESC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Readings by Metric",
+      "type": "barchart"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      },
+      "id": 18,
+      "panels": [],
+      "title": "Sensor Estate",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 31
+      },
+      "id": 19,
+      "options": {
+        "basemap": {
+          "config": {},
+          "name": "Layer 0",
+          "type": "default"
+        },
+        "controls": {
+          "mouseWheelZoom": true,
+          "showAttribution": true,
+          "showDebug": false,
+          "showMeasure": false,
+          "showScale": false,
+          "showZoom": true
+        },
+        "layers": [
+          {
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": {
+                  "fixed": "semi-dark-blue"
+                },
+                "opacity": 0.8,
+                "rotation": {
+                  "fixed": 0,
+                  "max": 360,
+                  "min": -360,
+                  "mode": "mod"
+                },
+                "size": {
+                  "field": "readings",
+                  "fixed": 8,
+                  "max": 24,
+                  "min": 6
+                },
+                "symbol": {
+                  "fixed": "img/icons/marker/circle.svg",
+                  "mode": "fixed"
+                },
+                "textConfig": {
+                  "fontSize": 12,
+                  "offsetX": 0,
+                  "offsetY": 0,
+                  "textAlign": "center",
+                  "textBaseline": "middle"
+                }
+              }
+            },
+            "location": {
+              "latitude": "latitude",
+              "longitude": "longitude",
+              "mode": "coords"
+            },
+            "name": "Sensor locations",
+            "tooltip": true,
+            "type": "markers"
+          }
+        ],
+        "view": {
+          "id": "coords",
+          "lat": 41.8781,
+          "lon": -87.6298,
+          "zoom": 10
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  sensor_id,\n  CASE source\n    WHEN 'simulator' THEN 'City Sensor Network'\n    WHEN 'openaq' THEN 'Air Quality Network'\n    WHEN 'openmeteo' THEN 'Chicago Weather Station'\n    WHEN 'gbfs' THEN 'Divvy Bike Share'\n    WHEN 'usgs' THEN 'Chicago River Gauge'\n    ELSE source\n  END AS source,\n  AVG(latitude)::DOUBLE PRECISION AS latitude,\n  AVG(longitude)::DOUBLE PRECISION AS longitude,\n  COUNT(*)::INTEGER AS readings,\n  MAX(time) AS latest_reading_at\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\nGROUP BY sensor_id, source\nORDER BY latest_reading_at DESC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Sensor Network Map",
+      "type": "geomap"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "valid_pct"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "basic",
+                  "type": "gauge"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 31
+      },
+      "id": 20,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  sensor_id,\n  CASE source\n    WHEN 'simulator' THEN 'City Sensor Network'\n    WHEN 'openaq' THEN 'Air Quality Network'\n    WHEN 'openmeteo' THEN 'Chicago Weather Station'\n    WHEN 'gbfs' THEN 'Divvy Bike Share'\n    WHEN 'usgs' THEN 'Chicago River Gauge'\n    ELSE source\n  END AS source,\n  COUNT(DISTINCT metric)::INTEGER AS metrics,\n  COUNT(*)::INTEGER AS readings,\n  COALESCE(100.0 * SUM(CASE WHEN quality_flag = 1 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 0)::DOUBLE PRECISION AS valid_pct,\n  MAX(time) AS latest_reading_at,\n  CASE WHEN MAX(time) >= NOW() - INTERVAL '1 hour' THEN 'Fresh' ELSE 'Stale' END AS status\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\nGROUP BY sensor_id, source\nORDER BY latest_reading_at DESC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Sensor Freshness & Coverage",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 41
+      },
+      "id": 21,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT DISTINCT ON (sensor_id, metric)\n  time,\n  CASE source\n    WHEN 'simulator' THEN 'City Sensor Network'\n    WHEN 'openaq' THEN 'Air Quality Network'\n    WHEN 'openmeteo' THEN 'Chicago Weather Station'\n    WHEN 'gbfs' THEN 'Divvy Bike Share'\n    WHEN 'usgs' THEN 'Chicago River Gauge'\n    ELSE source\n  END AS source,\n  sensor_id,\n  CASE metric\n    WHEN 'PM2.5' THEN 'PM2.5'\n    WHEN 'O3' THEN 'Ozone'\n    WHEN 'NO2' THEN 'Nitrogen Dioxide'\n    WHEN 'temperature' THEN 'Temperature'\n    WHEN 'humidity' THEN 'Humidity'\n    WHEN 'wind_speed' THEN 'Wind Speed'\n    WHEN 'precipitation' THEN 'Precipitation'\n    WHEN 'bike_available_count' THEN 'Available Bikes'\n    WHEN 'dock_available_count' THEN 'Open Docks'\n    WHEN 'station_capacity' THEN 'Station Capacity'\n    WHEN 'water_gage_height' THEN 'River Gage Height'\n    ELSE metric\n  END AS metric,\n  value,\n  unit,\n  CASE quality_flag WHEN 1 THEN 'Valid' WHEN 0 THEN 'Suspect' ELSE 'Invalid' END AS quality\nFROM sensor_readings\nWHERE source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\nORDER BY sensor_id, metric, time DESC\nLIMIT 200;",
+          "refId": "A"
+        }
+      ],
+      "title": "Latest Sensor Readings",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 49
+      },
+      "id": 22,
+      "panels": [],
+      "title": "Data Quality",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 50
+      },
+      "id": 23,
+      "options": {
+        "barRadius": 0.05,
+        "barWidth": 0.82,
+        "fullHighlight": false,
+        "groupWidth": 0.72,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  CASE quality_flag WHEN 1 THEN 'Valid' WHEN 0 THEN 'Suspect' ELSE 'Invalid' END AS quality,\n  COUNT(*)::INTEGER AS readings\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\nGROUP BY quality_flag\nORDER BY quality;",
+          "refId": "A"
+        }
+      ],
+      "title": "Quality Flag Distribution",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 95
+              },
+              {
+                "color": "green",
+                "value": 99
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 50
+      },
+      "id": 24,
+      "options": {
+        "barRadius": 0.05,
+        "barWidth": 0.82,
+        "fullHighlight": false,
+        "groupWidth": 0.72,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "orientation": "horizontal",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  CASE source\n    WHEN 'simulator' THEN 'City Sensor Network'\n    WHEN 'openaq' THEN 'Air Quality Network'\n    WHEN 'openmeteo' THEN 'Chicago Weather Station'\n    WHEN 'gbfs' THEN 'Divvy Bike Share'\n    WHEN 'usgs' THEN 'Chicago River Gauge'\n    ELSE source\n  END AS source,\n  COALESCE(100.0 * SUM(CASE WHEN quality_flag = 1 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 0)::DOUBLE PRECISION AS valid_pct\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\nGROUP BY source\nORDER BY valid_pct ASC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Valid Reading Rate by Source",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 50
+      },
+      "id": 25,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH exceptions AS (\n  SELECT\n    time,\n    CASE source\n      WHEN 'simulator' THEN 'City Sensor Network'\n      WHEN 'openaq' THEN 'Air Quality Network'\n      WHEN 'openmeteo' THEN 'Chicago Weather Station'\n      WHEN 'gbfs' THEN 'Divvy Bike Share'\n      WHEN 'usgs' THEN 'Chicago River Gauge'\n      ELSE source\n    END AS source,\n    sensor_id,\n    CASE metric\n      WHEN 'PM2.5' THEN 'PM2.5'\n      WHEN 'O3' THEN 'Ozone'\n      WHEN 'NO2' THEN 'Nitrogen Dioxide'\n      WHEN 'temperature' THEN 'Temperature'\n      WHEN 'humidity' THEN 'Humidity'\n      WHEN 'wind_speed' THEN 'Wind Speed'\n      WHEN 'precipitation' THEN 'Precipitation'\n      WHEN 'bike_available_count' THEN 'Available Bikes'\n      WHEN 'dock_available_count' THEN 'Open Docks'\n      WHEN 'station_capacity' THEN 'Station Capacity'\n      WHEN 'water_gage_height' THEN 'River Gage Height'\n      ELSE metric\n    END AS metric,\n    value::TEXT AS value,\n    unit,\n    CASE quality_flag WHEN 0 THEN 'Suspect' ELSE 'Invalid' END AS quality\n  FROM sensor_readings\n  WHERE $__timeFilter(time)\n    AND source ~ '${source:regex}'\n    AND metric ~ '${metric:regex}'\n    AND sensor_id ~ '${sensor_id:regex}'\n    AND quality_flag <> 1\n  ORDER BY time DESC\n  LIMIT 50\n), clean_audit AS (\n  SELECT\n    NOW() AS time,\n    'All Sources' AS source,\n    'All Sensors' AS sensor_id,\n    'All Metrics' AS metric,\n    '0' AS value,\n    'exceptions' AS unit,\n    'Clean audit: no suspect or invalid readings in the selected window' AS quality\n  WHERE NOT EXISTS (SELECT 1 FROM exceptions)\n)\nSELECT * FROM exceptions\nUNION ALL\nSELECT * FROM clean_audit\nORDER BY time DESC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Suspect & Invalid Readings",
+      "type": "table"
     }
   ],
   "refresh": "10s",
   "schemaVersion": 39,
+  "style": "dark",
   "tags": [
     "smart-city",
-    "local",
-    "timescaledb"
+    "timescale",
+    "operations",
+    "enterprise"
   ],
   "templating": {
     "list": [
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "timescaledb-hot"
+        },
+        "definition": "SELECT DISTINCT source FROM sensor_readings ORDER BY 1;",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Source",
+        "multi": true,
+        "name": "source",
+        "options": [],
+        "query": "SELECT DISTINCT source FROM sensor_readings ORDER BY 1;",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
       {
         "allValue": ".*",
         "current": {
@@ -796,13 +1780,29 @@
     ]
   },
   "time": {
-    "from": "now-6h",
+    "from": "now-24h",
     "to": "now"
   },
-  "timepicker": {},
-  "timezone": "browser",
-  "title": "Smart City Operations",
+  "timepicker": {
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m"
+    ],
+    "time_options": [
+      "1h",
+      "6h",
+      "12h",
+      "24h",
+      "7d"
+    ]
+  },
+  "timezone": "",
+  "title": "Smart City Enterprise Operations",
   "uid": "smart-city-operations",
-  "version": 1,
+  "version": 22,
   "weekStart": ""
 }
