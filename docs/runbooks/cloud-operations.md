@@ -111,7 +111,7 @@ RESTORE_TEST_BACKUP_URI=latest
 
 Never set `RESTORE_TEST_NAMESPACE` to the live runtime namespace.
 
-## CI/CD Image Publishing
+## CI/CD Image Publishing And Runtime Promotion
 
 The `Publish Images` GitHub Actions workflow builds and pushes the three service images on `main` merges. It uses GitHub OIDC and GCP Workload Identity Federation, not service account JSON keys.
 
@@ -122,16 +122,24 @@ GCP_WORKLOAD_IDENTITY_PROVIDER=<terraform output github_actions_workload_identit
 GCP_CI_SERVICE_ACCOUNT=<terraform output github_actions_service_account>
 ```
 
-CI publishes short-SHA and `latest-main` tags. Validate published tags with:
+CI publishes short-SHA and `latest-main` tags. Publishing an image does not change the running GKE workload by itself. Validate published tags with:
 
 ```sh
 make ci-publish-check
 ```
 
-Runtime deployment remains manual:
+Runtime deployment is a separate controlled promotion step. Use one of these paths after a successful publish:
 
 ```sh
 make runtime-promote-latest
+```
+
+Or run the GitHub Actions workflow `Promote Runtime` from the Actions tab. Choose `latest-main` or a short-SHA image tag, then optionally enable the public demo smoke check. The workflow renders the runtime manifests, applies the selected tag to GKE, verifies the deployed image tags, and runs `make runtime-health`.
+
+For a specific short SHA locally:
+
+```sh
+IMAGE_TAG=<short-sha> make runtime-promote-sha
 ```
 
 ## Public Demo
