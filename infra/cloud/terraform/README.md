@@ -80,7 +80,7 @@ Apply only when the team intentionally accepts GKE Autopilot cost:
 ALLOW_TERRAFORM_APPLY_RUNTIME=yes make terraform-apply-runtime
 ```
 
-The runtime Terraform does not create Cloud SQL, external TimescaleDB services, service account keys, public ingress, or a remote backend. TimescaleDB is deployed later as an internal Kubernetes StatefulSet by `make k8s-apply`.
+The runtime Terraform does not create Cloud SQL, external TimescaleDB services, service account keys, Streamlit public ingress, or a remote backend. TimescaleDB is deployed later as an internal Kubernetes StatefulSet by `make k8s-apply`. Public Streamlit ingress is handled by the guarded public demo workflow.
 
 The same runtime plan also enables GitHub Actions OIDC resources for image publishing. After apply, set these GitHub repository variables from Terraform outputs:
 

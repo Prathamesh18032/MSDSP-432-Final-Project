@@ -24,18 +24,48 @@ def query_dataframe(sql: str, params: tuple[Any, ...] = ()) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=columns)
 
 
-def overview() -> pd.DataFrame:
+def cutoff(hours: int) -> datetime:
+    return datetime.now(timezone.utc) - timedelta(hours=hours)
+
+
+def overview(hours: int) -> pd.DataFrame:
     return query_dataframe(
         """
-        SELECT
-            COUNT(*)::BIGINT AS total_readings,
-            COUNT(DISTINCT sensor_id)::BIGINT AS active_sensors,
-            COUNT(DISTINCT metric)::BIGINT AS metrics,
-            COUNT(DISTINCT source)::BIGINT AS sources,
-            MAX(time) AS latest_reading_at
-        FROM sensor_readings;
-        """
+        WITH scoped AS (
+            SELECT *
+            FROM sensor_readings
+            WHERE time >= %s
+        ), all_rows AS (
+            SELECT MAX(time) AS latest_reading_at, MAX(ingested_at) AS latest_ingested_at
+            FROM sensor_readings
+        ), quality AS (
+            SELECT
+                COUNT(*)::BIGINT AS total_readings,
+                COUNT(DISTINCT sensor_id)::BIGINT AS active_sensors,
+                COUNT(DISTINCT metric)::BIGINT AS metrics,
+                COUNT(DISTINCT source)::BIGINT AS sources,
+                COALESCE(100.0 * SUM(CASE WHEN quality_flag = 1 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 0)::DOUBLE PRECISION AS valid_pct
+            FROM scoped
+        ), latest_metrics AS (
+            SELECT
+                COALESCE(MAX(dropped_readings_total), 0)::BIGINT AS dropped_readings_total,
+                COALESCE(MAX(channel_fill_pct), 0)::INTEGER AS channel_fill_pct,
+                COALESCE(AVG(readings_per_second), 0)::DOUBLE PRECISION AS avg_readings_per_second
+            FROM ingestion_metrics
+            WHERE recorded_at >= %s
+        )
+        SELECT *
+        FROM quality, all_rows, latest_metrics;
+        """,
+        (cutoff(hours), cutoff(hours)),
     )
+
+
+def source_options() -> list[str]:
+    frame = query_dataframe("SELECT DISTINCT source FROM sensor_readings ORDER BY source;")
+    if frame.empty:
+        return []
+    return frame["source"].dropna().astype(str).tolist()
 
 
 def metric_options() -> list[str]:
@@ -45,90 +75,274 @@ def metric_options() -> list[str]:
     return frame["metric"].dropna().astype(str).tolist()
 
 
-def trend(metric: str, hours: int) -> pd.DataFrame:
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
-    return query_dataframe(
-        """
-        SELECT
-            time_bucket('5 minutes', time) AS bucket,
-            metric,
-            AVG(value)::DOUBLE PRECISION AS avg_value,
-            COUNT(*)::BIGINT AS readings
-        FROM sensor_readings
-        WHERE metric = %s
-          AND time >= %s
-          AND quality_flag = 1
-        GROUP BY bucket, metric
-        ORDER BY bucket;
-        """,
-        (metric, cutoff),
-    )
-
-
-def quality_distribution() -> pd.DataFrame:
-    return query_dataframe(
-        """
-        SELECT
-            CASE quality_flag
-                WHEN 1 THEN 'valid'
-                WHEN 0 THEN 'suspect'
-                ELSE 'invalid'
-            END AS quality,
-            COUNT(*)::BIGINT AS readings
-        FROM sensor_readings
-        GROUP BY quality_flag
-        ORDER BY quality;
-        """
-    )
-
-
-def source_metric_counts() -> pd.DataFrame:
+def source_summary(hours: int) -> pd.DataFrame:
     return query_dataframe(
         """
         SELECT
             source,
+            COUNT(*)::BIGINT AS readings,
+            COUNT(DISTINCT sensor_id)::BIGINT AS sensors,
+            COUNT(DISTINCT metric)::BIGINT AS metrics,
+            MAX(time) AS latest_reading_at,
+            MAX(ingested_at) AS latest_ingested_at,
+            COALESCE(100.0 * SUM(CASE WHEN quality_flag = 1 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 0)::DOUBLE PRECISION AS valid_pct
+        FROM sensor_readings
+        WHERE time >= %s
+        GROUP BY source
+        ORDER BY readings DESC;
+        """,
+        (cutoff(hours),),
+    )
+
+
+def trend(metrics: list[str], hours: int, source: str | None = None) -> pd.DataFrame:
+    if not metrics:
+        return pd.DataFrame()
+    source_clause = "AND source = %s" if source else ""
+    params: list[Any] = [cutoff(hours), metrics]
+    if source:
+        params.append(source)
+    return query_dataframe(
+        f"""
+        SELECT
+            time_bucket('5 minutes', time) AS bucket,
+            source,
             metric,
+            AVG(value)::DOUBLE PRECISION AS avg_value,
+            MIN(value)::DOUBLE PRECISION AS min_value,
+            MAX(value)::DOUBLE PRECISION AS max_value,
             COUNT(*)::BIGINT AS readings
         FROM sensor_readings
-        GROUP BY source, metric
-        ORDER BY source, metric;
-        """
+        WHERE time >= %s
+          AND metric = ANY(%s)
+          AND quality_flag = 1
+          {source_clause}
+        GROUP BY bucket, source, metric
+        ORDER BY bucket, source, metric;
+        """,
+        tuple(params),
     )
 
 
-def metric_coverage() -> pd.DataFrame:
+def metric_summary(metrics: list[str], hours: int, source: str | None = None) -> pd.DataFrame:
+    if not metrics:
+        return pd.DataFrame()
+    source_clause = "AND source = %s" if source else ""
+    params: list[Any] = [cutoff(hours), metrics]
+    if source:
+        params.append(source)
     return query_dataframe(
-        """
+        f"""
+        WITH scoped AS (
+            SELECT *
+            FROM sensor_readings
+            WHERE time >= %s
+              AND metric = ANY(%s)
+              AND quality_flag = 1
+              {source_clause}
+        ), latest AS (
+            SELECT DISTINCT ON (metric)
+                metric,
+                value AS latest_value,
+                unit,
+                time AS latest_reading_at
+            FROM scoped
+            ORDER BY metric, time DESC
+        ), stats AS (
+            SELECT
+                metric,
+                AVG(value)::DOUBLE PRECISION AS avg_value,
+                MIN(value)::DOUBLE PRECISION AS min_value,
+                MAX(value)::DOUBLE PRECISION AS max_value,
+                COUNT(*)::BIGINT AS readings,
+                COUNT(DISTINCT sensor_id)::BIGINT AS sensors
+            FROM scoped
+            GROUP BY metric
+        )
         SELECT
-            metric,
-            COUNT(DISTINCT sensor_id)::BIGINT AS sensors,
-            COUNT(*)::BIGINT AS readings,
-            MIN(time) AS first_reading_at,
-            MAX(time) AS latest_reading_at
-        FROM sensor_readings
-        GROUP BY metric
-        ORDER BY metric;
-        """
+            stats.metric,
+            latest.latest_value,
+            latest.unit,
+            stats.avg_value,
+            stats.min_value,
+            stats.max_value,
+            stats.readings,
+            stats.sensors,
+            latest.latest_reading_at
+        FROM stats
+        JOIN latest USING (metric)
+        ORDER BY stats.metric;
+        """,
+        tuple(params),
     )
 
 
-def sensor_health(stale_after_hours: int) -> pd.DataFrame:
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=stale_after_hours)
-    frame = query_dataframe(
+def latest_readings(hours: int, source: str | None = None, metrics: list[str] | None = None) -> pd.DataFrame:
+    source_clause = "AND source = %s" if source else ""
+    metric_clause = "AND metric = ANY(%s)" if metrics else ""
+    params: list[Any] = [cutoff(hours)]
+    if source:
+        params.append(source)
+    if metrics:
+        params.append(metrics)
+    return query_dataframe(
+        f"""
+        SELECT DISTINCT ON (sensor_id, metric)
+            time,
+            sensor_id,
+            source,
+            metric,
+            value,
+            unit,
+            latitude::DOUBLE PRECISION AS latitude,
+            longitude::DOUBLE PRECISION AS longitude,
+            quality_flag,
+            ingested_at
+        FROM sensor_readings
+        WHERE time >= %s
+          {source_clause}
+          {metric_clause}
+        ORDER BY sensor_id, metric, time DESC;
+        """,
+        tuple(params),
+    )
+
+
+def sensor_network(hours: int, stale_after_hours: int) -> pd.DataFrame:
+    return query_dataframe(
         """
         SELECT
             sensor_id,
             source,
             COUNT(*)::BIGINT AS readings,
+            COUNT(DISTINCT metric)::BIGINT AS metric_count,
+            STRING_AGG(DISTINCT metric, ', ' ORDER BY metric) AS metrics,
             MAX(time) AS latest_reading_at,
-            STRING_AGG(DISTINCT metric, ', ' ORDER BY metric) AS metrics
+            MAX(ingested_at) AS latest_ingested_at,
+            AVG(latitude)::DOUBLE PRECISION AS latitude,
+            AVG(longitude)::DOUBLE PRECISION AS longitude,
+            COALESCE(100.0 * SUM(CASE WHEN quality_flag = 1 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 0)::DOUBLE PRECISION AS valid_pct,
+            CASE WHEN MAX(time) >= %s THEN 'fresh' ELSE 'stale' END AS status
         FROM sensor_readings
+        WHERE time >= %s
         GROUP BY sensor_id, source
-        ORDER BY latest_reading_at DESC, sensor_id;
+        ORDER BY latest_reading_at DESC, source, sensor_id;
+        """,
+        (cutoff(stale_after_hours), cutoff(hours)),
+    )
+
+
+def source_metric_counts(hours: int) -> pd.DataFrame:
+    return query_dataframe(
         """
+        SELECT
+            source,
+            metric,
+            COUNT(*)::BIGINT AS readings,
+            COUNT(DISTINCT sensor_id)::BIGINT AS sensors,
+            MAX(time) AS latest_reading_at
+        FROM sensor_readings
+        WHERE time >= %s
+        GROUP BY source, metric
+        ORDER BY source, metric;
+        """,
+        (cutoff(hours),),
+    )
+
+
+def quality_distribution(hours: int) -> pd.DataFrame:
+    return query_dataframe(
+        """
+        SELECT
+            CASE quality_flag
+                WHEN 1 THEN 'Valid'
+                WHEN 0 THEN 'Suspect'
+                ELSE 'Invalid'
+            END AS quality,
+            COUNT(*)::BIGINT AS readings
+        FROM sensor_readings
+        WHERE time >= %s
+        GROUP BY quality_flag
+        ORDER BY quality;
+        """,
+        (cutoff(hours),),
+    )
+
+
+def metric_coverage(hours: int) -> pd.DataFrame:
+    return query_dataframe(
+        """
+        SELECT
+            metric,
+            COUNT(DISTINCT source)::BIGINT AS sources,
+            COUNT(DISTINCT sensor_id)::BIGINT AS sensors,
+            COUNT(*)::BIGINT AS readings,
+            MIN(time) AS first_reading_at,
+            MAX(time) AS latest_reading_at
+        FROM sensor_readings
+        WHERE time >= %s
+        GROUP BY metric
+        ORDER BY readings DESC, metric;
+        """,
+        (cutoff(hours),),
+    )
+
+
+def ingestion_metrics(hours: int) -> pd.DataFrame:
+    return query_dataframe(
+        """
+        SELECT
+            time_bucket('1 minute', recorded_at) AS bucket,
+            AVG(readings_per_second)::DOUBLE PRECISION AS readings_per_second,
+            MAX(channel_fill_pct)::INTEGER AS channel_fill_pct,
+            MAX(dropped_readings_total)::BIGINT AS dropped_readings_total,
+            AVG(pubsub_lag_ms)::DOUBLE PRECISION AS pubsub_lag_ms,
+            AVG(gcs_write_latency_ms)::DOUBLE PRECISION AS gcs_write_latency_ms
+        FROM ingestion_metrics
+        WHERE recorded_at >= %s
+        GROUP BY bucket
+        ORDER BY bucket;
+        """,
+        (cutoff(hours),),
+    )
+
+
+def latest_ingestion_metrics(hours: int) -> pd.DataFrame:
+    frame = query_dataframe(
+        """
+        SELECT
+            recorded_at,
+            readings_per_second::DOUBLE PRECISION AS readings_per_second,
+            channel_fill_pct::INTEGER AS channel_fill_pct,
+            dropped_readings_total::BIGINT AS dropped_readings_total,
+            pubsub_lag_ms::DOUBLE PRECISION AS pubsub_lag_ms,
+            gcs_write_latency_ms::DOUBLE PRECISION AS gcs_write_latency_ms
+        FROM ingestion_metrics
+        WHERE recorded_at >= %s
+        ORDER BY recorded_at DESC
+        LIMIT 1;
+        """,
+        (cutoff(hours),),
     )
     if not frame.empty:
-        frame["status"] = frame["latest_reading_at"].apply(
-            lambda value: "fresh" if pd.notna(value) and value >= cutoff else "stale"
-        )
-    return frame
+        return frame
+    return query_dataframe(
+        """
+        SELECT
+            recorded_at,
+            readings_per_second::DOUBLE PRECISION AS readings_per_second,
+            channel_fill_pct::INTEGER AS channel_fill_pct,
+            dropped_readings_total::BIGINT AS dropped_readings_total,
+            pubsub_lag_ms::DOUBLE PRECISION AS pubsub_lag_ms,
+            gcs_write_latency_ms::DOUBLE PRECISION AS gcs_write_latency_ms
+        FROM ingestion_metrics
+        ORDER BY recorded_at DESC
+        LIMIT 1;
+        """,
+    )
+
+
+def domain_latest(domain_metrics: list[str], hours: int) -> pd.DataFrame:
+    if not domain_metrics:
+        return pd.DataFrame()
+    return latest_readings(hours, metrics=domain_metrics)
