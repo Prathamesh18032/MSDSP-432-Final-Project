@@ -2,3 +2,7 @@ streamlit>=1.38,<2
 pandas>=2.2,<3
 psycopg[binary]>=3.2,<4
 pyarrow>=16,<19
+plotly>=6.3,<7
+streamlit-autorefresh>=1.0,<2
+google-cloud-bigquery>=3.25,<4
+google-cloud-storage>=2.18,<3

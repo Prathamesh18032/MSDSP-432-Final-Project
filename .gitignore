@@ -38,6 +38,7 @@ venv/
 
 # Local cold-storage runtime artifacts
 data/
+artifacts/
 
 # Terraform local state and provider artifacts
 .terraform/

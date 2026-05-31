@@ -16,7 +16,7 @@ endif
 TFVARS_GCS_BUCKET := $(shell awk -F= '/^[[:space:]]*gcs_bucket[[:space:]]*=/ {gsub(/[ "	]/, "", $$2); print $$2}' infra/cloud/terraform/terraform.tfvars 2>/dev/null)
 CLOUD_COLD_BUCKET ?= $(if $(TFVARS_GCS_BUCKET),$(TFVARS_GCS_BUCKET),$(GCS_BUCKET))
 
-.PHONY: help check test streamlit-check cloud-check ci-cd-check gcp-bootstrap-check gcp-cost-guard-check artifact-registry-preview artifact-registry-check artifact-registry-create artifact-registry-list ci-publish-check terraform-check terraform-init terraform-validate terraform-plan terraform-show-plan terraform-import-artifact-registry-preview terraform-import-artifact-registry terraform-apply-core terraform-plan-runtime terraform-apply-runtime gcp-core-check pubsub-check bigquery-cold-check gke-get-credentials k8s-render k8s-apply k8s-status k8s-smoke k8s-logs k8s-backup-once k8s-backup-check k8s-restore-test k8s-restore-check k8s-restore-clean k8s-port-forward-streamlit observability-check runtime-check runtime-health runtime-cost-check runtime-scale-down runtime-scale-up runtime-live-smoke demo-live-start demo-live-stop docker-build docker-build-ingestor docker-build-writer docker-build-streamlit docker-smoke docker-tag-release docker-push run run-local seed-simulator run-openaq run-multisource poll-multisource-once consume-pubsub consume-pubsub-once pubsub-smoke pubsub-hotpath-smoke export-cold export-cold-demo export-cold-gcs cloud-cold-smoke run-streamlit run-streamlit-compose stop logs clean
+.PHONY: help check test streamlit-check cloud-check ci-cd-check gcp-bootstrap-check gcp-cost-guard-check artifact-registry-preview artifact-registry-check artifact-registry-create artifact-registry-list ci-publish-check terraform-check terraform-init terraform-validate terraform-plan terraform-show-plan terraform-import-artifact-registry-preview terraform-import-artifact-registry terraform-apply-core terraform-plan-runtime terraform-apply-runtime gcp-core-check pubsub-check bigquery-cold-check gke-get-credentials k8s-render k8s-apply k8s-status k8s-smoke k8s-logs k8s-backup-once k8s-backup-check k8s-restore-test k8s-restore-check k8s-restore-clean k8s-port-forward-streamlit public-demo-render public-demo-apply public-demo-status public-demo-url public-demo-smoke public-demo-disable observability-check runtime-check runtime-health runtime-cost-check runtime-scale-down runtime-scale-up runtime-demo-mode runtime-idle-mode runtime-resume-mode runtime-promote-latest runtime-promote-sha runtime-release-check runtime-cost-report runtime-cost-guard runtime-evidence runtime-live-smoke demo-live-start demo-live-stop docker-build docker-build-ingestor docker-build-writer docker-build-streamlit docker-smoke docker-tag-release docker-push run run-local seed-simulator run-openaq run-multisource poll-multisource-once consume-pubsub consume-pubsub-once pubsub-smoke pubsub-hotpath-smoke export-cold export-cold-demo export-cold-gcs cloud-cold-smoke run-streamlit run-streamlit-compose stop logs clean
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z_-]+:.*##/ {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -81,6 +81,8 @@ cloud-check: ## Validate cloud-readiness scaffold without contacting GCP
 	@test -f infra/cloud/k8s/base/serviceaccounts.yaml
 	@test -f infra/cloud/k8s/base/configmap.yaml
 	@test -f infra/cloud/k8s/base/workloads.yaml
+	@test -f infra/cloud/k8s/base/public-demo-http.yaml
+	@test -f infra/cloud/k8s/base/public-demo-https.yaml
 	@test -f infra/cloud/gcp.env.example
 	@test -f docs/runbooks/gcp-console-bootstrap.md
 	@test -x infra/cloud/scripts/gcp_bootstrap_check.sh
@@ -116,12 +118,27 @@ cloud-check: ## Validate cloud-readiness scaffold without contacting GCP
 	@test -x infra/cloud/scripts/k8s_restore_check.sh
 	@test -x infra/cloud/scripts/k8s_restore_clean.sh
 	@test -x infra/cloud/scripts/k8s_port_forward_streamlit.sh
+	@test -x infra/cloud/scripts/public_demo_render.sh
+	@test -x infra/cloud/scripts/public_demo_apply.sh
+	@test -x infra/cloud/scripts/public_demo_status.sh
+	@test -x infra/cloud/scripts/public_demo_url.sh
+	@test -x infra/cloud/scripts/public_demo_smoke.sh
+	@test -x infra/cloud/scripts/public_demo_disable.sh
 	@test -x infra/cloud/scripts/observability_check.sh
 	@test -x infra/cloud/scripts/runtime_check.sh
 	@test -x infra/cloud/scripts/runtime_health.sh
 	@test -x infra/cloud/scripts/runtime_cost_check.sh
 	@test -x infra/cloud/scripts/runtime_scale_down.sh
 	@test -x infra/cloud/scripts/runtime_scale_up.sh
+	@test -x infra/cloud/scripts/runtime_demo_mode.sh
+	@test -x infra/cloud/scripts/runtime_idle_mode.sh
+	@test -x infra/cloud/scripts/runtime_resume_mode.sh
+	@test -x infra/cloud/scripts/runtime_promote_latest.sh
+	@test -x infra/cloud/scripts/runtime_promote_sha.sh
+	@test -x infra/cloud/scripts/runtime_release_check.sh
+	@test -x infra/cloud/scripts/runtime_cost_report.sh
+	@test -x infra/cloud/scripts/runtime_cost_guard.sh
+	@test -x infra/cloud/scripts/runtime_evidence.sh
 	@test -x infra/cloud/scripts/runtime_live_smoke.sh
 	@test -x infra/cloud/scripts/demo_live_start.sh
 	@test -x infra/cloud/scripts/demo_live_stop.sh
@@ -135,6 +152,7 @@ cloud-check: ## Validate cloud-readiness scaffold without contacting GCP
 	@test -f docs/runbooks/gke-runtime.md
 	@test -f docs/runbooks/cloud-operations.md
 	@test -f docs/runbooks/live-demo.md
+	@test -f docs/runbooks/public-demo.md
 	@for file in $$(find infra/cloud/k8s -name '*.yaml' -type f); do grep -q '^apiVersion:' "$$file"; grep -q '^kind:' "$$file"; done
 	@if command -v terraform >/dev/null 2>&1; then terraform fmt -check -recursive infra/cloud/terraform; else echo "terraform not installed; skipping terraform fmt"; fi
 	@if command -v kubectl >/dev/null 2>&1; then kubectl version --client=true >/dev/null; echo "kubectl installed; cluster dry-run intentionally skipped"; else echo "kubectl not installed; skipping kubernetes client check"; fi
@@ -237,6 +255,24 @@ k8s-restore-clean: ## Delete the disposable restore-test namespace
 k8s-port-forward-streamlit: ## Port-forward Streamlit from the GKE runtime namespace
 	infra/cloud/scripts/k8s_port_forward_streamlit.sh
 
+public-demo-render: ## Render public Streamlit demo ingress manifests with ALLOW_PUBLIC_INGRESS=yes
+	infra/cloud/scripts/public_demo_render.sh
+
+public-demo-apply: ## Create/update the guarded public Streamlit demo ingress
+	infra/cloud/scripts/public_demo_apply.sh
+
+public-demo-status: ## Show public demo ingress, certificate, backend, and static IP status
+	infra/cloud/scripts/public_demo_status.sh
+
+public-demo-url: ## Print the current public demo URL when the ingress is ready
+	infra/cloud/scripts/public_demo_url.sh
+
+public-demo-smoke: ## Smoke-test the public Streamlit demo health endpoint
+	infra/cloud/scripts/public_demo_smoke.sh
+
+public-demo-disable: ## Disable the public Streamlit demo ingress
+	infra/cloud/scripts/public_demo_disable.sh
+
 observability-check: ## Validate cloud runtime health, logs, Pub/Sub, GCS, and BigQuery visibility
 	infra/cloud/scripts/observability_check.sh
 
@@ -254,6 +290,33 @@ runtime-scale-down: ## Scale optional runtime deployments to zero while keeping 
 
 runtime-scale-up: ## Scale optional runtime deployments back to one replica
 	infra/cloud/scripts/runtime_scale_up.sh
+
+runtime-demo-mode: ## Resume runtime workloads and CronJobs for a live demo window
+	infra/cloud/scripts/runtime_demo_mode.sh
+
+runtime-idle-mode: ## Disable public ingress, suspend CronJobs, and scale optional workloads down
+	infra/cloud/scripts/runtime_idle_mode.sh
+
+runtime-resume-mode: ## Bring the runtime back from idle mode and validate health
+	infra/cloud/scripts/runtime_resume_mode.sh
+
+runtime-promote-latest: ## Promote latest-main images to the GKE runtime
+	infra/cloud/scripts/runtime_promote_latest.sh
+
+runtime-promote-sha: ## Promote a specific CI-published image tag with IMAGE_TAG=<short-sha>
+	infra/cloud/scripts/runtime_promote_sha.sh
+
+runtime-release-check: ## Verify deployed runtime image tags match RUNTIME_EXPECTED_IMAGE_TAG
+	infra/cloud/scripts/runtime_release_check.sh
+
+runtime-cost-report: ## Summarize active cloud resources and public demo cost posture
+	infra/cloud/scripts/runtime_cost_report.sh
+
+runtime-cost-guard: ## Fail when active runtime/public demo cost is not acknowledged
+	infra/cloud/scripts/runtime_cost_guard.sh
+
+runtime-evidence: ## Capture sanitized runtime evidence output under artifacts/evidence
+	infra/cloud/scripts/runtime_evidence.sh
 
 runtime-live-smoke: ## Publish one batch and verify the GKE Pub/Sub writer inserts into TimescaleDB
 	infra/cloud/scripts/runtime_live_smoke.sh
@@ -281,7 +344,7 @@ docker-smoke: ## Smoke-test locally built images without pushing or contacting G
 	@docker image inspect $(STREAMLIT_IMAGE) >/dev/null
 	@docker run --rm $(INGESTOR_IMAGE) -once 2>&1 | grep -q "connect to TimescaleDB"
 	@docker run --rm $(WRITER_IMAGE) 2>&1 | grep -q "connect to TimescaleDB"
-	@docker run --rm --entrypoint python $(STREAMLIT_IMAGE) -m py_compile apps/streamlit/app.py apps/streamlit/smartcity/cold_storage.py apps/streamlit/smartcity/data_access.py
+	@docker run --rm --entrypoint python $(STREAMLIT_IMAGE) -m py_compile apps/streamlit/app.py apps/streamlit/smartcity/*.py
 	@echo "Docker smoke check passed."
 
 docker-tag-release: ## Ensure all local images have the configured Artifact Registry release tag
