@@ -82,7 +82,7 @@ ALLOW_TERRAFORM_APPLY_RUNTIME=yes make terraform-apply-runtime
 
 The runtime Terraform does not create Cloud SQL, external TimescaleDB services, service account keys, Streamlit public ingress, or a remote backend. TimescaleDB is deployed later as an internal Kubernetes StatefulSet by `make k8s-apply`. Public Streamlit ingress is handled by the guarded public demo workflow.
 
-The same runtime plan also enables GitHub Actions OIDC resources for image publishing. After apply, set these GitHub repository variables from Terraform outputs:
+The same runtime plan also enables GitHub Actions OIDC resources for image publishing and runtime promotion. The CI service account gets the read/deploy permissions needed by `Promote Runtime`: Artifact Registry publish, GKE deploy access, Pub/Sub and Monitoring read access, cold-storage object read access, and BigQuery health-query access. After apply, set these GitHub repository variables from Terraform outputs:
 
 ```text
 GCP_WORKLOAD_IDENTITY_PROVIDER=github_actions_workload_identity_provider
