@@ -16,7 +16,7 @@ endif
 TFVARS_GCS_BUCKET := $(shell awk -F= '/^[[:space:]]*gcs_bucket[[:space:]]*=/ {gsub(/[ "	]/, "", $$2); print $$2}' infra/cloud/terraform/terraform.tfvars 2>/dev/null)
 CLOUD_COLD_BUCKET ?= $(if $(TFVARS_GCS_BUCKET),$(TFVARS_GCS_BUCKET),$(GCS_BUCKET))
 
-.PHONY: help check test streamlit-check cloud-check ci-cd-check phase3-check phase3-package phase3-package-list gcp-bootstrap-check gcp-cost-guard-check artifact-registry-preview artifact-registry-check artifact-registry-create artifact-registry-list ci-publish-check terraform-check terraform-init terraform-validate terraform-plan terraform-show-plan terraform-import-artifact-registry-preview terraform-import-artifact-registry terraform-apply-core terraform-plan-runtime terraform-apply-runtime gcp-core-check pubsub-check bigquery-cold-check gke-get-credentials k8s-render k8s-apply k8s-status k8s-smoke k8s-logs k8s-backup-once k8s-backup-check k8s-restore-test k8s-restore-check k8s-restore-clean k8s-port-forward-streamlit public-demo-render public-demo-apply public-demo-status public-demo-url public-demo-smoke public-demo-disable observability-check runtime-check runtime-health runtime-cost-check runtime-scale-down runtime-scale-up runtime-demo-mode runtime-idle-mode runtime-resume-mode runtime-promote-latest runtime-promote-sha runtime-image-check runtime-release-check runtime-cost-report runtime-cost-guard runtime-evidence runtime-live-smoke demo-live-start demo-live-stop docker-build docker-build-ingestor docker-build-writer docker-build-streamlit docker-smoke docker-tag-release docker-push run run-local seed-simulator grafana-demo-ready run-openaq run-multisource poll-multisource-once consume-pubsub consume-pubsub-once pubsub-smoke pubsub-hotpath-smoke export-cold export-cold-demo export-cold-gcs cloud-cold-smoke run-streamlit run-streamlit-compose stop logs clean
+.PHONY: help check test streamlit-check cloud-check ci-cd-check phase3-check phase3-package phase3-package-list gcp-bootstrap-check gcp-cost-guard-check artifact-registry-preview artifact-registry-check artifact-registry-create artifact-registry-list ci-publish-check terraform-check terraform-init terraform-validate terraform-plan terraform-show-plan terraform-import-artifact-registry-preview terraform-import-artifact-registry terraform-apply-core terraform-plan-runtime terraform-apply-runtime gcp-core-check pubsub-check bigquery-cold-check gke-get-credentials k8s-render k8s-apply k8s-status k8s-smoke k8s-logs k8s-backup-once k8s-backup-check k8s-restore-test k8s-restore-check k8s-restore-clean k8s-port-forward-streamlit public-demo-render public-demo-apply public-demo-status public-demo-url public-demo-smoke public-demo-disable grafana-public-render grafana-public-apply grafana-public-status grafana-public-url grafana-public-smoke grafana-public-disable observability-check runtime-check runtime-health runtime-cost-check runtime-scale-down runtime-scale-up runtime-demo-mode runtime-idle-mode runtime-resume-mode runtime-promote-latest runtime-promote-sha runtime-image-check runtime-release-check runtime-cost-report runtime-cost-guard runtime-evidence runtime-live-smoke demo-live-start demo-live-stop docker-build docker-build-ingestor docker-build-writer docker-build-streamlit docker-smoke docker-tag-release docker-push run run-local seed-simulator grafana-demo-ready run-openaq run-multisource poll-multisource-once consume-pubsub consume-pubsub-once pubsub-smoke pubsub-hotpath-smoke export-cold export-cold-demo export-cold-gcs cloud-cold-smoke run-streamlit run-streamlit-compose stop logs clean
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z0-9_-]+:.*##/ {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -41,6 +41,7 @@ check: ## Validate the repo foundation scaffold
 	@test -f infra/local/grafana/provisioning/datasources/timescaledb.yml
 	@test -f infra/local/grafana/provisioning/dashboards/dashboard-provider.yml
 	@test -f infra/local/grafana/provisioning/dashboards/smart-city-operations.json
+	@test -f infra/local/grafana/provisioning/alerting/smart-city-alerts.yml
 	@test -f services/ingestor/cmd/poll-openaq/main.go
 	@test -f services/ingestor/cmd/poll-multisource/main.go
 	@test -f services/ingestor/Dockerfile
@@ -93,6 +94,8 @@ cloud-check: ## Validate cloud-readiness scaffold without contacting GCP
 	@test -f infra/cloud/k8s/base/workloads.yaml
 	@test -f infra/cloud/k8s/base/public-demo-http.yaml
 	@test -f infra/cloud/k8s/base/public-demo-https.yaml
+	@test -f infra/cloud/k8s/base/grafana-public-http.yaml
+	@test -f infra/cloud/k8s/base/grafana-public-https.yaml
 	@test -f infra/cloud/gcp.env.example
 	@test -f docs/runbooks/gcp-console-bootstrap.md
 	@test -x infra/cloud/scripts/gcp_bootstrap_check.sh
@@ -134,6 +137,12 @@ cloud-check: ## Validate cloud-readiness scaffold without contacting GCP
 	@test -x infra/cloud/scripts/public_demo_url.sh
 	@test -x infra/cloud/scripts/public_demo_smoke.sh
 	@test -x infra/cloud/scripts/public_demo_disable.sh
+	@test -x infra/cloud/scripts/grafana_public_render.sh
+	@test -x infra/cloud/scripts/grafana_public_apply.sh
+	@test -x infra/cloud/scripts/grafana_public_status.sh
+	@test -x infra/cloud/scripts/grafana_public_url.sh
+	@test -x infra/cloud/scripts/grafana_public_smoke.sh
+	@test -x infra/cloud/scripts/grafana_public_disable.sh
 	@test -x infra/cloud/scripts/observability_check.sh
 	@test -x infra/cloud/scripts/runtime_check.sh
 	@test -x infra/cloud/scripts/runtime_health.sh
@@ -282,6 +291,24 @@ public-demo-smoke: ## Smoke-test the public Streamlit demo health endpoint
 
 public-demo-disable: ## Disable the public Streamlit demo ingress
 	infra/cloud/scripts/public_demo_disable.sh
+
+grafana-public-render: ## Render public Grafana demo ingress manifests with ALLOW_GRAFANA_PUBLIC_INGRESS=yes
+	infra/cloud/scripts/grafana_public_render.sh
+
+grafana-public-apply: ## Create/update the guarded public Grafana demo ingress
+	infra/cloud/scripts/grafana_public_apply.sh
+
+grafana-public-status: ## Show public Grafana ingress, certificate, backend, and static IP status
+	infra/cloud/scripts/grafana_public_status.sh
+
+grafana-public-url: ## Print the current public Grafana URL when the ingress is ready
+	infra/cloud/scripts/grafana_public_url.sh
+
+grafana-public-smoke: ## Smoke-test public Grafana login-gated access
+	infra/cloud/scripts/grafana_public_smoke.sh
+
+grafana-public-disable: ## Disable the public Grafana demo ingress
+	infra/cloud/scripts/grafana_public_disable.sh
 
 observability-check: ## Validate cloud runtime health, logs, Pub/Sub, GCS, and BigQuery visibility
 	infra/cloud/scripts/observability_check.sh

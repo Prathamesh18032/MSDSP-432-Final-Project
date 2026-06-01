@@ -1,0 +1,42 @@
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: smartcity-grafana-backend
+  namespace: __GKE_NAMESPACE__
+spec:
+  timeoutSec: 300
+  healthCheck:
+    type: HTTP
+    requestPath: /api/health
+    port: 3000
+---
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: smartcity-grafana-cert
+  namespace: __GKE_NAMESPACE__
+spec:
+  domains:
+    - __PUBLIC_GRAFANA_DOMAIN__
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: smartcity-grafana-public
+  namespace: __GKE_NAMESPACE__
+  annotations:
+    kubernetes.io/ingress.class: gce
+    kubernetes.io/ingress.global-static-ip-name: __PUBLIC_GRAFANA_STATIC_IP_NAME__
+    networking.gke.io/managed-certificates: smartcity-grafana-cert
+spec:
+  rules:
+    - host: __PUBLIC_GRAFANA_DOMAIN__
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: smartcity-grafana
+                port:
+                  number: 3000
