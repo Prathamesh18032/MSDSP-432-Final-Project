@@ -122,19 +122,19 @@ GCP_WORKLOAD_IDENTITY_PROVIDER=<terraform output github_actions_workload_identit
 GCP_CI_SERVICE_ACCOUNT=<terraform output github_actions_service_account>
 ```
 
-CI publishes short-SHA and `latest-main` tags. Publishing an image does not change the running GKE workload by itself. Validate published tags with:
+CI publishes short-SHA and `latest-main` tags. On `main`, a successful `Publish Images` run automatically triggers the `Promote Runtime` workflow, which deploys `latest-main` to GKE, applies Grafana provisioning ConfigMaps, restarts Grafana, verifies deployed image tags, and runs runtime health checks. Validate published tags with:
 
 ```sh
 make ci-publish-check
 ```
 
-Runtime deployment is a separate controlled promotion step. Use one of these paths after a successful publish:
+To rerun promotion manually or deploy a specific tag, use one of these paths after a successful publish:
 
 ```sh
 make runtime-promote-latest
 ```
 
-Or run the GitHub Actions workflow `Promote Runtime` from the Actions tab. Choose `latest-main` or a short-SHA image tag, then optionally enable the public demo smoke check. The workflow renders the runtime manifests, applies the selected tag to GKE, verifies the deployed image tags, and runs `make runtime-health`.
+Or run the GitHub Actions workflow `Promote Runtime` from the Actions tab. Choose `latest-main` or a short-SHA image tag, then optionally enable public Streamlit smoke, public Grafana ingress apply, and public Grafana smoke. The workflow renders the runtime manifests, applies the selected tag to GKE, updates Grafana provisioning, verifies the deployed image tags, and runs `make runtime-health`.
 
 For a specific short SHA locally:
 
@@ -144,7 +144,7 @@ IMAGE_TAG=<short-sha> make runtime-promote-sha
 
 ## Public Demo
 
-Use the [public demo runbook](public-demo.md) when teammates, the professor, or reviewers need a URL. Only Streamlit is exposed publicly, and it requires `STREAMLIT_DEMO_PASSWORD`.
+Use the [public demo runbook](public-demo.md) when teammates, the professor, or reviewers need a URL. Streamlit requires `STREAMLIT_DEMO_PASSWORD`; Grafana uses a separate login-protected ingress with `GRAFANA_ADMIN_PASSWORD`.
 
 ## Cost Watch
 

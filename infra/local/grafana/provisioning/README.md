@@ -32,9 +32,13 @@ The dashboard sections are:
 
 - `Executive Overview`: reviewer-facing KPIs for readings, sensors, sources, validity, freshness, and drops.
 - `Live Ingestion Operations`: local queue throughput, backpressure, and dropped-reading trends.
-- `City Signal Domains`: air quality, weather/water, mobility, source coverage, and metric coverage.
+- `City Signal Domains`: unit-correct air quality, weather, water, and mobility trends.
 - `Sensor Estate`: native Grafana geomap, sensor freshness, coverage, and latest readings.
 - `Data Quality`: quality distribution, valid-reading rate by source, and suspect/invalid rows.
+
+Alert rules are provisioned from `alerting/smart-city-alerts.yml`. They are visible inside Grafana
+and cover stale ingestion, stale source data, quality exceptions, and dropped readings. Notification
+channels are intentionally not configured for the local reviewer stack.
 
 The dashboard intentionally avoids Pub/Sub lag and GCS latency panels for local mode because those
 fields are normally `NULL` unless a future slice records those cloud metrics into TimescaleDB.

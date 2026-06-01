@@ -316,3 +316,126 @@ spec:
     - name: http
       port: 8501
       targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smartcity-grafana
+  namespace: __GKE_NAMESPACE__
+  labels:
+    app.kubernetes.io/name: smartcity-grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: smartcity-grafana
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: smartcity-grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana-oss:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: smartcity-config
+                  key: GRAFANA_ADMIN_USER
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: smartcity-runtime-secrets
+                  key: GRAFANA_ADMIN_PASSWORD
+                  optional: true
+            - name: GF_USERS_ALLOW_SIGN_UP
+              value: "false"
+            - name: GF_AUTH_ANONYMOUS_ENABLED
+              value: "false"
+            - name: GF_SERVER_ROOT_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: smartcity-config
+                  key: GRAFANA_ROOT_URL
+                  optional: true
+            - name: TIMESCALE_HOST
+              value: smartcity-timescaledb
+            - name: TIMESCALE_PORT
+              value: "5432"
+            - name: TIMESCALE_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: smartcity-config
+                  key: K8S_TIMESCALE_DB
+            - name: TIMESCALE_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: smartcity-config
+                  key: K8S_TIMESCALE_USER
+            - name: TIMESCALE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: smartcity-runtime-secrets
+                  key: TIMESCALE_PASSWORD
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: grafana-provisioning
+              mountPath: /etc/grafana/provisioning/dashboards/dashboard-provider.yml
+              subPath: dashboard-provider.yml
+              readOnly: true
+            - name: grafana-provisioning
+              mountPath: /etc/grafana/provisioning/dashboards/smart-city-operations.json
+              subPath: smart-city-operations.json
+              readOnly: true
+            - name: grafana-provisioning
+              mountPath: /etc/grafana/provisioning/datasources/timescaledb.yml
+              subPath: timescaledb.yml
+              readOnly: true
+            - name: grafana-provisioning
+              mountPath: /etc/grafana/provisioning/alerting/smart-city-alerts.yml
+              subPath: smart-city-alerts.yml
+              readOnly: true
+      volumes:
+        - name: grafana-provisioning
+          configMap:
+            name: smartcity-grafana-provisioning
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: smartcity-grafana
+  namespace: __GKE_NAMESPACE__
+  annotations:
+    cloud.google.com/backend-config: '{"default":"smartcity-grafana-backend"}'
+    cloud.google.com/neg: '{"ingress": true}'
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: smartcity-grafana
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
