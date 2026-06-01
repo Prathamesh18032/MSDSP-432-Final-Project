@@ -38,19 +38,23 @@ domain="${PUBLIC_GRAFANA_DOMAIN:-}"
 
 [[ -n "${project}" ]] || { echo "ERROR: GCP_PROJECT_ID is required." >&2; exit 1; }
 
-gcloud services enable compute.googleapis.com --project "${project}" >/dev/null
-if ! gcloud compute addresses describe "${static_ip_name}" --global --project "${project}" >/dev/null 2>&1; then
-  gcloud compute addresses create "${static_ip_name}" --global --project "${project}"
-fi
+if [[ "${GRAFANA_PUBLIC_MANAGE_STATIC_IP:-}" == "yes" ]]; then
+  gcloud services enable compute.googleapis.com --project "${project}" >/dev/null
+  if ! gcloud compute addresses describe "${static_ip_name}" --global --project "${project}" >/dev/null 2>&1; then
+    gcloud compute addresses create "${static_ip_name}" --global --project "${project}"
+  fi
 
-ip="$(gcloud compute addresses describe "${static_ip_name}" \
-  --global \
-  --project "${project}" \
-  --format='value(address)')"
+  ip="$(gcloud compute addresses describe "${static_ip_name}" \
+    --global \
+    --project "${project}" \
+    --format='value(address)')"
+else
+  ip=""
+fi
 
 if [[ -n "${domain}" ]]; then
   export GRAFANA_ROOT_URL="https://${domain}"
-else
+elif [[ -n "${ip}" ]]; then
   export GRAFANA_ROOT_URL="http://${ip}"
 fi
 

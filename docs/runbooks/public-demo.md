@@ -67,6 +67,12 @@ make grafana-public-url
 make grafana-public-smoke
 ```
 
+The apply path expects the Grafana static IP to be reserved already. To create or repair that IP from a local admin machine, opt in explicitly:
+
+```sh
+GRAFANA_PUBLIC_MANAGE_STATIC_IP=yes ALLOW_GRAFANA_PUBLIC_INGRESS=yes make grafana-public-apply
+```
+
 If no domain is configured, share the `http://<grafana-load-balancer-ip>` URL only during the active demo window.
 
 If a domain is configured:
