@@ -529,7 +529,7 @@
           },
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n  recorded_at AS \"time\",\n  'Readings/sec' AS metric,\n  readings_per_second AS value\nFROM ingestion_metrics\nWHERE $__timeFilter(recorded_at)\nORDER BY recorded_at;",
+          "rawSql": "WITH ops AS (\n  SELECT\n    recorded_at AS \"time\",\n    'Readings/sec' AS metric,\n    readings_per_second AS value\n  FROM ingestion_metrics\n  WHERE $__timeFilter(recorded_at)\n), fallback AS (\n  SELECT\n    time_bucket('1 minute', time) AS \"time\",\n    'Readings/sec' AS metric,\n    (COUNT(*)::DOUBLE PRECISION / 60.0) AS value\n  FROM sensor_readings\n  WHERE $__timeFilter(time)\n    AND NOT EXISTS (SELECT 1 FROM ops)\n  GROUP BY 1\n)\nSELECT * FROM ops\nUNION ALL\nSELECT * FROM fallback\nORDER BY \"time\";",
           "refId": "A"
         }
       ],
@@ -631,7 +631,7 @@
           },
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n  recorded_at AS \"time\",\n  'Channel Fill' AS metric,\n  channel_fill_pct AS value\nFROM ingestion_metrics\nWHERE $__timeFilter(recorded_at)\nORDER BY recorded_at;",
+          "rawSql": "WITH ops AS (\n  SELECT\n    recorded_at AS \"time\",\n    'Channel Fill' AS metric,\n    channel_fill_pct AS value\n  FROM ingestion_metrics\n  WHERE $__timeFilter(recorded_at)\n), fallback AS (\n  SELECT\n    time_bucket('1 minute', time) AS \"time\",\n    'Channel Fill' AS metric,\n    0::DOUBLE PRECISION AS value\n  FROM sensor_readings\n  WHERE $__timeFilter(time)\n    AND NOT EXISTS (SELECT 1 FROM ops)\n  GROUP BY 1\n)\nSELECT * FROM ops\nUNION ALL\nSELECT * FROM fallback\nORDER BY \"time\";",
           "refId": "A"
         }
       ],
@@ -723,7 +723,7 @@
           },
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n  recorded_at AS \"time\",\n  'Dropped Total' AS metric,\n  dropped_readings_total AS value\nFROM ingestion_metrics\nWHERE $__timeFilter(recorded_at)\nORDER BY recorded_at;",
+          "rawSql": "WITH ops AS (\n  SELECT\n    recorded_at AS \"time\",\n    'Dropped Total' AS metric,\n    dropped_readings_total AS value\n  FROM ingestion_metrics\n  WHERE $__timeFilter(recorded_at)\n), fallback AS (\n  SELECT\n    time_bucket('1 minute', time) AS \"time\",\n    'Dropped Total' AS metric,\n    0::DOUBLE PRECISION AS value\n  FROM sensor_readings\n  WHERE $__timeFilter(time)\n    AND NOT EXISTS (SELECT 1 FROM ops)\n  GROUP BY 1\n)\nSELECT * FROM ops\nUNION ALL\nSELECT * FROM fallback\nORDER BY \"time\";",
           "refId": "A"
         }
       ],

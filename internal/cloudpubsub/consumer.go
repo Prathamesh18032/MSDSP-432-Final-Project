@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"log"
 	"sync/atomic"
+	"time"
 
 	gcppubsub "cloud.google.com/go/pubsub"
 
+	"github.com/Prathamesh18032/MSDSP-432-Final-Project/internal/buffer"
 	"github.com/Prathamesh18032/MSDSP-432-Final-Project/internal/readings"
 )
 
@@ -16,10 +18,15 @@ type ReadingWriter interface {
 	InsertReadings(ctx context.Context, batch []readings.SensorReading) error
 }
 
+type MetricsWriter interface {
+	RecordIngestionMetrics(ctx context.Context, metric buffer.IngestionMetric) error
+}
+
 type Message struct {
-	Data []byte
-	Ack  func()
-	Nack func()
+	Data        []byte
+	PublishTime time.Time
+	Ack         func()
+	Nack        func()
 }
 
 type Consumer struct {
@@ -64,9 +71,10 @@ func (c *Consumer) Receive(ctx context.Context) error {
 
 	return c.subscription.Receive(ctx, func(ctx context.Context, message *gcppubsub.Message) {
 		err := HandleMessage(ctx, Message{
-			Data: message.Data,
-			Ack:  message.Ack,
-			Nack: message.Nack,
+			Data:        message.Data,
+			PublishTime: message.PublishTime,
+			Ack:         message.Ack,
+			Nack:        message.Nack,
 		}, c.writer)
 		if err != nil {
 			c.logger.Printf("pubsub message failed: %v", err)
@@ -97,9 +105,10 @@ func (c *Consumer) ReceiveLimit(ctx context.Context, limit int) (int, error) {
 		}
 
 		err := HandleMessage(ctx, Message{
-			Data: message.Data,
-			Ack:  message.Ack,
-			Nack: message.Nack,
+			Data:        message.Data,
+			PublishTime: message.PublishTime,
+			Ack:         message.Ack,
+			Nack:        message.Nack,
 		}, c.writer)
 		if err != nil {
 			c.logger.Printf("pubsub message failed: %v", err)
@@ -153,6 +162,25 @@ func HandleMessage(ctx context.Context, message Message, writer ReadingWriter) e
 			message.Nack()
 		}
 		return fmt.Errorf("write pubsub reading %s: %w", reading.DedupKey(), err)
+	}
+
+	if metrics, ok := writer.(MetricsWriter); ok {
+		now := time.Now().UTC()
+		var lagMillis *int
+		if !message.PublishTime.IsZero() {
+			lag := int(now.Sub(message.PublishTime).Milliseconds())
+			if lag < 0 {
+				lag = 0
+			}
+			lagMillis = &lag
+		}
+		_ = metrics.RecordIngestionMetrics(ctx, buffer.IngestionMetric{
+			RecordedAt:           now,
+			ReadingsPerSecond:    1,
+			ChannelFillPct:       0,
+			PubSubLagMillis:      lagMillis,
+			DroppedReadingsTotal: 0,
+		})
 	}
 
 	if message.Ack != nil {
