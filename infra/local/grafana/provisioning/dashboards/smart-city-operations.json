@@ -61,7 +61,7 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
+        "w": 8,
         "x": 0,
         "y": 1
       },
@@ -78,7 +78,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "value_and_name"
       },
       "targets": [
         {
@@ -92,7 +92,7 @@
           "refId": "A"
         }
       ],
-      "title": "Readings In Window",
+      "title": "Readings in Window",
       "type": "stat"
     },
     {
@@ -121,8 +121,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 4,
+        "w": 8,
+        "x": 8,
         "y": 1
       },
       "id": 3,
@@ -138,7 +138,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "value_and_name"
       },
       "targets": [
         {
@@ -181,8 +181,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 8,
+        "w": 8,
+        "x": 16,
         "y": 1
       },
       "id": 4,
@@ -198,7 +198,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "value_and_name"
       },
       "targets": [
         {
@@ -251,9 +251,9 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 12,
-        "y": 1
+        "w": 8,
+        "x": 0,
+        "y": 5
       },
       "id": 5,
       "options": {
@@ -268,7 +268,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "value_and_name"
       },
       "targets": [
         {
@@ -329,9 +329,9 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 16,
-        "y": 1
+        "w": 8,
+        "x": 8,
+        "y": 5
       },
       "id": 6,
       "options": {
@@ -346,7 +346,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "value_and_name"
       },
       "targets": [
         {
@@ -397,9 +397,9 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 20,
-        "y": 1
+        "w": 8,
+        "x": 16,
+        "y": 5
       },
       "id": 7,
       "options": {
@@ -414,7 +414,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "value_and_name"
       },
       "targets": [
         {
@@ -437,7 +437,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 5
+        "y": 10
       },
       "id": 8,
       "panels": [],
@@ -503,7 +503,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 6
+        "y": 11
       },
       "id": 9,
       "options": {
@@ -605,7 +605,7 @@
         "h": 7,
         "w": 8,
         "x": 8,
-        "y": 6
+        "y": 11
       },
       "id": 10,
       "options": {
@@ -697,7 +697,7 @@
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 6
+        "y": 11
       },
       "id": 11,
       "options": {
@@ -736,7 +736,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 13
+        "y": 18
       },
       "id": 12,
       "panels": [],
@@ -793,17 +793,18 @@
                 "value": null
               }
             ]
-          }
+          },
+          "unit": "suffix: ug/m3"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 7,
         "w": 8,
         "x": 0,
-        "y": 14
+        "y": 19
       },
-      "id": 13,
+      "id": 26,
       "options": {
         "legend": {
           "calcs": [
@@ -827,11 +828,11 @@
           },
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n  time_bucket('5 minutes', time) AS \"time\",\n  CASE metric\n    WHEN 'PM2.5' THEN 'PM2.5'\n    WHEN 'O3' THEN 'Ozone'\n    WHEN 'NO2' THEN 'Nitrogen Dioxide'\n    ELSE metric\n  END || ' · ' || CASE source\n    WHEN 'simulator' THEN 'City Sensor Network'\n    WHEN 'openaq' THEN 'Air Quality Network'\n    ELSE source\n  END AS metric,\n  AVG(value)::DOUBLE PRECISION AS value\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\n  AND metric IN ('PM2.5', 'O3', 'NO2')\n  AND quality_flag = 1\nGROUP BY 1, 2\nORDER BY 1;",
+          "rawSql": "SELECT\n  time_bucket('5 minutes', time) AS \"time\",\n  CASE source\n    WHEN 'simulator' THEN 'City Sensor Network'\n    WHEN 'openaq' THEN 'Air Quality Network'\n    WHEN 'openmeteo' THEN 'Chicago Weather Station'\n    WHEN 'gbfs' THEN 'Divvy Bike Share'\n    WHEN 'usgs' THEN 'Chicago River Gauge'\n    ELSE source\n  END AS metric,\n  AVG(value)::DOUBLE PRECISION AS value\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\n  AND metric = 'PM2.5'\n  AND quality_flag = 1\nGROUP BY 1, 2\nORDER BY 1;",
           "refId": "A"
         }
       ],
-      "title": "Air Quality Trends",
+      "title": "PM2.5 (ug/m3)",
       "type": "timeseries"
     },
     {
@@ -884,15 +885,660 @@
                 "value": null
               }
             ]
-          }
+          },
+          "unit": "suffix: ppm"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 7,
         "w": 8,
         "x": 8,
-        "y": 14
+        "y": 19
+      },
+      "id": 27,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_bucket('5 minutes', time) AS \"time\",\n  CASE source\n    WHEN 'simulator' THEN 'City Sensor Network'\n    WHEN 'openaq' THEN 'Air Quality Network'\n    WHEN 'openmeteo' THEN 'Chicago Weather Station'\n    WHEN 'gbfs' THEN 'Divvy Bike Share'\n    WHEN 'usgs' THEN 'Chicago River Gauge'\n    ELSE source\n  END AS metric,\n  AVG(value)::DOUBLE PRECISION AS value\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\n  AND metric = 'O3'\n  AND quality_flag = 1\nGROUP BY 1, 2\nORDER BY 1;",
+          "refId": "A"
+        }
+      ],
+      "title": "Ozone (ppm)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "suffix: ppb"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 19
+      },
+      "id": 28,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_bucket('5 minutes', time) AS \"time\",\n  CASE source\n    WHEN 'simulator' THEN 'City Sensor Network'\n    WHEN 'openaq' THEN 'Air Quality Network'\n    WHEN 'openmeteo' THEN 'Chicago Weather Station'\n    WHEN 'gbfs' THEN 'Divvy Bike Share'\n    WHEN 'usgs' THEN 'Chicago River Gauge'\n    ELSE source\n  END AS metric,\n  AVG(value)::DOUBLE PRECISION AS value\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\n  AND metric = 'NO2'\n  AND quality_flag = 1\nGROUP BY 1, 2\nORDER BY 1;",
+          "refId": "A"
+        }
+      ],
+      "title": "Nitrogen Dioxide (ppb)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "celsius"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 27
+      },
+      "id": 29,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_bucket('5 minutes', time) AS \"time\",\n  CASE source\n    WHEN 'simulator' THEN 'City Sensor Network'\n    WHEN 'openaq' THEN 'Air Quality Network'\n    WHEN 'openmeteo' THEN 'Chicago Weather Station'\n    WHEN 'gbfs' THEN 'Divvy Bike Share'\n    WHEN 'usgs' THEN 'Chicago River Gauge'\n    ELSE source\n  END AS metric,\n  AVG(value)::DOUBLE PRECISION AS value\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\n  AND metric = 'temperature'\n  AND quality_flag = 1\nGROUP BY 1, 2\nORDER BY 1;",
+          "refId": "A"
+        }
+      ],
+      "title": "Temperature (C)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 27
+      },
+      "id": 30,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_bucket('5 minutes', time) AS \"time\",\n  CASE source\n    WHEN 'simulator' THEN 'City Sensor Network'\n    WHEN 'openaq' THEN 'Air Quality Network'\n    WHEN 'openmeteo' THEN 'Chicago Weather Station'\n    WHEN 'gbfs' THEN 'Divvy Bike Share'\n    WHEN 'usgs' THEN 'Chicago River Gauge'\n    ELSE source\n  END AS metric,\n  AVG(value)::DOUBLE PRECISION AS value\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\n  AND metric = 'humidity'\n  AND quality_flag = 1\nGROUP BY 1, 2\nORDER BY 1;",
+          "refId": "A"
+        }
+      ],
+      "title": "Humidity (%)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "velocitykmh"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 27
+      },
+      "id": 31,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_bucket('5 minutes', time) AS \"time\",\n  CASE source\n    WHEN 'simulator' THEN 'City Sensor Network'\n    WHEN 'openaq' THEN 'Air Quality Network'\n    WHEN 'openmeteo' THEN 'Chicago Weather Station'\n    WHEN 'gbfs' THEN 'Divvy Bike Share'\n    WHEN 'usgs' THEN 'Chicago River Gauge'\n    ELSE source\n  END AS metric,\n  AVG(value)::DOUBLE PRECISION AS value\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\n  AND metric = 'wind_speed'\n  AND quality_flag = 1\nGROUP BY 1, 2\nORDER BY 1;",
+          "refId": "A"
+        }
+      ],
+      "title": "Wind Speed (km/h)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "lengthmm"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 35
+      },
+      "id": 32,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_bucket('5 minutes', time) AS \"time\",\n  CASE source\n    WHEN 'simulator' THEN 'City Sensor Network'\n    WHEN 'openaq' THEN 'Air Quality Network'\n    WHEN 'openmeteo' THEN 'Chicago Weather Station'\n    WHEN 'gbfs' THEN 'Divvy Bike Share'\n    WHEN 'usgs' THEN 'Chicago River Gauge'\n    ELSE source\n  END AS metric,\n  AVG(value)::DOUBLE PRECISION AS value\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\n  AND metric = 'precipitation'\n  AND quality_flag = 1\nGROUP BY 1, 2\nORDER BY 1;",
+          "refId": "A"
+        }
+      ],
+      "title": "Precipitation (mm)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "lengthft"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 35
+      },
+      "id": 33,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_bucket('5 minutes', time) AS \"time\",\n  CASE source\n    WHEN 'simulator' THEN 'City Sensor Network'\n    WHEN 'openaq' THEN 'Air Quality Network'\n    WHEN 'openmeteo' THEN 'Chicago Weather Station'\n    WHEN 'gbfs' THEN 'Divvy Bike Share'\n    WHEN 'usgs' THEN 'Chicago River Gauge'\n    ELSE source\n  END AS metric,\n  AVG(value)::DOUBLE PRECISION AS value\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\n  AND metric = 'water_gage_height'\n  AND quality_flag = 1\nGROUP BY 1, 2\nORDER BY 1;",
+          "refId": "A"
+        }
+      ],
+      "title": "River Gage Height (ft)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "suffix: bikes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 0,
+        "y": 42
       },
       "id": 14,
       "options": {
@@ -918,11 +1564,11 @@
           },
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n  time_bucket('5 minutes', time) AS \"time\",\n  CASE metric\n    WHEN 'temperature' THEN 'Temperature'\n    WHEN 'humidity' THEN 'Humidity'\n    WHEN 'wind_speed' THEN 'Wind Speed'\n    WHEN 'precipitation' THEN 'Precipitation'\n    WHEN 'water_gage_height' THEN 'River Gage Height'\n    ELSE metric\n  END || ' · ' || CASE source\n    WHEN 'simulator' THEN 'City Sensor Network'\n    WHEN 'openmeteo' THEN 'Chicago Weather Station'\n    WHEN 'usgs' THEN 'Chicago River Gauge'\n    ELSE source\n  END AS metric,\n  AVG(value)::DOUBLE PRECISION AS value\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\n  AND metric IN ('temperature', 'humidity', 'wind_speed', 'precipitation', 'water_gage_height')\n  AND quality_flag = 1\nGROUP BY 1, 2\nORDER BY 1;",
+          "rawSql": "SELECT\n  time_bucket('5 minutes', time) AS \"time\",\n  'Divvy Bike Share' AS metric,\n  SUM(value)::DOUBLE PRECISION AS value\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\n  AND metric = 'bike_available_count'\n  AND quality_flag = 1\n  AND source = 'gbfs'\nGROUP BY 1, 2\nORDER BY 1;",
           "refId": "A"
         }
       ],
-      "title": "Weather & Water Signals",
+      "title": "Available Bikes (count)",
       "type": "timeseries"
     },
     {
@@ -976,15 +1622,15 @@
               }
             ]
           },
-          "unit": "short"
+          "unit": "suffix: docks"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 14
+        "h": 7,
+        "w": 6,
+        "x": 6,
+        "y": 42
       },
       "id": 15,
       "options": {
@@ -1010,11 +1656,197 @@
           },
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n  time_bucket('5 minutes', time) AS \"time\",\n  CASE metric\n    WHEN 'bike_available_count' THEN 'Available Bikes'\n    WHEN 'dock_available_count' THEN 'Open Docks'\n    WHEN 'station_capacity' THEN 'Station Capacity'\n    ELSE metric\n  END AS metric,\n  SUM(value)::DOUBLE PRECISION AS value\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\n  AND metric IN ('bike_available_count', 'dock_available_count', 'station_capacity')\n  AND quality_flag = 1\nGROUP BY 1, 2\nORDER BY 1;",
+          "rawSql": "SELECT\n  time_bucket('5 minutes', time) AS \"time\",\n  'Divvy Bike Share' AS metric,\n  SUM(value)::DOUBLE PRECISION AS value\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\n  AND metric = 'dock_available_count'\n  AND quality_flag = 1\n  AND source = 'gbfs'\nGROUP BY 1, 2\nORDER BY 1;",
           "refId": "A"
         }
       ],
-      "title": "Mobility Capacity Signals",
+      "title": "Open Docks (count)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "suffix: spaces"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 12,
+        "y": 42
+      },
+      "id": 13,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_bucket('5 minutes', time) AS \"time\",\n  'Divvy Bike Share' AS metric,\n  SUM(value)::DOUBLE PRECISION AS value\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\n  AND metric = 'station_capacity'\n  AND quality_flag = 1\n  AND source = 'gbfs'\nGROUP BY 1, 2\nORDER BY 1;",
+          "refId": "A"
+        }
+      ],
+      "title": "Station Capacity (count)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percent",
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 18,
+        "y": 42
+      },
+      "id": 34,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "WITH station_buckets AS (\n  SELECT\n    time_bucket('5 minutes', time) AS bucket,\n    sensor_id,\n    MAX(value) FILTER (WHERE metric = 'bike_available_count') AS bikes,\n    MAX(value) FILTER (WHERE metric = 'station_capacity') AS capacity\n  FROM sensor_readings\n  WHERE $__timeFilter(time)\n    AND source ~ '${source:regex}'\n    AND metric ~ '${metric:regex}'\n    AND sensor_id ~ '${sensor_id:regex}'\n    AND source = 'gbfs'\n    AND metric IN ('bike_available_count', 'station_capacity')\n    AND quality_flag = 1\n  GROUP BY 1, 2\n)\nSELECT\n  bucket AS \"time\",\n  'Divvy Bike Share' AS metric,\n  COALESCE(100.0 * SUM(bikes) / NULLIF(SUM(capacity), 0), 0)::DOUBLE PRECISION AS value\nFROM station_buckets\nGROUP BY bucket\nORDER BY bucket;",
+          "refId": "A"
+        }
+      ],
+      "title": "Bike Availability (%)",
       "type": "timeseries"
     },
     {
@@ -1061,7 +1893,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 22
+        "y": 50
       },
       "id": 16,
       "options": {
@@ -1144,7 +1976,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 22
+        "y": 50
       },
       "id": 17,
       "options": {
@@ -1189,7 +2021,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 30
+        "y": 59
       },
       "id": 18,
       "panels": [],
@@ -1231,7 +2063,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 31
+        "y": 60
       },
       "id": 19,
       "options": {
@@ -1365,7 +2197,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 31
+        "y": 60
       },
       "id": 20,
       "options": {
@@ -1426,7 +2258,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 41
+        "y": 70
       },
       "id": 21,
       "options": {
@@ -1462,7 +2294,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 49
+        "y": 78
       },
       "id": 22,
       "panels": [],
@@ -1513,7 +2345,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 50
+        "y": 79
       },
       "id": 23,
       "options": {
@@ -1590,7 +2422,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 50
+        "y": 79
       },
       "id": 24,
       "options": {
@@ -1660,7 +2492,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 50
+        "y": 79
       },
       "id": 25,
       "options": {
@@ -1803,6 +2635,6 @@
   "timezone": "",
   "title": "Smart City Enterprise Operations",
   "uid": "smart-city-operations",
-  "version": 22,
+  "version": 23,
   "weekStart": ""
 }

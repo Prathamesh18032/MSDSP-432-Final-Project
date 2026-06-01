@@ -6,6 +6,7 @@ tfvars="${root_dir}/infra/cloud/terraform/terraform.tfvars"
 base_dir="${root_dir}/infra/cloud/k8s/base"
 rendered_dir="${root_dir}/infra/cloud/k8s/rendered"
 schema_file="${root_dir}/infra/local/timescaledb/init/001_schema.sql"
+grafana_dir="${root_dir}/infra/local/grafana/provisioning"
 
 tfvar() {
   local key="$1"
@@ -34,12 +35,18 @@ backup_prefix="${TIMESCALE_BACKUP_PREFIX:-backups/timescaledb}"
 backup_retention_days="${TIMESCALE_BACKUP_RETENTION_DAYS:-14}"
 public_demo_enabled="${PUBLIC_DEMO_ENABLED:-false}"
 public_demo_domain="${PUBLIC_DEMO_DOMAIN:-}"
+grafana_admin_user="${GRAFANA_ADMIN_USER:-admin}"
+grafana_root_url="${GRAFANA_ROOT_URL:-}"
 backup_schedule="${backup_schedule%\"}"
 backup_schedule="${backup_schedule#\"}"
 
 [[ -n "${project}" ]] || { echo "ERROR: GCP_PROJECT_ID is required for k8s rendering." >&2; exit 1; }
 [[ -n "${bucket}" ]] || { echo "ERROR: GCS_BUCKET or terraform gcs_bucket is required for k8s rendering." >&2; exit 1; }
 [[ -f "${schema_file}" ]] || { echo "ERROR: Timescale schema not found at ${schema_file}." >&2; exit 1; }
+[[ -f "${grafana_dir}/dashboards/dashboard-provider.yml" ]] || { echo "ERROR: Grafana dashboard provider not found." >&2; exit 1; }
+[[ -f "${grafana_dir}/dashboards/smart-city-operations.json" ]] || { echo "ERROR: Grafana dashboard JSON not found." >&2; exit 1; }
+[[ -f "${grafana_dir}/datasources/timescaledb.yml" ]] || { echo "ERROR: Grafana datasource provisioning not found." >&2; exit 1; }
+[[ -f "${grafana_dir}/alerting/smart-city-alerts.yml" ]] || { echo "ERROR: Grafana alert provisioning not found." >&2; exit 1; }
 
 rm -rf "${rendered_dir}"
 mkdir -p "${rendered_dir}"
@@ -67,6 +74,8 @@ render_file() {
     -e "s|__TIMESCALE_BACKUP_RETENTION_DAYS__|${backup_retention_days}|g" \
     -e "s|__PUBLIC_DEMO_ENABLED__|${public_demo_enabled}|g" \
     -e "s|__PUBLIC_DEMO_DOMAIN__|${public_demo_domain}|g" \
+    -e "s|__GRAFANA_ADMIN_USER__|${grafana_admin_user}|g" \
+    -e "s|__GRAFANA_ROOT_URL__|${grafana_root_url}|g" \
     "${source}" > "${target}"
 }
 
@@ -86,6 +95,31 @@ data:
 YAML
   sed 's/^/    /' "${schema_file}"
 } > "${rendered_dir}/timescaledb-init.yaml"
+
+{
+  cat <<YAML
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: smartcity-grafana-provisioning
+  namespace: ${namespace}
+data:
+  dashboard-provider.yml: |
+YAML
+  sed 's/^/    /' "${grafana_dir}/dashboards/dashboard-provider.yml"
+  cat <<YAML
+  smart-city-operations.json: |
+YAML
+  sed 's/^/    /' "${grafana_dir}/dashboards/smart-city-operations.json"
+  cat <<YAML
+  timescaledb.yml: |
+YAML
+  sed 's/^/    /' "${grafana_dir}/datasources/timescaledb.yml"
+  cat <<YAML
+  smart-city-alerts.yml: |
+YAML
+  sed 's/^/    /' "${grafana_dir}/alerting/smart-city-alerts.yml"
+} > "${rendered_dir}/grafana-provisioning.yaml"
 
 echo "Rendered Kubernetes manifests to ${rendered_dir}"
 echo "Image tag: ${runtime_tag}"
