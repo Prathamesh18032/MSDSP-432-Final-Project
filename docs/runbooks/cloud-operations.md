@@ -113,7 +113,7 @@ Never set `RESTORE_TEST_NAMESPACE` to the live runtime namespace.
 
 ## CI/CD Image Publishing And Runtime Promotion
 
-The `Publish Images` GitHub Actions workflow builds and pushes the three service images on `main` merges. It uses GitHub OIDC and GCP Workload Identity Federation, not service account JSON keys.
+The `Publish Images` GitHub Actions workflow builds and pushes the three service images on `main` merges. It uses GitHub OIDC and GCP Workload Identity Federation, not service account JSON keys. Terraform grants the same CI service account the deploy and read-only health-check permissions used by `Promote Runtime`.
 
 Required GitHub repository variables after Terraform apply:
 
