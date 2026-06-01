@@ -10,6 +10,7 @@ rendered_dir="${root_dir}/infra/cloud/k8s/rendered"
 db="${K8S_TIMESCALE_DB:-smartcity_hot}"
 user="${K8S_TIMESCALE_USER:-smartcity}"
 password="${K8S_TIMESCALE_PASSWORD:-}"
+grafana_password="${GRAFANA_ADMIN_PASSWORD:-}"
 
 if [[ ! -d "${rendered_dir}" ]]; then
   echo "Rendered manifests not found. Run: make k8s-render" >&2
@@ -41,13 +42,22 @@ if ! kubectl get secret smartcity-runtime-secrets -n "${namespace}" >/dev/null 2
   if [[ -n "${STREAMLIT_DEMO_PASSWORD:-}" ]]; then
     args+=(--from-literal "STREAMLIT_DEMO_PASSWORD=${STREAMLIT_DEMO_PASSWORD}")
   fi
+  if [[ -n "${grafana_password}" ]]; then
+    args+=(--from-literal "GRAFANA_ADMIN_PASSWORD=${grafana_password}")
+  fi
 
   kubectl "${args[@]}" --dry-run=client -o yaml | kubectl apply -f -
 fi
 
 kubectl apply -f "${rendered_dir}/timescaledb-init.yaml"
+kubectl apply -f "${rendered_dir}/grafana-provisioning.yaml"
 kubectl apply -f "${rendered_dir}/serviceaccounts.yaml"
 kubectl apply -f "${rendered_dir}/configmap.yaml"
 kubectl apply -f "${rendered_dir}/workloads.yaml"
+
+if kubectl get deploy smartcity-grafana -n "${namespace}" >/dev/null 2>&1; then
+  kubectl rollout restart deploy/smartcity-grafana -n "${namespace}"
+  kubectl rollout status deploy/smartcity-grafana -n "${namespace}" --timeout=300s
+fi
 
 echo "Kubernetes runtime manifests applied to namespace ${namespace}."
