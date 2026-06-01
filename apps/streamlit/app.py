@@ -643,6 +643,120 @@ def data_quality(filters: Filters) -> None:
             download_csv("Download coverage summary", export, "coverage-summary")
 
 
+def safety_ai(filters: Filters) -> None:
+    styles.section("Safety AI", "Possible suspicious activity traces from the optional image inference agent.")
+    try:
+        summary_frame = data_access.safety_ai_summary(filters.hours)
+        timeline = data_access.safety_ai_timeline(filters.hours)
+        recent = data_access.safety_ai_recent(filters.hours)
+    except Exception:
+        st.error("Safety AI review traces are temporarily unavailable.")
+        return
+
+    if summary_frame.empty:
+        styles.empty_state("No Safety AI prediction table is available in this environment yet.")
+        return
+
+    summary = summary_frame.iloc[0]
+    total = int(summary.get("total_predictions") or 0)
+    suspicious = int(summary.get("suspicious_predictions") or 0)
+    normal = int(summary.get("normal_predictions") or 0)
+    high = int(summary.get("high_severity_predictions") or 0)
+    if total == 0:
+        styles.empty_state("No Safety AI predictions were recorded in the selected time window.")
+        return
+
+    styles.card_grid(
+        [
+            {
+                "label": "Frames reviewed",
+                "value": format_int(total),
+                "note": f"Image predictions from the last {filters.hours} hours.",
+                "tone": "good",
+            },
+            {
+                "label": "AI-flagged possible activity",
+                "value": format_int(suspicious),
+                "note": "Frames routed for human review.",
+                "tone": "warn" if suspicious else "good",
+            },
+            {
+                "label": "Normal review frames",
+                "value": format_int(normal),
+                "note": "Frames not flagged as suspicious.",
+                "tone": "good",
+            },
+            {
+                "label": "High-severity hints",
+                "value": format_int(high),
+                "note": "Possible high or critical activity labels.",
+                "tone": "bad" if high else "good",
+            },
+            {
+                "label": "Average confidence",
+                "value": format_pct(100 * float(summary.get("avg_confidence") or 0)),
+                "note": f"Latest prediction: {format_time(summary.get('latest_prediction_at'))}.",
+                "tone": "good",
+            },
+        ]
+    )
+
+    if not timeline.empty:
+        st.plotly_chart(charts.safety_ai_timeline(timeline), use_container_width=True)
+
+    if recent.empty:
+        styles.empty_state("No recent Safety AI prediction rows match this window.")
+        return
+
+    latest_flagged = recent[recent["is_suspicious"] == True].head(1)  # noqa: E712
+    if not latest_flagged.empty:
+        latest = latest_flagged.iloc[0]
+        styles.report_panel(
+            "Latest AI-flagged possible activity",
+            [
+                f"{latest.get('display_label')} at {latest.get('location_name')} from camera {latest.get('camera_id')}.",
+                f"Prediction time: {format_time(latest.get('event_time'))}; confidence: {format_pct(100 * float(latest.get('confidence') or 0))}.",
+                "This is a review hint from a pretrained model, not a confirmed incident.",
+            ],
+        )
+
+    table = recent.copy()
+    table["event_time"] = table["event_time"].map(format_time)
+    table["is_suspicious"] = table["is_suspicious"].map(lambda value: "Possible activity" if value else "Normal")
+    for column in ["confidence", "crime_score", "type_score"]:
+        table[column] = table[column].map(lambda value: "n/a" if pd.isna(value) else format_pct(100 * float(value)))
+    table = table[
+        [
+            "event_time",
+            "camera_id",
+            "location_name",
+            "is_suspicious",
+            "display_label",
+            "confidence",
+            "crime_score",
+            "type_score",
+            "severity",
+            "review_status",
+            "media_uri",
+        ]
+    ]
+    table.columns = [
+        "Prediction time",
+        "Camera",
+        "Location",
+        "Review result",
+        "Possible activity",
+        "Confidence",
+        "Crime score",
+        "Type score",
+        "Severity",
+        "Review status",
+        "Media URI",
+    ]
+    styles.responsive_table(table, max_rows=30)
+    download_csv("Download Safety AI predictions", table, "safety-ai-predictions")
+
+
 def cold_path() -> None:
     styles.section("Historical Archive", "Longer-term reporting evidence for city readings.")
     try:
@@ -739,8 +853,8 @@ def render_dashboard() -> None:
     executive_overview(snapshot, local_cold, cloud_cold)
     executive_report(snapshot, source_summary, cloud_cold, filters)
 
-    tab_overview, tab_domains, tab_network, tab_quality, tab_cold = st.tabs(
-        ["Operations", "Domains", "Sensors", "Quality", "Archive"]
+    tab_overview, tab_domains, tab_network, tab_quality, tab_safety, tab_cold = st.tabs(
+        ["Operations", "Domains", "Sensors", "Quality", "Safety AI", "Archive"]
     )
     with tab_overview:
         city_operations(filters)
@@ -752,6 +866,8 @@ def render_dashboard() -> None:
         sensor_network(filters)
     with tab_quality:
         data_quality(filters)
+    with tab_safety:
+        safety_ai(filters)
     with tab_cold:
         cold_path()
 

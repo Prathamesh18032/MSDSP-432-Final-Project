@@ -9,12 +9,12 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 - Project: Smart City Zero-Disk IoT Infrastructure.
 - Strategy: local-first MVP, cloud-ready architecture.
 - Current branch of record: `main`.
-- Latest merged slice: Slice 22, enterprise Grafana operations dashboard, PR #28.
+- Latest merged slice: Slice 23, Phase 3 final submission package and presentation evidence.
 - Latest merged fix: PR #27, manual GKE runtime promotion workflow.
-- Active slice: Slice 23, Phase 3 final submission package and presentation evidence, branch `codex/slice-23-phase3-final-package`.
-- Next planned slice after this PR merges: refresh Phase 3 deliverables if teammate AI Agent work lands before submission.
-- Current working capability: deterministic Go simulator, OpenAQ, Open-Meteo, Divvy GBFS, and USGS pollers can generate or fetch smart-city readings, publish through a local queue buffer or Pub/Sub, insert into local TimescaleDB, export Parquet cold-storage files, upload cloud cold-storage files to GCS, record ingestion metrics, visualize readings through Grafana dashboards, run a polished Streamlit command center, build local deployable container images, publish those images to Artifact Registry in `asia-south1`, run safe GCP bootstrap checks, produce reviewable Terraform plans, apply low-cost core GCP resources, consume Pub/Sub readings into the local hot store, validate BigQuery external-table visibility over GCS Parquet files, run a live GKE Autopilot runtime with self-hosted TimescaleDB, publish images from GitHub Actions through OIDC, manually promote CI-published images to GKE, run runtime observability checks, automate TimescaleDB backups to GCS, and restore-test backups in a disposable namespace.
-- Local checks expected to pass on `main`: `make check`, `make test`.
+- Active slice: Optional video AI agent MVP, branch `codex/video-agent-mvp`.
+- Next planned slice after this PR merges: refresh Phase 3 deliverables and demo script to include Safety AI evidence when enabled.
+- Current working capability: deterministic Go simulator, OpenAQ, Open-Meteo, Divvy GBFS, and USGS pollers can generate or fetch smart-city readings, publish through a local queue buffer or Pub/Sub, insert into local TimescaleDB, export Parquet cold-storage files, upload cloud cold-storage files to GCS, record ingestion metrics, visualize readings through Grafana dashboards, run a polished Streamlit command center, build local deployable container images, publish those images to Artifact Registry in `asia-south1`, run safe GCP bootstrap checks, produce reviewable Terraform plans, apply low-cost core GCP resources, consume Pub/Sub readings into the local hot store, validate BigQuery external-table visibility over GCS Parquet files, run a live GKE Autopilot runtime with self-hosted TimescaleDB, publish images from GitHub Actions through OIDC, manually promote CI-published images to GKE, run runtime observability checks, automate TimescaleDB backups to GCS, restore-test backups in a disposable namespace, and optionally run an inference-only video safety agent that flags possible suspicious activity for human review.
+- Local checks expected to pass on `main`: `make check`, `make test`, `make ai-check`.
 - Known blocker: GitHub branch protection for private repositories requires GitHub Pro or making the repo public. Direct-push protection is deferred.
 - Operational note: Docker Compose stack is not assumed to be running. Start it with `make run-local` when needed, or use `make grafana-demo-ready` for the local reviewer-grade Grafana path.
 
@@ -58,16 +58,17 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 | Slice | Goal | Status | Default Owner |
 | --- | --- | --- | --- |
 | 23 | Phase 3 final submission package and presentation evidence | In Progress | DevOps / Analytics workstreams |
+| 24 | Optional video AI agent MVP and Safety AI Grafana evidence | In Progress | AI / Analytics workstreams |
 
 ## Team Work Board
 
 ### Backlog
 
-- Refresh Phase 3 deliverables if teammate AI Agent implementation merges before the final June 8 submission.
+- Add reviewer-safe AI demo evidence after the optional video agent lands.
 
 ### In Progress
 
-- Slice 23: Phase 3 final submission package and presentation evidence, branch `codex/slice-23-phase3-final-package`.
+- Slice 24: Optional video AI agent MVP, branch `codex/video-agent-mvp`.
 
 ### In Review
 

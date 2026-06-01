@@ -24,6 +24,7 @@ jq empty infra/local/grafana/provisioning/dashboards/smart-city-operations.json
 make check
 make test
 make streamlit-check
+make ai-check
 make cloud-check
 make ci-cd-check
 docker compose config >/dev/null

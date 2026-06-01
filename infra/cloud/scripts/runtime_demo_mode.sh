@@ -27,6 +27,10 @@ kubectl_retry scale deploy/smartcity-ingestor deploy/smartcity-hot-writer deploy
 kubectl_retry rollout status deploy/smartcity-hot-writer -n "${namespace}" --timeout=180s
 kubectl_retry rollout status deploy/smartcity-ingestor -n "${namespace}" --timeout=180s
 kubectl_retry rollout status deploy/smartcity-streamlit -n "${namespace}" --timeout=180s
+if [[ "${VIDEO_AGENT_REPLICAS:-0}" != "0" ]]; then
+  kubectl_retry scale deploy/smartcity-video-agent -n "${namespace}" --replicas="${VIDEO_AGENT_REPLICAS}"
+  kubectl_retry rollout status deploy/smartcity-video-agent -n "${namespace}" --timeout=300s
+fi
 
 for cronjob in smartcity-cold-export smartcity-timescale-backup; do
   kubectl_retry patch cronjob "${cronjob}" -n "${namespace}" --type merge -p '{"spec":{"suspend":false}}' >/dev/null

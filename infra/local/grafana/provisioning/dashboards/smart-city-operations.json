@@ -827,7 +827,7 @@
           },
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n  time_bucket('5 minutes', time) AS \"time\",\n  CASE metric\n    WHEN 'PM2.5' THEN 'PM2.5'\n    WHEN 'O3' THEN 'Ozone'\n    WHEN 'NO2' THEN 'Nitrogen Dioxide'\n    ELSE metric\n  END || ' · ' || CASE source\n    WHEN 'simulator' THEN 'City Sensor Network'\n    WHEN 'openaq' THEN 'Air Quality Network'\n    ELSE source\n  END AS metric,\n  AVG(value)::DOUBLE PRECISION AS value\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\n  AND metric IN ('PM2.5', 'O3', 'NO2')\n  AND quality_flag = 1\nGROUP BY 1, 2\nORDER BY 1;",
+          "rawSql": "SELECT\n  time_bucket('5 minutes', time) AS \"time\",\n  CASE metric\n    WHEN 'PM2.5' THEN 'PM2.5'\n    WHEN 'O3' THEN 'Ozone'\n    WHEN 'NO2' THEN 'Nitrogen Dioxide'\n    ELSE metric\n  END || ' \u00b7 ' || CASE source\n    WHEN 'simulator' THEN 'City Sensor Network'\n    WHEN 'openaq' THEN 'Air Quality Network'\n    ELSE source\n  END AS metric,\n  AVG(value)::DOUBLE PRECISION AS value\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\n  AND metric IN ('PM2.5', 'O3', 'NO2')\n  AND quality_flag = 1\nGROUP BY 1, 2\nORDER BY 1;",
           "refId": "A"
         }
       ],
@@ -918,7 +918,7 @@
           },
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n  time_bucket('5 minutes', time) AS \"time\",\n  CASE metric\n    WHEN 'temperature' THEN 'Temperature'\n    WHEN 'humidity' THEN 'Humidity'\n    WHEN 'wind_speed' THEN 'Wind Speed'\n    WHEN 'precipitation' THEN 'Precipitation'\n    WHEN 'water_gage_height' THEN 'River Gage Height'\n    ELSE metric\n  END || ' · ' || CASE source\n    WHEN 'simulator' THEN 'City Sensor Network'\n    WHEN 'openmeteo' THEN 'Chicago Weather Station'\n    WHEN 'usgs' THEN 'Chicago River Gauge'\n    ELSE source\n  END AS metric,\n  AVG(value)::DOUBLE PRECISION AS value\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\n  AND metric IN ('temperature', 'humidity', 'wind_speed', 'precipitation', 'water_gage_height')\n  AND quality_flag = 1\nGROUP BY 1, 2\nORDER BY 1;",
+          "rawSql": "SELECT\n  time_bucket('5 minutes', time) AS \"time\",\n  CASE metric\n    WHEN 'temperature' THEN 'Temperature'\n    WHEN 'humidity' THEN 'Humidity'\n    WHEN 'wind_speed' THEN 'Wind Speed'\n    WHEN 'precipitation' THEN 'Precipitation'\n    WHEN 'water_gage_height' THEN 'River Gage Height'\n    ELSE metric\n  END || ' \u00b7 ' || CASE source\n    WHEN 'simulator' THEN 'City Sensor Network'\n    WHEN 'openmeteo' THEN 'Chicago Weather Station'\n    WHEN 'usgs' THEN 'Chicago River Gauge'\n    ELSE source\n  END AS metric,\n  AVG(value)::DOUBLE PRECISION AS value\nFROM sensor_readings\nWHERE $__timeFilter(time)\n  AND source ~ '${source:regex}'\n  AND metric ~ '${metric:regex}'\n  AND sensor_id ~ '${sensor_id:regex}'\n  AND metric IN ('temperature', 'humidity', 'wind_speed', 'precipitation', 'water_gage_height')\n  AND quality_flag = 1\nGROUP BY 1, 2\nORDER BY 1;",
           "refId": "A"
         }
       ],
@@ -1689,6 +1689,515 @@
       ],
       "title": "Suspect & Invalid Readings",
       "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 59
+      },
+      "id": 26,
+      "panels": [],
+      "title": "Safety AI",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 60
+      },
+      "id": 27,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*)::BIGINT AS \"AI Flags\"\nFROM video_activity_predictions\nWHERE $__timeFilter(event_time)\n  AND camera_id ~ '${camera_id:regex}'\n  AND is_suspicious = TRUE;",
+          "refId": "A"
+        }
+      ],
+      "title": "AI Flags In Window",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 3
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 60
+      },
+      "id": 28,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*)::BIGINT AS \"High Severity\"\nFROM video_activity_predictions\nWHERE $__timeFilter(event_time)\n  AND camera_id ~ '${camera_id:regex}'\n  AND is_suspicious = TRUE\n  AND severity IN ('high', 'critical');",
+          "refId": "A"
+        }
+      ],
+      "title": "High Severity Flags",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.65
+              },
+              {
+                "color": "red",
+                "value": 0.85
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 60
+      },
+      "id": 29,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE((\n  SELECT confidence\n  FROM video_activity_predictions\n  WHERE camera_id ~ '${camera_id:regex}'\n  ORDER BY event_time DESC\n  LIMIT 1\n), 0)::DOUBLE PRECISION AS \"Confidence\";",
+          "refId": "A"
+        }
+      ],
+      "title": "Latest Confidence",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 60
+      },
+      "id": 30,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH latest AS (\n  SELECT\n    event_time AS \"time\",\n    city,\n    camera_id,\n    location_name,\n    display_label AS possible_activity,\n    confidence,\n    severity,\n    review_status\n  FROM video_activity_predictions\n  WHERE camera_id ~ '${camera_id:regex}'\n    AND is_suspicious = TRUE\n  ORDER BY event_time DESC\n  LIMIT 1\n), empty_state AS (\n  SELECT NOW() AS \"time\", 'n/a' AS city, 'n/a' AS camera_id, 'n/a' AS location_name, 'No AI flags in selected data yet' AS possible_activity, 0::DOUBLE PRECISION AS confidence, 'low' AS severity, 'pending' AS review_status\n  WHERE NOT EXISTS (SELECT 1 FROM latest)\n)\nSELECT * FROM latest\nUNION ALL\nSELECT * FROM empty_state\nORDER BY \"time\" DESC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Latest AI-Flagged Activity",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 64
+      },
+      "id": 31,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  time_bucket('5 minutes', event_time) AS \"time\",\n  CASE WHEN is_suspicious THEN 'AI-flagged possible activity' ELSE 'Normal review frame' END AS metric,\n  COUNT(*)::DOUBLE PRECISION AS value\nFROM video_activity_predictions\nWHERE $__timeFilter(event_time)\n  AND camera_id ~ '${camera_id:regex}'\nGROUP BY 1, 2\nORDER BY 1;",
+          "refId": "A"
+        }
+      ],
+      "title": "Safety AI Predictions Over Time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 64
+      },
+      "id": 32,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.8,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  display_label AS possible_activity,\n  COUNT(*)::INTEGER AS flags\nFROM video_activity_predictions\nWHERE $__timeFilter(event_time)\n  AND camera_id ~ '${camera_id:regex}'\n  AND is_suspicious = TRUE\nGROUP BY display_label\nORDER BY flags DESC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Flags by Possible Activity",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "timescaledb-hot"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 72
+      },
+      "id": 33,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "timescaledb-hot"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH flags AS (\n  SELECT\n    event_time AS \"time\",\n    city,\n    camera_id,\n    location_name,\n    display_label AS possible_activity,\n    ROUND(confidence::numeric, 3) AS confidence,\n    ROUND(crime_score::numeric, 3) AS crime_score,\n    ROUND(COALESCE(type_score, 0)::numeric, 3) AS type_score,\n    severity,\n    review_status,\n    media_uri\n  FROM video_activity_predictions\n  WHERE $__timeFilter(event_time)\n    AND camera_id ~ '${camera_id:regex}'\n    AND is_suspicious = TRUE\n  ORDER BY event_time DESC\n  LIMIT 100\n), empty_state AS (\n  SELECT NOW() AS \"time\", 'n/a' AS city, 'n/a' AS camera_id, 'n/a' AS location_name, 'No AI-flagged possible suspicious activity in the selected window' AS possible_activity, 0::numeric AS confidence, 0::numeric AS crime_score, 0::numeric AS type_score, 'low' AS severity, 'pending' AS review_status, 'n/a' AS media_uri\n  WHERE NOT EXISTS (SELECT 1 FROM flags)\n)\nSELECT * FROM flags\nUNION ALL\nSELECT * FROM empty_state\nORDER BY \"time\" DESC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Recent Safety AI Flags",
+      "type": "table"
     }
   ],
   "refresh": "10s",
@@ -1776,6 +2285,31 @@
         "skipUrlSync": false,
         "sort": 1,
         "type": "query"
+      },
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "timescaledb-hot"
+        },
+        "definition": "SELECT DISTINCT camera_id FROM video_activity_predictions ORDER BY 1;",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Camera",
+        "multi": true,
+        "name": "camera_id",
+        "options": [],
+        "query": "SELECT DISTINCT camera_id FROM video_activity_predictions ORDER BY 1;",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
       }
     ]
   },
@@ -1803,6 +2337,6 @@
   "timezone": "",
   "title": "Smart City Enterprise Operations",
   "uid": "smart-city-operations",
-  "version": 22,
+  "version": 23,
   "weekStart": ""
 }

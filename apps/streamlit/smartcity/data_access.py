@@ -342,6 +342,81 @@ def latest_ingestion_metrics(hours: int) -> pd.DataFrame:
     )
 
 
+def video_predictions_available() -> bool:
+    frame = query_dataframe("SELECT to_regclass('public.video_activity_predictions') AS table_name;")
+    return not frame.empty and bool(frame.iloc[0].get("table_name"))
+
+
+def safety_ai_summary(hours: int) -> pd.DataFrame:
+    if not video_predictions_available():
+        return pd.DataFrame()
+    return query_dataframe(
+        """
+        WITH scoped AS (
+            SELECT *
+            FROM video_activity_predictions
+            WHERE event_time >= %s
+        )
+        SELECT
+            COUNT(*)::BIGINT AS total_predictions,
+            COALESCE(SUM(CASE WHEN is_suspicious THEN 1 ELSE 0 END), 0)::BIGINT AS suspicious_predictions,
+            COALESCE(SUM(CASE WHEN NOT is_suspicious THEN 1 ELSE 0 END), 0)::BIGINT AS normal_predictions,
+            COALESCE(SUM(CASE WHEN severity IN ('high', 'critical') AND is_suspicious THEN 1 ELSE 0 END), 0)::BIGINT AS high_severity_predictions,
+            COALESCE(AVG(confidence), 0)::DOUBLE PRECISION AS avg_confidence,
+            MAX(event_time) AS latest_prediction_at
+        FROM scoped;
+        """,
+        (cutoff(hours),),
+    )
+
+
+def safety_ai_timeline(hours: int) -> pd.DataFrame:
+    if not video_predictions_available():
+        return pd.DataFrame()
+    return query_dataframe(
+        """
+        SELECT
+            time_bucket('15 minutes', event_time) AS bucket,
+            CASE WHEN is_suspicious THEN 'AI-flagged possible activity' ELSE 'Normal review frame' END AS prediction_type,
+            COUNT(*)::BIGINT AS predictions
+        FROM video_activity_predictions
+        WHERE event_time >= %s
+        GROUP BY bucket, prediction_type
+        ORDER BY bucket, prediction_type;
+        """,
+        (cutoff(hours),),
+    )
+
+
+def safety_ai_recent(hours: int, limit: int = 100) -> pd.DataFrame:
+    if not video_predictions_available():
+        return pd.DataFrame()
+    return query_dataframe(
+        """
+        SELECT
+            event_time,
+            city,
+            camera_id,
+            location_name,
+            latitude::DOUBLE PRECISION AS latitude,
+            longitude::DOUBLE PRECISION AS longitude,
+            is_suspicious,
+            display_label,
+            confidence,
+            crime_score,
+            type_score,
+            severity,
+            review_status,
+            media_uri
+        FROM video_activity_predictions
+        WHERE event_time >= %s
+        ORDER BY event_time DESC
+        LIMIT %s;
+        """,
+        (cutoff(hours), limit),
+    )
+
+
 def domain_latest(domain_metrics: list[str], hours: int) -> pd.DataFrame:
     if not domain_metrics:
         return pd.DataFrame()

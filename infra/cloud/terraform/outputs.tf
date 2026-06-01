@@ -8,6 +8,16 @@ output "pubsub_dead_letter_topic" {
   value       = google_pubsub_topic.dead_letter.name
 }
 
+output "video_pubsub_topic" {
+  description = "Video object notification topic for the optional AI agent."
+  value       = google_pubsub_topic.video_events.name
+}
+
+output "video_pubsub_subscription" {
+  description = "Subscription consumed by the optional video AI agent."
+  value       = google_pubsub_subscription.video_agent.name
+}
+
 output "cold_storage_bucket" {
   description = "Cold Parquet storage bucket."
   value       = google_storage_bucket.cold_storage.name
