@@ -14,9 +14,11 @@ These manifests describe the first cloud runtime for the Smart City Zero-Disk Io
 - TimescaleDB backup CronJob writing `pg_dump` files to GCS.
 - Cold export CronJob writing Parquet to GCS.
 - Streamlit internal service reading TimescaleDB.
+- Optional video AI agent deployment reading GCS image/frame object notifications, writing all rows to `video_activity_predictions`, and writing suspicious compatibility rows to `video_activity_flags`.
 - Optional Streamlit-only public demo ingress templates.
 
 Grafana remains local/demo-only for now and is not deployed in the cloud runtime.
+Grafana can still show Safety AI panels locally when connected to the TimescaleDB schema.
 
 ## Render And Apply
 
@@ -34,6 +36,8 @@ make k8s-restore-check
 make k8s-restore-clean
 make k8s-port-forward-streamlit
 ```
+
+The video agent is rendered with `VIDEO_AGENT_REPLICAS=0` by default. For a Safety AI demo, publish the `smartcity-video-agent` image, set `VIDEO_AGENT_REPLICAS=1`, render/apply the manifests, and upload sampled images or extracted frames under `gs://$GCS_BUCKET/video_inbox/...`.
 
 To expose Streamlit temporarily for reviewers:
 

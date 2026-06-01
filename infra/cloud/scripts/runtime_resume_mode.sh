@@ -32,5 +32,9 @@ done
 kubectl_retry rollout status deploy/smartcity-hot-writer -n "${namespace}" --timeout=180s
 kubectl_retry rollout status deploy/smartcity-ingestor -n "${namespace}" --timeout=180s
 kubectl_retry rollout status deploy/smartcity-streamlit -n "${namespace}" --timeout=180s
+if [[ "${VIDEO_AGENT_REPLICAS:-0}" != "0" ]]; then
+  kubectl_retry scale deploy/smartcity-video-agent -n "${namespace}" --replicas="${VIDEO_AGENT_REPLICAS}"
+  kubectl_retry rollout status deploy/smartcity-video-agent -n "${namespace}" --timeout=300s
+fi
 "${root_dir}/infra/cloud/scripts/runtime_health.sh"
 echo "Runtime resumed."

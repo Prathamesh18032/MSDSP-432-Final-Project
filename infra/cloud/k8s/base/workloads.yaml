@@ -255,6 +255,45 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: smartcity-video-agent
+  namespace: __GKE_NAMESPACE__
+  labels:
+    app.kubernetes.io/name: smartcity-video-agent
+spec:
+  replicas: __VIDEO_AGENT_REPLICAS__
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: smartcity-video-agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: smartcity-video-agent
+    spec:
+      serviceAccountName: smartcity-writer
+      containers:
+        - name: video-agent
+          image: __IMAGE_REGISTRY__/smartcity-video-agent:__RUNTIME_IMAGE_TAG__
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: smartcity-config
+          env:
+            - name: VIDEO_AGENT_TIMESCALE_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: smartcity-runtime-secrets
+                  key: TIMESCALE_DSN
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: smartcity-streamlit
   namespace: __GKE_NAMESPACE__
   labels:

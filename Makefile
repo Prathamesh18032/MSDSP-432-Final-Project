@@ -7,6 +7,7 @@ DOCKER_PLATFORM ?= linux/amd64
 INGESTOR_IMAGE = $(IMAGE_REGISTRY)/smartcity-ingestor:$(IMAGE_TAG)
 WRITER_IMAGE = $(IMAGE_REGISTRY)/smartcity-writer:$(IMAGE_TAG)
 STREAMLIT_IMAGE = $(IMAGE_REGISTRY)/smartcity-streamlit:$(IMAGE_TAG)
+VIDEO_AGENT_IMAGE = $(IMAGE_REGISTRY)/smartcity-video-agent:$(IMAGE_TAG)
 
 ifneq (,$(wildcard .env))
 include .env
@@ -16,7 +17,7 @@ endif
 TFVARS_GCS_BUCKET := $(shell awk -F= '/^[[:space:]]*gcs_bucket[[:space:]]*=/ {gsub(/[ "	]/, "", $$2); print $$2}' infra/cloud/terraform/terraform.tfvars 2>/dev/null)
 CLOUD_COLD_BUCKET ?= $(if $(TFVARS_GCS_BUCKET),$(TFVARS_GCS_BUCKET),$(GCS_BUCKET))
 
-.PHONY: help check test streamlit-check cloud-check ci-cd-check phase3-check phase3-package phase3-package-list gcp-bootstrap-check gcp-cost-guard-check artifact-registry-preview artifact-registry-check artifact-registry-create artifact-registry-list ci-publish-check terraform-check terraform-init terraform-validate terraform-plan terraform-show-plan terraform-import-artifact-registry-preview terraform-import-artifact-registry terraform-apply-core terraform-plan-runtime terraform-apply-runtime gcp-core-check pubsub-check bigquery-cold-check gke-get-credentials k8s-render k8s-apply k8s-status k8s-smoke k8s-logs k8s-backup-once k8s-backup-check k8s-restore-test k8s-restore-check k8s-restore-clean k8s-port-forward-streamlit public-demo-render public-demo-apply public-demo-status public-demo-url public-demo-smoke public-demo-disable observability-check runtime-check runtime-health runtime-cost-check runtime-scale-down runtime-scale-up runtime-demo-mode runtime-idle-mode runtime-resume-mode runtime-promote-latest runtime-promote-sha runtime-image-check runtime-release-check runtime-cost-report runtime-cost-guard runtime-evidence runtime-live-smoke demo-live-start demo-live-stop docker-build docker-build-ingestor docker-build-writer docker-build-streamlit docker-smoke docker-tag-release docker-push run run-local seed-simulator grafana-demo-ready run-openaq run-multisource poll-multisource-once consume-pubsub consume-pubsub-once pubsub-smoke pubsub-hotpath-smoke export-cold export-cold-demo export-cold-gcs cloud-cold-smoke run-streamlit run-streamlit-compose stop logs clean
+.PHONY: help check test streamlit-check ai-check cloud-check ci-cd-check phase3-check phase3-package phase3-package-list gcp-bootstrap-check gcp-cost-guard-check artifact-registry-preview artifact-registry-check artifact-registry-create artifact-registry-list ci-publish-check terraform-check terraform-init terraform-validate terraform-plan terraform-show-plan terraform-import-artifact-registry-preview terraform-import-artifact-registry terraform-apply-core terraform-plan-runtime terraform-apply-runtime gcp-core-check pubsub-check bigquery-cold-check gke-get-credentials k8s-render k8s-apply k8s-status k8s-smoke k8s-logs k8s-backup-once k8s-backup-check k8s-restore-test k8s-restore-check k8s-restore-clean k8s-port-forward-streamlit public-demo-render public-demo-apply public-demo-status public-demo-url public-demo-smoke public-demo-disable observability-check runtime-check runtime-health runtime-cost-check runtime-scale-down runtime-scale-up runtime-demo-mode runtime-idle-mode runtime-resume-mode runtime-promote-latest runtime-promote-sha runtime-image-check runtime-release-check runtime-cost-report runtime-cost-guard runtime-evidence runtime-live-smoke demo-live-start demo-live-stop docker-build docker-build-ingestor docker-build-writer docker-build-streamlit docker-build-video-agent docker-smoke docker-tag-release docker-push docker-push-video-agent run run-local seed-simulator seed-video-dataset extract-video-frames upload-video-dataset-gcs grafana-demo-ready run-openaq run-multisource poll-multisource-once consume-pubsub consume-pubsub-once pubsub-smoke pubsub-hotpath-smoke export-cold export-cold-demo export-cold-gcs cloud-cold-smoke run-streamlit run-streamlit-compose run-video-agent-once run-video-agent-compose stop logs clean
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z0-9_-]+:.*##/ {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -55,6 +56,12 @@ check: ## Validate the repo foundation scaffold
 	@test -f apps/streamlit/app.py
 	@test -f apps/streamlit/requirements.txt
 	@test -f apps/streamlit/Dockerfile
+	@test -f services/video-agent/video_agent/main.py
+	@test -f services/video-agent/Dockerfile
+	@test -f services/video-agent/requirements.txt
+	@test -x scripts/video_dataset_seed.py
+	@test -x scripts/video_extract_frames.py
+	@test -x scripts/video_dataset_upload.sh
 	@echo "Foundation check passed."
 
 test: ## Run Go tests
@@ -62,6 +69,11 @@ test: ## Run Go tests
 
 streamlit-check: ## Run lightweight Streamlit app syntax checks
 	python3 -m py_compile apps/streamlit/app.py apps/streamlit/smartcity/*.py
+
+ai-check: ## Run lightweight video-agent checks without downloading ML models
+	PYTHONPATH=services/video-agent python3 -m py_compile services/video-agent/video_agent/*.py
+	python3 -m py_compile scripts/video_dataset_seed.py scripts/video_extract_frames.py
+	PYTHONPATH=services/video-agent python3 -m unittest discover -s services/video-agent/tests
 
 ci-cd-check: ## Validate GitHub Actions image publishing workflow
 	infra/cloud/scripts/ci_cd_check.sh
@@ -351,6 +363,9 @@ docker-build-writer: ## Build the cold export writer image locally
 docker-build-streamlit: ## Build the Streamlit reports image locally
 	docker build --platform $(DOCKER_PLATFORM) -f apps/streamlit/Dockerfile -t $(STREAMLIT_IMAGE) .
 
+docker-build-video-agent: ## Build the optional video AI agent image locally
+	docker build --platform $(DOCKER_PLATFORM) -f services/video-agent/Dockerfile -t $(VIDEO_AGENT_IMAGE) .
+
 docker-smoke: ## Smoke-test locally built images without pushing or contacting GCP
 	@docker image inspect $(INGESTOR_IMAGE) >/dev/null
 	@docker image inspect $(WRITER_IMAGE) >/dev/null
@@ -366,6 +381,10 @@ docker-tag-release: ## Ensure all local images have the configured Artifact Regi
 docker-push: ## Push all configured service images to Artifact Registry
 	infra/cloud/scripts/docker_push.sh
 
+docker-push-video-agent: ## Push the optional video AI agent image to Artifact Registry
+	docker image inspect $(VIDEO_AGENT_IMAGE) >/dev/null
+	docker push $(VIDEO_AGENT_IMAGE)
+
 run: ## Start the local Docker Compose stack
 	docker compose up
 
@@ -374,6 +393,16 @@ run-local: ## Start the local stack in the background
 
 seed-simulator: ## Insert deterministic simulator readings into local TimescaleDB
 	$(GO_TEST_ENV) go run ./services/writer/cmd/seed-simulator
+
+seed-video-dataset: ## Prepare an optional small video dataset under data/video_inbox
+	python3 scripts/video_dataset_seed.py
+
+extract-video-frames: ## Extract local demo video frames into data/video_inbox
+	@test -n "$${VIDEO_AGENT_SOURCE_VIDEO:-}" || (echo "Set VIDEO_AGENT_SOURCE_VIDEO=/path/to/demo.mp4" >&2; exit 1)
+	python3 scripts/video_extract_frames.py "$${VIDEO_AGENT_SOURCE_VIDEO}"
+
+upload-video-dataset-gcs: ## Upload optional video samples to the configured GCS video inbox
+	scripts/video_dataset_upload.sh
 
 grafana-demo-ready: ## Start local stack and populate Grafana from simulator plus live sources
 	$(MAKE) run-local
@@ -426,6 +455,12 @@ run-streamlit: ## Run the Streamlit reports app locally
 
 run-streamlit-compose: ## Run the Streamlit reports app through Docker Compose
 	docker compose --profile analytics up -d --build streamlit
+
+run-video-agent-once: ## Run the optional video AI agent once against local video_inbox
+	PYTHONPATH=services/video-agent VIDEO_AGENT_MOCK_MODEL=$${VIDEO_AGENT_MOCK_MODEL:-true} python3 -m video_agent.main --once --local-scan
+
+run-video-agent-compose: ## Run the optional video AI agent through Docker Compose
+	docker compose --profile ai up --build video-agent
 
 stop: ## Stop the local Docker Compose stack
 	docker compose down

@@ -131,6 +131,23 @@ def ingestion_trend(frame: pd.DataFrame) -> go.Figure:
     return finish(fig, 330)
 
 
+def safety_ai_timeline(frame: pd.DataFrame) -> go.Figure:
+    fig = px.bar(
+        frame,
+        x="bucket",
+        y="predictions",
+        color="prediction_type",
+        barmode="stack",
+        labels={"bucket": "", "predictions": "Predictions", "prediction_type": ""},
+        title="Safety AI prediction trace",
+        color_discrete_map={
+            "AI-flagged possible activity": "#B42318",
+            "Normal review frame": "#067647",
+        },
+    )
+    return finish(fig, 330)
+
+
 def latest_domain_bar(frame: pd.DataFrame, title: str) -> go.Figure:
     data = metadata.add_display_columns(frame)
     if {"sensor_name", "metric_name"}.issubset(data.columns):

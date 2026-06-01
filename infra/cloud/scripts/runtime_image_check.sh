@@ -20,7 +20,12 @@ registry="${IMAGE_REGISTRY:-${region}-docker.pkg.dev/${project}/${repository}}"
 [[ -n "${project}" ]] || { echo "ERROR: GCP_PROJECT_ID is required." >&2; exit 1; }
 [[ -n "${tag}" ]] || { echo "ERROR: RUNTIME_EXPECTED_IMAGE_TAG is required." >&2; exit 1; }
 
-for image in smartcity-ingestor smartcity-writer smartcity-streamlit; do
+images=(smartcity-ingestor smartcity-writer smartcity-streamlit)
+if [[ "${VIDEO_AGENT_REPLICAS:-0}" != "0" ]]; then
+  images+=(smartcity-video-agent)
+fi
+
+for image in "${images[@]}"; do
   if ! gcloud artifacts docker tags list "${registry}/${image}" \
     --project "${project}" \
     --format="value(tag)" \

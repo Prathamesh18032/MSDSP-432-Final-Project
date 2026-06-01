@@ -44,6 +44,17 @@ jobs:
       - name: Validate Docker Compose configuration
         run: docker compose config
 
+  video-agent:
+    name: Video agent checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run lightweight AI checks
+        run: make ai-check
+
   cloud-readiness:
     name: Cloud readiness scaffold
     runs-on: ubuntu-latest
