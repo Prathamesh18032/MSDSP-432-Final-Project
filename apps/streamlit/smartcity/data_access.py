@@ -46,18 +46,37 @@ def overview(hours: int) -> pd.DataFrame:
                 COUNT(DISTINCT source)::BIGINT AS sources,
                 COALESCE(100.0 * SUM(CASE WHEN quality_flag = 1 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 0)::DOUBLE PRECISION AS valid_pct
             FROM scoped
-        ), latest_metrics AS (
+        ), ops AS (
             SELECT
                 COALESCE(MAX(dropped_readings_total), 0)::BIGINT AS dropped_readings_total,
                 COALESCE(MAX(channel_fill_pct), 0)::INTEGER AS channel_fill_pct,
                 COALESCE(AVG(readings_per_second), 0)::DOUBLE PRECISION AS avg_readings_per_second
             FROM ingestion_metrics
             WHERE recorded_at >= %s
+        ), derived_ops AS (
+            SELECT
+                0::BIGINT AS dropped_readings_total,
+                0::INTEGER AS channel_fill_pct,
+                COALESCE(
+                    COUNT(*)::DOUBLE PRECISION / NULLIF(
+                        EXTRACT(EPOCH FROM (MAX(COALESCE(ingested_at, time)) - MIN(COALESCE(ingested_at, time)))),
+                        0
+                    ),
+                    0
+                )::DOUBLE PRECISION AS avg_readings_per_second
+            FROM sensor_readings
+            WHERE COALESCE(ingested_at, time) >= %s
+        ), latest_metrics AS (
+            SELECT * FROM ops
+            WHERE EXISTS (SELECT 1 FROM ingestion_metrics WHERE recorded_at >= %s)
+            UNION ALL
+            SELECT * FROM derived_ops
+            WHERE NOT EXISTS (SELECT 1 FROM ingestion_metrics WHERE recorded_at >= %s)
         )
         SELECT *
         FROM quality, all_rows, latest_metrics;
         """,
-        (cutoff(hours), cutoff(hours)),
+        (cutoff(hours), cutoff(hours), cutoff(hours), cutoff(hours), cutoff(hours)),
     )
 
 
@@ -289,7 +308,7 @@ def metric_coverage(hours: int) -> pd.DataFrame:
 
 
 def ingestion_metrics(hours: int) -> pd.DataFrame:
-    return query_dataframe(
+    frame = query_dataframe(
         """
         SELECT
             time_bucket('1 minute', recorded_at) AS bucket,
@@ -300,6 +319,24 @@ def ingestion_metrics(hours: int) -> pd.DataFrame:
             AVG(gcs_write_latency_ms)::DOUBLE PRECISION AS gcs_write_latency_ms
         FROM ingestion_metrics
         WHERE recorded_at >= %s
+        GROUP BY bucket
+        ORDER BY bucket;
+        """,
+        (cutoff(hours),),
+    )
+    if not frame.empty:
+        return frame
+    return query_dataframe(
+        """
+        SELECT
+            time_bucket('1 minute', COALESCE(ingested_at, time)) AS bucket,
+            (COUNT(*)::DOUBLE PRECISION / 60.0)::DOUBLE PRECISION AS readings_per_second,
+            0::INTEGER AS channel_fill_pct,
+            0::BIGINT AS dropped_readings_total,
+            NULL::DOUBLE PRECISION AS pubsub_lag_ms,
+            NULL::DOUBLE PRECISION AS gcs_write_latency_ms
+        FROM sensor_readings
+        WHERE COALESCE(ingested_at, time) >= %s
         GROUP BY bucket
         ORDER BY bucket;
         """,
@@ -326,7 +363,7 @@ def latest_ingestion_metrics(hours: int) -> pd.DataFrame:
     )
     if not frame.empty:
         return frame
-    return query_dataframe(
+    frame = query_dataframe(
         """
         SELECT
             recorded_at,
@@ -339,6 +376,28 @@ def latest_ingestion_metrics(hours: int) -> pd.DataFrame:
         ORDER BY recorded_at DESC
         LIMIT 1;
         """,
+    )
+    if not frame.empty:
+        return frame
+    return query_dataframe(
+        """
+        SELECT
+            MAX(COALESCE(ingested_at, time)) AS recorded_at,
+            COALESCE(
+                COUNT(*)::DOUBLE PRECISION / NULLIF(
+                    EXTRACT(EPOCH FROM (MAX(COALESCE(ingested_at, time)) - MIN(COALESCE(ingested_at, time)))),
+                    0
+                ),
+                0
+            )::DOUBLE PRECISION AS readings_per_second,
+            0::INTEGER AS channel_fill_pct,
+            0::BIGINT AS dropped_readings_total,
+            NULL::DOUBLE PRECISION AS pubsub_lag_ms,
+            NULL::DOUBLE PRECISION AS gcs_write_latency_ms
+        FROM sensor_readings
+        WHERE COALESCE(ingested_at, time) >= %s;
+        """,
+        (cutoff(hours),),
     )
 
 
