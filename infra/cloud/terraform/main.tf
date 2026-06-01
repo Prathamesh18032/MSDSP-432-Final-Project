@@ -277,7 +277,7 @@ resource "google_service_account" "github_actions" {
 
   account_id   = var.github_actions_service_account_id
   display_name = "Smart City GitHub Actions"
-  description  = "Publishes Smart City service images to Artifact Registry from GitHub Actions."
+  description  = "Publishes Smart City service images and promotes runtime deployments from GitHub Actions."
 }
 
 resource "google_project_iam_member" "github_actions_artifact_registry_writer" {
@@ -286,6 +286,54 @@ resource "google_project_iam_member" "github_actions_artifact_registry_writer" {
   project = var.gcp_project_id
   role    = "roles/artifactregistry.writer"
   member  = google_service_account.github_actions[0].member
+}
+
+resource "google_project_iam_member" "github_actions_container_developer" {
+  count = var.enable_ci_cd_resources ? 1 : 0
+
+  project = var.gcp_project_id
+  role    = "roles/container.developer"
+  member  = google_service_account.github_actions[0].member
+}
+
+resource "google_project_iam_member" "github_actions_pubsub_viewer" {
+  count = var.enable_ci_cd_resources ? 1 : 0
+
+  project = var.gcp_project_id
+  role    = "roles/pubsub.viewer"
+  member  = google_service_account.github_actions[0].member
+}
+
+resource "google_project_iam_member" "github_actions_monitoring_viewer" {
+  count = var.enable_ci_cd_resources ? 1 : 0
+
+  project = var.gcp_project_id
+  role    = "roles/monitoring.viewer"
+  member  = google_service_account.github_actions[0].member
+}
+
+resource "google_project_iam_member" "github_actions_bigquery_job_user" {
+  count = var.enable_ci_cd_resources ? 1 : 0
+
+  project = var.gcp_project_id
+  role    = "roles/bigquery.jobUser"
+  member  = google_service_account.github_actions[0].member
+}
+
+resource "google_bigquery_dataset_iam_member" "github_actions_dataset_viewer" {
+  count = var.enable_ci_cd_resources ? 1 : 0
+
+  dataset_id = google_bigquery_dataset.analytics.dataset_id
+  role       = "roles/bigquery.dataViewer"
+  member     = google_service_account.github_actions[0].member
+}
+
+resource "google_storage_bucket_iam_member" "github_actions_cold_storage_viewer" {
+  count = var.enable_ci_cd_resources ? 1 : 0
+
+  bucket = google_storage_bucket.cold_storage.name
+  role   = "roles/storage.objectViewer"
+  member = google_service_account.github_actions[0].member
 }
 
 resource "google_iam_workload_identity_pool" "github_actions" {
