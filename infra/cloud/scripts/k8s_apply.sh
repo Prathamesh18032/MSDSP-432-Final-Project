@@ -7,6 +7,7 @@ fi
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 rendered_dir="${root_dir}/infra/cloud/k8s/rendered"
+schema_file="${root_dir}/infra/local/timescaledb/init/001_schema.sql"
 db="${K8S_TIMESCALE_DB:-smartcity_hot}"
 user="${K8S_TIMESCALE_USER:-smartcity}"
 password="${K8S_TIMESCALE_PASSWORD:-}"
@@ -54,6 +55,24 @@ kubectl apply -f "${rendered_dir}/grafana-provisioning.yaml"
 kubectl apply -f "${rendered_dir}/serviceaccounts.yaml"
 kubectl apply -f "${rendered_dir}/configmap.yaml"
 kubectl apply -f "${rendered_dir}/workloads.yaml"
+
+kubectl rollout status statefulset/smartcity-timescaledb -n "${namespace}" --timeout=300s
+kubectl exec -i statefulset/smartcity-timescaledb -n "${namespace}" -- \
+  sh -c 'PGPASSWORD="${POSTGRES_PASSWORD:-}" psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER}" -d "${POSTGRES_DB}"' \
+  < "${schema_file}"
+
+runtime_deployments=(smartcity-ingestor smartcity-hot-writer smartcity-streamlit)
+if kubectl get deploy smartcity-video-agent -n "${namespace}" >/dev/null 2>&1; then
+  runtime_deployments+=(smartcity-video-agent)
+fi
+
+for deployment in "${runtime_deployments[@]}"; do
+  kubectl rollout restart "deploy/${deployment}" -n "${namespace}"
+done
+
+for deployment in "${runtime_deployments[@]}"; do
+  kubectl rollout status "deploy/${deployment}" -n "${namespace}" --timeout=300s
+done
 
 if kubectl get deploy smartcity-grafana -n "${namespace}" >/dev/null 2>&1; then
   kubectl rollout restart deploy/smartcity-grafana -n "${namespace}"
