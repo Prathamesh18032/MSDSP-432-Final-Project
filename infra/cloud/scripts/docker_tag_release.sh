@@ -27,6 +27,9 @@ if [[ "${tag}" == "local" ]]; then
 fi
 
 images=(smartcity-ingestor smartcity-writer smartcity-streamlit)
+if [[ "${INCLUDE_VIDEO_AGENT_IMAGE:-false}" == "true" ]]; then
+  images+=(smartcity-video-agent)
+fi
 
 for image in "${images[@]}"; do
   target="${registry}/${image}:${tag}"

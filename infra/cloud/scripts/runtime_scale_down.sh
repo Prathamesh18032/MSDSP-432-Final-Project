@@ -7,9 +7,10 @@ fi
 
 namespace="${GKE_NAMESPACE:-smartcity}"
 
-kubectl scale deploy/smartcity-ingestor deploy/smartcity-hot-writer deploy/smartcity-streamlit \
+kubectl scale deploy/smartcity-ingestor deploy/smartcity-hot-writer deploy/smartcity-streamlit deploy/smartcity-video-agent \
   --replicas=0 \
-  -n "${namespace}"
+  -n "${namespace}" \
+  --ignore-not-found=true
 
 echo "Scaled optional runtime deployments to zero in namespace ${namespace}."
 echo "TimescaleDB StatefulSet, PVC, services, CronJobs, and cloud resources were left intact."

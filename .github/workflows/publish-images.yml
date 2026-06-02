@@ -27,6 +27,8 @@ jobs:
             dockerfile: services/writer/Dockerfile
           - name: smartcity-streamlit
             dockerfile: apps/streamlit/Dockerfile
+          - name: smartcity-video-agent
+            dockerfile: services/video-agent/Dockerfile
 
     steps:
       - name: Check out repository

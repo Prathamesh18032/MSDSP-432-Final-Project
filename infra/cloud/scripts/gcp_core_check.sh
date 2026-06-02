@@ -37,6 +37,8 @@ region="$(tfvar gcp_region || true)"; region="${region:-${GCP_REGION:-asia-south
 topic="$(tfvar pubsub_topic_name || true)"; topic="${topic:-${GCP_PUBSUB_TOPIC:-smartcity-readings}}"
 dlq_topic="$(tfvar pubsub_dlq_topic_name || true)"; dlq_topic="${dlq_topic:-${GCP_PUBSUB_DLQ_TOPIC:-smartcity-dlq}}"
 subscription="$(tfvar pubsub_subscription_name || true)"; subscription="${subscription:-${GCP_PUBSUB_SUBSCRIPTION:-smartcity-hot-writer}}"
+video_topic="$(tfvar video_pubsub_topic_name || true)"; video_topic="${video_topic:-${VIDEO_AGENT_PUBSUB_TOPIC:-smartcity-video-events}}"
+video_subscription="$(tfvar video_pubsub_subscription_name || true)"; video_subscription="${video_subscription:-${VIDEO_AGENT_PUBSUB_SUBSCRIPTION:-smartcity-video-agent}}"
 bucket="$(tfvar gcs_bucket || true)"; bucket="${bucket:-${GCS_BUCKET:-smartcity-zero-disk-iot-pa-cold}}"
 dataset="$(tfvar bigquery_dataset || true)"; dataset="${dataset:-${BIGQUERY_DATASET:-smartcity_iot}}"
 repository="$(tfvar artifact_registry_repository || true)"; repository="${repository:-${ARTIFACT_REGISTRY_REPOSITORY:-smartcity}}"
@@ -57,6 +59,12 @@ info "Pub/Sub DLQ topic exists: ${dlq_topic}"
 
 gcloud pubsub subscriptions describe "${subscription}" --project="${project}" >/dev/null || fail "Missing Pub/Sub subscription ${subscription}."
 info "Pub/Sub subscription exists: ${subscription}"
+
+gcloud pubsub topics describe "${video_topic}" --project="${project}" >/dev/null || fail "Missing video Pub/Sub topic ${video_topic}."
+info "Video Pub/Sub topic exists: ${video_topic}"
+
+gcloud pubsub subscriptions describe "${video_subscription}" --project="${project}" >/dev/null || fail "Missing video Pub/Sub subscription ${video_subscription}."
+info "Video Pub/Sub subscription exists: ${video_subscription}"
 
 gcloud storage buckets describe "gs://${bucket}" --project="${project}" >/dev/null || fail "Missing GCS bucket gs://${bucket}."
 info "GCS bucket exists: gs://${bucket}"

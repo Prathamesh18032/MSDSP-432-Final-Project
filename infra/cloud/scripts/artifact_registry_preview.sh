@@ -53,12 +53,14 @@ Then image tags would be:
 ${registry}/smartcity-ingestor:${tag}
 ${registry}/smartcity-writer:${tag}
 ${registry}/smartcity-streamlit:${tag}
+${registry}/smartcity-video-agent:${tag}  # optional Safety AI image
 
 And future pushes would look like:
 
 docker push ${registry}/smartcity-ingestor:${tag}
 docker push ${registry}/smartcity-writer:${tag}
 docker push ${registry}/smartcity-streamlit:${tag}
+docker push ${registry}/smartcity-video-agent:${tag}  # optional Safety AI image
 
 Equivalent Make workflow:
 
@@ -66,7 +68,9 @@ make gcp-bootstrap-check
 make gcp-cost-guard-check
 make artifact-registry-create
 make docker-build IMAGE_TAG=${tag}
+make docker-build-video-agent IMAGE_TAG=${tag}  # optional
 make docker-tag-release IMAGE_TAG=${tag}
 make docker-push IMAGE_TAG=${tag}
+make docker-push-video-agent IMAGE_TAG=${tag}  # optional
 make artifact-registry-list
 EOF

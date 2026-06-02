@@ -81,6 +81,34 @@ services:
       timescaledb:
         condition: service_healthy
 
+  video-agent:
+    profiles:
+      - ai
+    build:
+      context: .
+      dockerfile: services/video-agent/Dockerfile
+    container_name: smartcity-video-agent
+    environment:
+      VIDEO_AGENT_TIMESCALE_DSN: postgresql://${TIMESCALE_USER:-smartcity}:${TIMESCALE_PASSWORD:-smartcity_dev_password}@timescaledb:5432/${TIMESCALE_DB:-smartcity_hot}
+      VIDEO_AGENT_INPUT_DIR: /app/data/video_inbox
+      VIDEO_AGENT_CITY: ${VIDEO_AGENT_CITY:-chicago}
+      VIDEO_AGENT_CAMERA_ID: ${VIDEO_AGENT_CAMERA_ID:-demo-001}
+      VIDEO_AGENT_THRESHOLD: ${VIDEO_AGENT_THRESHOLD:-0.65}
+      VIDEO_AGENT_MODEL: ${VIDEO_AGENT_MODEL:-OPear/videomae-large-finetuned-UCF-Crime}
+      VIDEO_AGENT_BINARY_MODEL: ${VIDEO_AGENT_BINARY_MODEL:-dima806/crime_cctv_image_detection}
+      VIDEO_AGENT_TYPE_MODEL: ${VIDEO_AGENT_TYPE_MODEL:-dima806/crime_type_cctv_image_detection}
+      VIDEO_AGENT_CRIME_THRESHOLD: ${VIDEO_AGENT_CRIME_THRESHOLD:-0.50}
+      VIDEO_AGENT_MODEL_VERSION: ${VIDEO_AGENT_MODEL_VERSION:-mvp}
+      VIDEO_AGENT_MOCK_MODEL: ${VIDEO_AGENT_MOCK_MODEL:-false}
+      VIDEO_AGENT_DRY_RUN: ${VIDEO_AGENT_DRY_RUN:-false}
+      VIDEO_AGENT_POLL_SECONDS: ${VIDEO_AGENT_POLL_SECONDS:-10800}
+    command: ["--once", "--local-scan"]
+    volumes:
+      - ./data/video_inbox:/app/data/video_inbox:ro
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+
 volumes:
   timescale-data:
   metadata-data:

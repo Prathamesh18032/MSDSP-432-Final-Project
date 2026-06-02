@@ -1,0 +1,11 @@
+google-cloud-pubsub>=2.23,<3
+google-cloud-storage>=2.18,<3
+psycopg[binary]>=3.2,<4
+torch>=2.3,<3
+transformers>=4.44,<5
+pillow>=10,<12
+kaggle>=1.6,<2
+kagglehub>=0.3,<1
+opencv-python-headless>=4.10,<5
+# av intentionally omitted; demo video inputs are converted to JPG frames
+# with OpenCV before inference.

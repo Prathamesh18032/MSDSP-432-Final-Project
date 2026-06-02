@@ -24,7 +24,14 @@ registry="${IMAGE_REGISTRY:-${region}-docker.pkg.dev/${project}/${repository}}"
 
 [[ -n "${project}" ]] || { echo "ERROR: GCP_PROJECT_ID is required." >&2; exit 1; }
 
-for image in smartcity-ingestor smartcity-writer smartcity-streamlit; do
+images=(smartcity-ingestor smartcity-writer smartcity-streamlit)
+deployments=(smartcity-ingestor smartcity-hot-writer smartcity-streamlit)
+if [[ "${VIDEO_AGENT_REPLICAS:-0}" != "0" ]]; then
+  images+=(smartcity-video-agent)
+  deployments+=(smartcity-video-agent)
+fi
+
+for image in "${images[@]}"; do
   if ! gcloud artifacts docker tags list "${registry}/${image}" \
     --project "${project}" \
     --format="value(tag)" \
@@ -35,7 +42,7 @@ for image in smartcity-ingestor smartcity-writer smartcity-streamlit; do
   echo "OK: ${image}:${tag} exists in Artifact Registry."
 done
 
-for deployment in smartcity-ingestor smartcity-hot-writer smartcity-streamlit; do
+for deployment in "${deployments[@]}"; do
   image="$(kubectl get deploy "${deployment}" -n "${namespace}" -o jsonpath='{.spec.template.spec.containers[0].image}')"
   if [[ "${image}" != *":${tag}" ]]; then
     echo "ERROR: ${deployment} is running ${image}, expected tag ${tag}." >&2

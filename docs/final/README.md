@@ -91,13 +91,13 @@ This project is intentionally reviewer-safe:
 - Backup and restore workflows validate recoverability without deleting hot TimescaleDB data.
 - No service-account keys are committed; cloud flows use local credentials or GitHub OIDC.
 
-## Future Scope: AI Agents In Smart City IoT
+## Optional Scope: AI Agents In Smart City IoT
 
-AI Agent features are future scope unless a later teammate implementation is merged before final submission. The Phase 3 narrative may mention them as the next layer above the implemented data platform:
+AI Agent features are optional demo scope above the implemented data platform. If enabled, the video agent runs local/open-source inference over public demo clips and writes human-review flags into TimescaleDB for Grafana:
 
-- Incident triage agents that summarize abnormal city readings and recommend operator actions.
-- Anomaly explanation agents that connect air, weather, mobility, and water signals.
-- Operator copilots that answer questions over recent TimescaleDB readings and cold BigQuery history.
-- Policy-aware alert routing that respects safety, privacy, and data-access boundaries.
+- Inference-only video safety agent; no LLM API key, training job, or fine-tuning is required.
+- Demo data lands under `gs://$GCS_BUCKET/video_inbox/...` or local `data/video_inbox/...`.
+- All image/frame predictions are stored in `video_activity_predictions`; suspicious compatibility flags are stored in `video_activity_flags`.
+- Grafana and Streamlit include Safety AI views for recent AI-flagged possible suspicious activity and normal review-frame traces.
 
-If AI Agent code lands later, pull latest `main`, update this guide and the deck, rerun `make phase3-check`, rebuild the zip, and submit the refreshed package.
+The wording should stay reviewer-safe: the model produces possible activity labels for human review, not confirmed crime determinations.

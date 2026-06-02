@@ -4,8 +4,8 @@ This directory contains the cloud-ready foundation for the Smart City Zero-Disk 
 
 ## What Is Included
 
-- `terraform/`: GCP resources for Pub/Sub, dead-letter routing, GCS cold storage, BigQuery external analytics, Artifact Registry, service accounts, and gated GKE Autopilot runtime.
-- `k8s/`: renderable GKE manifests for self-hosted TimescaleDB, the multi-source ingestor, Pub/Sub hot writer, cold export CronJob, Streamlit, and guarded Streamlit-only public demo ingress.
+- `terraform/`: GCP resources for Pub/Sub, dead-letter routing, GCS cold storage, video object notifications, BigQuery external analytics, Artifact Registry, service accounts, and gated GKE Autopilot runtime.
+- `k8s/`: renderable GKE manifests for self-hosted TimescaleDB, the multi-source ingestor, Pub/Sub hot writer, optional video AI agent, cold export CronJob, Streamlit, and guarded Streamlit-only public demo ingress.
 - Local container image packaging uses the same Artifact Registry naming convention through `make docker-build`, `make docker-tag-release`, and `make docker-push`.
 - Terraform plan review uses local, ignored `terraform.tfvars` and `smartcity.tfplan` artifacts.
 
@@ -23,7 +23,7 @@ This directory contains the cloud-ready foundation for the Smart City Zero-Disk 
 2. Enable required APIs and authenticate Terraform locally or through CI.
 3. Create local `infra/cloud/terraform/terraform.tfvars`.
 4. Run `terraform fmt`, `terraform init`, and `terraform plan` for review.
-5. Publish ingestor, writer, and Streamlit images to Artifact Registry.
+5. Publish ingestor, writer, Streamlit, and optional video-agent images to Artifact Registry.
 6. Review the runtime plan with `make terraform-plan-runtime`.
 7. Apply runtime resources only with `ALLOW_TERRAFORM_APPLY_RUNTIME=yes make terraform-apply-runtime`.
 8. Render manifests with `make k8s-render`, create runtime secrets, and deploy to the non-production namespace.
@@ -106,3 +106,5 @@ Slice 18 adds live runtime hardening. Runtime Terraform also provisions GitHub A
 Slice 19 adds reliability and demo polish. Restore tests run only in a disposable namespace, runtime health checks surface failed jobs/restarts/PVCs/latest objects/image tags, and scale/demo commands help reduce cost after presentations without deleting the hot TimescaleDB PVC.
 
 Slice 20 adds public demo and enterprise operations. Public ingress exposes Streamlit with a demo password and can expose Grafana separately with login-protected credentials for demo week. Release promotion targets deploy CI-published images manually, runtime modes make demo/idle transitions repeatable, and evidence targets capture sanitized validation output.
+
+The optional video AI agent adds a small Cloud Storage media inbox (`video_inbox/`), a video Pub/Sub notification topic/subscription, and a disabled-by-default GKE deployment. Set `VIDEO_AGENT_REPLICAS=1` only for demos that need active inference over uploaded public sample images or extracted frames.
