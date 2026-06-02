@@ -274,6 +274,7 @@ spec:
         - name: video-agent
           image: __IMAGE_REGISTRY__/smartcity-video-agent:__RUNTIME_IMAGE_TAG__
           imagePullPolicy: Always
+          command: ["/bin/sh", "-c", "python -m video_agent.main --once --gcs-scan && sleep infinity"]
           envFrom:
             - configMapRef:
                 name: smartcity-config
