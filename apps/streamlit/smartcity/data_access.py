@@ -414,7 +414,6 @@ def safety_ai_summary(hours: int) -> pd.DataFrame:
         WITH scoped AS (
             SELECT *
             FROM video_activity_predictions
-            WHERE event_time >= %s
         )
         SELECT
             COUNT(*)::BIGINT AS total_predictions,
@@ -425,7 +424,7 @@ def safety_ai_summary(hours: int) -> pd.DataFrame:
             MAX(event_time) AS latest_prediction_at
         FROM scoped;
         """,
-        (cutoff(hours),),
+        (),
     )
 
 
@@ -439,11 +438,10 @@ def safety_ai_timeline(hours: int) -> pd.DataFrame:
             CASE WHEN is_suspicious THEN 'AI-flagged possible activity' ELSE 'Normal review frame' END AS prediction_type,
             COUNT(*)::BIGINT AS predictions
         FROM video_activity_predictions
-        WHERE event_time >= %s
         GROUP BY bucket, prediction_type
         ORDER BY bucket, prediction_type;
         """,
-        (cutoff(hours),),
+        (),
     )
 
 
@@ -468,11 +466,10 @@ def safety_ai_recent(hours: int, limit: int = 100) -> pd.DataFrame:
             review_status,
             media_uri
         FROM video_activity_predictions
-        WHERE event_time >= %s
         ORDER BY event_time DESC
         LIMIT %s;
         """,
-        (cutoff(hours), limit),
+        (limit,),
     )
 
 
@@ -489,11 +486,10 @@ def safety_ai_by_camera(hours: int) -> pd.DataFrame:
             COUNT(*)::BIGINT AS total,
             ROUND(AVG(confidence)::NUMERIC, 3)::DOUBLE PRECISION AS avg_confidence
         FROM video_activity_predictions
-        WHERE event_time >= %s
         GROUP BY location_name, camera_id
         ORDER BY flagged DESC;
         """,
-        (cutoff(hours),),
+        (),
     )
 
 
@@ -507,11 +503,11 @@ def safety_ai_by_label(hours: int) -> pd.DataFrame:
             severity,
             COUNT(*)::BIGINT AS count
         FROM video_activity_predictions
-        WHERE event_time >= %s AND is_suspicious = true
+        WHERE is_suspicious = true
         GROUP BY display_label, severity
         ORDER BY count DESC;
         """,
-        (cutoff(hours),),
+        (),
     )
 
 
@@ -527,11 +523,10 @@ def safety_ai_by_day_type(hours: int) -> pd.DataFrame:
             COUNT(*) FILTER (WHERE NOT is_suspicious)::BIGINT AS normal,
             COUNT(*)::BIGINT AS total
         FROM video_activity_predictions
-        WHERE event_time >= %s
         GROUP BY day_type
         ORDER BY day_type;
         """,
-        (cutoff(hours),),
+        (),
     )
 
 
