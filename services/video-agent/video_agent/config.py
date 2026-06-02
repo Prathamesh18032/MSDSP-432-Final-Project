@@ -55,7 +55,7 @@ def load_config() -> Config:
         model_version=os.getenv("VIDEO_AGENT_MODEL_VERSION", "mvp"),
         threshold=float(os.getenv("VIDEO_AGENT_THRESHOLD", "0.65")),
         crime_threshold=float(os.getenv("VIDEO_AGENT_CRIME_THRESHOLD", "0.50")),
-        mock_model=_bool_env("VIDEO_AGENT_MOCK_MODEL", True),
+        mock_model=_bool_env("VIDEO_AGENT_MOCK_MODEL", False),
         poll_seconds=int(os.getenv("VIDEO_AGENT_POLL_SECONDS", "10800")),
         clip_seconds=int(os.getenv("VIDEO_AGENT_CLIP_SECONDS", "10")),
         dry_run=_bool_env("VIDEO_AGENT_DRY_RUN", False),

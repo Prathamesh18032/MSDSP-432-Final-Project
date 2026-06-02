@@ -457,7 +457,7 @@ run-streamlit-compose: ## Run the Streamlit reports app through Docker Compose
 	docker compose --profile analytics up -d --build streamlit
 
 run-video-agent-once: ## Run the optional video AI agent once against local video_inbox
-	PYTHONPATH=services/video-agent VIDEO_AGENT_MOCK_MODEL=$${VIDEO_AGENT_MOCK_MODEL:-true} python3 -m video_agent.main --once --local-scan
+	PYTHONPATH=services/video-agent VIDEO_AGENT_MOCK_MODEL=$${VIDEO_AGENT_MOCK_MODEL:-false} python3 -m video_agent.main --once --local-scan
 
 run-video-agent-gcs: ## Run the video AI agent once scanning GCS bucket (set GCS_BUCKET and VIDEO_AGENT_GCS_PREFIX)
 	PYTHONPATH=services/video-agent VIDEO_AGENT_MOCK_MODEL=$${VIDEO_AGENT_MOCK_MODEL:-false} $(shell which python3 || which python) -m video_agent.main --once --gcs-scan
