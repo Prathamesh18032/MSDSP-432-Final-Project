@@ -417,6 +417,65 @@ def safety_ai_recent(hours: int, limit: int = 100) -> pd.DataFrame:
     )
 
 
+def safety_ai_by_camera(hours: int) -> pd.DataFrame:
+    if not video_predictions_available():
+        return pd.DataFrame()
+    return query_dataframe(
+        """
+        SELECT
+            location_name,
+            camera_id,
+            COUNT(*) FILTER (WHERE is_suspicious)::BIGINT AS flagged,
+            COUNT(*) FILTER (WHERE NOT is_suspicious)::BIGINT AS normal,
+            COUNT(*)::BIGINT AS total,
+            ROUND(AVG(confidence)::NUMERIC, 3)::DOUBLE PRECISION AS avg_confidence
+        FROM video_activity_predictions
+        WHERE event_time >= %s
+        GROUP BY location_name, camera_id
+        ORDER BY flagged DESC;
+        """,
+        (cutoff(hours),),
+    )
+
+
+def safety_ai_by_label(hours: int) -> pd.DataFrame:
+    if not video_predictions_available():
+        return pd.DataFrame()
+    return query_dataframe(
+        """
+        SELECT
+            display_label,
+            severity,
+            COUNT(*)::BIGINT AS count
+        FROM video_activity_predictions
+        WHERE event_time >= %s AND is_suspicious = true
+        GROUP BY display_label, severity
+        ORDER BY count DESC;
+        """,
+        (cutoff(hours),),
+    )
+
+
+def safety_ai_by_day_type(hours: int) -> pd.DataFrame:
+    """Suspicious predictions split by weekday vs weekend."""
+    if not video_predictions_available():
+        return pd.DataFrame()
+    return query_dataframe(
+        """
+        SELECT
+            CASE WHEN EXTRACT(DOW FROM event_time) IN (0, 6) THEN 'Weekend' ELSE 'Weekday' END AS day_type,
+            COUNT(*) FILTER (WHERE is_suspicious)::BIGINT AS flagged,
+            COUNT(*) FILTER (WHERE NOT is_suspicious)::BIGINT AS normal,
+            COUNT(*)::BIGINT AS total
+        FROM video_activity_predictions
+        WHERE event_time >= %s
+        GROUP BY day_type
+        ORDER BY day_type;
+        """,
+        (cutoff(hours),),
+    )
+
+
 def domain_latest(domain_metrics: list[str], hours: int) -> pd.DataFrame:
     if not domain_metrics:
         return pd.DataFrame()

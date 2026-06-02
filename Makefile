@@ -459,6 +459,21 @@ run-streamlit-compose: ## Run the Streamlit reports app through Docker Compose
 run-video-agent-once: ## Run the optional video AI agent once against local video_inbox
 	PYTHONPATH=services/video-agent VIDEO_AGENT_MOCK_MODEL=$${VIDEO_AGENT_MOCK_MODEL:-true} python3 -m video_agent.main --once --local-scan
 
+run-video-agent-gcs: ## Run the video AI agent once scanning GCS bucket (set GCS_BUCKET and VIDEO_AGENT_GCS_PREFIX)
+	PYTHONPATH=services/video-agent VIDEO_AGENT_MOCK_MODEL=$${VIDEO_AGENT_MOCK_MODEL:-false} $(shell which python3 || which python) -m video_agent.main --once --gcs-scan
+
+demo-ready: ## Start full local demo: infra + simulator + video inference + streamlit
+	$(MAKE) run-local
+	@echo "Waiting for TimescaleDB to be ready..."
+	@sleep 8
+	$(MAKE) seed-simulator
+	$(MAKE) poll-multisource-once
+	PYTHONPATH=services/video-agent VIDEO_AGENT_MOCK_MODEL=$${VIDEO_AGENT_MOCK_MODEL:-false} $(shell which python3 || which python) -m video_agent.main --once --local-scan
+	@echo ""
+	@echo "Demo ready. Open Streamlit:"
+	@echo "  $$(which python3 || which python) -m streamlit run apps/streamlit/app.py --server.port $${STREAMLIT_PORT:-8501}"
+	@echo "Or Grafana: http://localhost:$${GRAFANA_PORT:-3000} (admin / admin)"
+
 run-video-agent-compose: ## Run the optional video AI agent through Docker Compose
 	docker compose --profile ai up --build video-agent
 
