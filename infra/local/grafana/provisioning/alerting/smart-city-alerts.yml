@@ -1,0 +1,262 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: Smart City Operations Alerts
+    folder: Smart City
+    interval: 1m
+    rules:
+      - uid: smartcity-no-recent-ingestion
+        title: No recent ingestion in 20 minutes
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: timescaledb-hot
+            relativeTimeRange:
+              from: 1800
+              to: 0
+            model:
+              datasource:
+                type: postgres
+                uid: timescaledb-hot
+              editorMode: code
+              format: table
+              rawQuery: true
+              rawSql: |
+                SELECT COALESCE(EXTRACT(EPOCH FROM (NOW() - MAX(ingested_at))) / 60.0, 9999)::DOUBLE PRECISION AS value
+                FROM sensor_readings;
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              reducer: last
+              refId: B
+              type: reduce
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 20
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              refId: C
+              type: threshold
+        noDataState: Alerting
+        execErrState: Error
+        for: 5m
+        annotations:
+          summary: No sensor readings have been ingested recently.
+        labels:
+          severity: critical
+          surface: grafana
+
+      - uid: smartcity-source-freshness-warning
+        title: Source freshness warning
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: timescaledb-hot
+            relativeTimeRange:
+              from: 3600
+              to: 0
+            model:
+              datasource:
+                type: postgres
+                uid: timescaledb-hot
+              editorMode: code
+              format: table
+              rawQuery: true
+              rawSql: |
+                SELECT COALESCE(MAX(age_minutes), 9999)::DOUBLE PRECISION AS value
+                FROM (
+                  SELECT EXTRACT(EPOCH FROM (NOW() - MAX(ingested_at))) / 60.0 AS age_minutes
+                  FROM sensor_readings
+                  GROUP BY source
+                ) freshness;
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              reducer: last
+              refId: B
+              type: reduce
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 20
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              refId: C
+              type: threshold
+        noDataState: Alerting
+        execErrState: Error
+        for: 5m
+        annotations:
+          summary: At least one source has not ingested data within the freshness window.
+        labels:
+          severity: warning
+          surface: grafana
+
+      - uid: smartcity-quality-exceptions
+        title: Suspect or invalid readings in 15 minutes
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: timescaledb-hot
+            relativeTimeRange:
+              from: 900
+              to: 0
+            model:
+              datasource:
+                type: postgres
+                uid: timescaledb-hot
+              editorMode: code
+              format: table
+              rawQuery: true
+              rawSql: |
+                SELECT COUNT(*)::DOUBLE PRECISION AS value
+                FROM sensor_readings
+                WHERE ingested_at >= NOW() - INTERVAL '15 minutes'
+                  AND quality_flag <> 1;
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              reducer: last
+              refId: B
+              type: reduce
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              refId: C
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 1m
+        annotations:
+          summary: Suspect or invalid sensor readings were received.
+        labels:
+          severity: warning
+          surface: grafana
+
+      - uid: smartcity-dropped-readings-increased
+        title: Dropped readings increased in 15 minutes
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: timescaledb-hot
+            relativeTimeRange:
+              from: 900
+              to: 0
+            model:
+              datasource:
+                type: postgres
+                uid: timescaledb-hot
+              editorMode: code
+              format: table
+              rawQuery: true
+              rawSql: |
+                SELECT COALESCE(MAX(dropped_readings_total) - MIN(dropped_readings_total), 0)::DOUBLE PRECISION AS value
+                FROM ingestion_metrics
+                WHERE recorded_at >= NOW() - INTERVAL '15 minutes';
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              reducer: last
+              refId: B
+              type: reduce
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: B
+              refId: C
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 1m
+        annotations:
+          summary: The ingestion buffer reported newly dropped readings.
+        labels:
+          severity: warning
+          surface: grafana
