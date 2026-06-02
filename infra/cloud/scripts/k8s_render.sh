@@ -27,7 +27,7 @@ subscription="$(tfvar pubsub_subscription_name || true)"; subscription="${subscr
 video_topic="$(tfvar video_pubsub_topic_name || true)"; video_topic="${video_topic:-${VIDEO_AGENT_PUBSUB_TOPIC:-smartcity-video-events}}"
 video_subscription="$(tfvar video_pubsub_subscription_name || true)"; video_subscription="${video_subscription:-${VIDEO_AGENT_PUBSUB_SUBSCRIPTION:-smartcity-video-agent}}"
 video_prefix="${VIDEO_AGENT_GCS_PREFIX:-video_inbox}"
-video_agent_replicas="${VIDEO_AGENT_REPLICAS:-0}"
+video_agent_replicas="${VIDEO_AGENT_REPLICAS:-1}"
 image_registry="${IMAGE_REGISTRY:-${region}-docker.pkg.dev/${project}/${repository}}"
 runtime_tag="${RUNTIME_IMAGE_TAG:-latest-main}"
 timescale_db="${K8S_TIMESCALE_DB:-smartcity_hot}"
