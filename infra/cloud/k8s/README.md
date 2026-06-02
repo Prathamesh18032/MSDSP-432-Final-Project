@@ -47,10 +47,19 @@ ALLOW_PUBLIC_INGRESS=yes make public-demo-apply
 make public-demo-url
 ```
 
+To expose Grafana temporarily for reviewers:
+
+```sh
+export GRAFANA_ADMIN_PASSWORD=<share-with-reviewers>
+ALLOW_GRAFANA_PUBLIC_INGRESS=yes make grafana-public-apply
+make grafana-public-url
+```
+
 Disable the public endpoint after review:
 
 ```sh
 make public-demo-disable
+make grafana-public-disable
 ```
 
 Rendered files are written to `infra/cloud/k8s/rendered/` and are ignored by Git. Do not edit rendered files directly; update the templates or renderer instead.
@@ -63,6 +72,7 @@ Do not commit secret values. `make k8s-apply` creates `smartcity-runtime-secrets
 - `TIMESCALE_DSN`
 - optional `OPENAQ_API_KEY`
 - optional `STREAMLIT_DEMO_PASSWORD`
+- optional `GRAFANA_ADMIN_PASSWORD`
 
 The TimescaleDB service is internal only:
 

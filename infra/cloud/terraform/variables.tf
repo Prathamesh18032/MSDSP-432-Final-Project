@@ -107,7 +107,7 @@ variable "gke_cluster_name" {
 }
 
 variable "enable_ci_cd_resources" {
-  description = "Enable GitHub Actions Workload Identity Federation resources for Artifact Registry image publishing."
+  description = "Enable GitHub Actions Workload Identity Federation resources for image publishing and runtime promotion."
   type        = bool
   default     = false
 }

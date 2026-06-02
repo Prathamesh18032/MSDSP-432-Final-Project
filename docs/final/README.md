@@ -84,7 +84,7 @@ The deck should spend minimal time repeating Phase 2 design material. The prefer
 This project is intentionally reviewer-safe:
 
 - The final zip excludes `.env`, Terraform state, local data, generated evidence, caches, and package output.
-- Public demo ingress exposes only Streamlit and requires `STREAMLIT_DEMO_PASSWORD`.
+- Public demo ingress exposes Streamlit with `STREAMLIT_DEMO_PASSWORD`; Grafana can be exposed separately with a non-default `GRAFANA_ADMIN_PASSWORD` for demo week.
 - Backend services remain private inside the runtime network.
 - GCP apply and public ingress flows are guarded by explicit environment flags.
 - Runtime cost controls support demo, idle, resume, and scale-down modes.

@@ -99,12 +99,12 @@ Slice 15 adds the first guarded apply path for low-cost core resources. `make te
 
 Slice 16 adds the first cloud cold-path validation. `make export-cold-gcs` uploads Parquet files to the existing GCS bucket, and `make bigquery-cold-check` verifies the external table is queryable. These commands do not create additional infrastructure.
 
-Slice 17 adds the first gated runtime path. `make terraform-plan-runtime` reviews GKE Autopilot and Workload Identity changes. `ALLOW_TERRAFORM_APPLY_RUNTIME=yes make terraform-apply-runtime` creates runtime infrastructure only when intentionally allowed. TimescaleDB remains the hot store and is deployed as an internal Kubernetes StatefulSet with a PVC; Grafana stays local/demo-only for now.
+Slice 17 adds the first gated runtime path. `make terraform-plan-runtime` reviews GKE Autopilot and Workload Identity changes. `ALLOW_TERRAFORM_APPLY_RUNTIME=yes make terraform-apply-runtime` creates runtime infrastructure only when intentionally allowed. TimescaleDB remains the hot store and is deployed as an internal Kubernetes StatefulSet with a PVC.
 
 Slice 18 adds live runtime hardening. Runtime Terraform also provisions GitHub Actions Workload Identity Federation for image publishing. Kubernetes manifests include a TimescaleDB backup CronJob, and operations scripts validate logs, workload health, Pub/Sub, GCS, BigQuery, and backup presence.
 
 Slice 19 adds reliability and demo polish. Restore tests run only in a disposable namespace, runtime health checks surface failed jobs/restarts/PVCs/latest objects/image tags, and scale/demo commands help reduce cost after presentations without deleting the hot TimescaleDB PVC.
 
-Slice 20 adds public demo and enterprise operations. Public ingress exposes only Streamlit and requires a demo password. Release promotion targets deploy CI-published images manually, runtime modes make demo/idle transitions repeatable, and evidence targets capture sanitized validation output.
+Slice 20 adds public demo and enterprise operations. Public ingress exposes Streamlit with a demo password and can expose Grafana separately with login-protected credentials for demo week. Release promotion targets deploy CI-published images manually, runtime modes make demo/idle transitions repeatable, and evidence targets capture sanitized validation output.
 
 The optional video AI agent adds a small Cloud Storage media inbox (`video_inbox/`), a video Pub/Sub notification topic/subscription, and a disabled-by-default GKE deployment. Set `VIDEO_AGENT_REPLICAS=1` only for demos that need active inference over uploaded public sample images or extracted frames.
