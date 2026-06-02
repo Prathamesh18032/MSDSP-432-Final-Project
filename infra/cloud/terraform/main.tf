@@ -41,6 +41,10 @@ data "google_project" "current" {
   project_id = var.gcp_project_id
 }
 
+data "google_storage_project_service_account" "gcs_account" {
+  project = var.gcp_project_id
+}
+
 resource "google_project_service" "required" {
   for_each = local.required_services
 
@@ -83,6 +87,24 @@ resource "google_pubsub_subscription" "hot_writer" {
   labels = local.labels
 }
 
+resource "google_pubsub_topic" "video_events" {
+  name                       = var.video_pubsub_topic_name
+  labels                     = local.labels
+  message_retention_duration = "86400s"
+
+  depends_on = [google_project_service.required]
+}
+
+resource "google_pubsub_subscription" "video_agent" {
+  name  = var.video_pubsub_subscription_name
+  topic = google_pubsub_topic.video_events.name
+
+  ack_deadline_seconds       = 60
+  message_retention_duration = "604800s"
+
+  labels = local.labels
+}
+
 resource "google_storage_bucket" "cold_storage" {
   name                        = var.gcs_bucket
   location                    = var.gcp_region
@@ -101,6 +123,22 @@ resource "google_storage_bucket" "cold_storage" {
   }
 
   depends_on = [google_project_service.required]
+}
+
+resource "google_pubsub_topic_iam_member" "gcs_video_notification_publisher" {
+  topic  = google_pubsub_topic.video_events.name
+  role   = "roles/pubsub.publisher"
+  member = "serviceAccount:${data.google_storage_project_service_account.gcs_account.email_address}"
+}
+
+resource "google_storage_notification" "video_inbox" {
+  bucket             = google_storage_bucket.cold_storage.name
+  payload_format     = "JSON_API_V1"
+  topic              = google_pubsub_topic.video_events.id
+  event_types        = ["OBJECT_FINALIZE"]
+  object_name_prefix = var.video_gcs_prefix
+
+  depends_on = [google_pubsub_topic_iam_member.gcs_video_notification_publisher]
 }
 
 resource "google_bigquery_dataset" "analytics" {
@@ -164,6 +202,12 @@ resource "google_pubsub_topic_iam_member" "ingestor_publisher" {
 
 resource "google_pubsub_subscription_iam_member" "writer_subscriber" {
   subscription = google_pubsub_subscription.hot_writer.name
+  role         = "roles/pubsub.subscriber"
+  member       = google_service_account.writer.member
+}
+
+resource "google_pubsub_subscription_iam_member" "video_agent_subscriber" {
+  subscription = google_pubsub_subscription.video_agent.name
   role         = "roles/pubsub.subscriber"
   member       = google_service_account.writer.member
 }

@@ -34,6 +34,24 @@ variable "pubsub_subscription_name" {
   default     = "smartcity-hot-writer"
 }
 
+variable "video_pubsub_topic_name" {
+  description = "Pub/Sub topic for Cloud Storage video object notifications."
+  type        = string
+  default     = "smartcity-video-events"
+}
+
+variable "video_pubsub_subscription_name" {
+  description = "Subscription used by the optional video inference agent."
+  type        = string
+  default     = "smartcity-video-agent"
+}
+
+variable "video_gcs_prefix" {
+  description = "Cloud Storage object prefix watched by the optional video inference agent."
+  type        = string
+  default     = "video_inbox/"
+}
+
 variable "pubsub_max_delivery_attempts" {
   description = "Maximum Pub/Sub delivery attempts before routing to the dead-letter topic."
   type        = number

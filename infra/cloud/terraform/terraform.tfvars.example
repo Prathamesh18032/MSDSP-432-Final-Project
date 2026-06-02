@@ -6,6 +6,9 @@ pubsub_topic_name         = "smartcity-readings"
 pubsub_dlq_topic_name     = "smartcity-dlq"
 pubsub_subscription_name  = "smartcity-hot-writer"
 pubsub_max_delivery_attempts = 5
+video_pubsub_topic_name        = "smartcity-video-events"
+video_pubsub_subscription_name = "smartcity-video-agent"
+video_gcs_prefix              = "video_inbox/"
 
 gcs_bucket                  = "smartcity-zero-disk-iot-pa-cold"
 cold_storage_retention_days = 365

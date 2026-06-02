@@ -25,9 +25,10 @@ for cronjob in smartcity-cold-export smartcity-timescale-backup; do
   kubectl_retry patch cronjob "${cronjob}" -n "${namespace}" --type merge -p '{"spec":{"suspend":true}}' >/dev/null || true
 done
 
-kubectl_retry scale deploy/smartcity-ingestor deploy/smartcity-hot-writer deploy/smartcity-streamlit \
+kubectl_retry scale deploy/smartcity-ingestor deploy/smartcity-hot-writer deploy/smartcity-streamlit deploy/smartcity-video-agent \
   -n "${namespace}" \
-  --replicas=0
+  --replicas=0 \
+  --ignore-not-found=true
 
 if [[ "${RUNTIME_IDLE_SCALE_TIMESCALE:-false}" == "true" ]]; then
   kubectl_retry scale statefulset/smartcity-timescaledb -n "${namespace}" --replicas=0

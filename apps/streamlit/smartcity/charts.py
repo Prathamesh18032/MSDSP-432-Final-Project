@@ -131,6 +131,69 @@ def ingestion_trend(frame: pd.DataFrame) -> go.Figure:
     return finish(fig, 330)
 
 
+def safety_ai_timeline(frame: pd.DataFrame) -> go.Figure:
+    fig = px.bar(
+        frame,
+        x="bucket",
+        y="predictions",
+        color="prediction_type",
+        barmode="stack",
+        labels={"bucket": "", "predictions": "Predictions", "prediction_type": ""},
+        title="Prediction activity over time",
+        color_discrete_map={
+            "AI-flagged possible activity": "#B42318",
+            "Normal review frame": "#067647",
+        },
+    )
+    fig.update_layout(legend=dict(font=dict(color="#111827")))
+    return finish(fig, 300)
+
+
+def safety_ai_by_camera(frame: pd.DataFrame) -> go.Figure:
+    fig = px.bar(
+        frame,
+        x="flagged",
+        y="location_name",
+        orientation="h",
+        color="avg_confidence",
+        color_continuous_scale=["#FEF3C7", "#B42318"],
+        labels={"flagged": "AI-flagged frames", "location_name": "", "avg_confidence": "Avg confidence"},
+        title="AI-flagged frames by camera zone",
+    )
+    fig.update_layout(yaxis=dict(tickfont=dict(color="#111827")), coloraxis_colorbar=dict(tickfont=dict(color="#111827")))
+    return finish(fig, 320)
+
+
+def safety_ai_by_label(frame: pd.DataFrame) -> go.Figure:
+    severity_colors = {"critical": "#B42318", "high": "#DC6803", "medium": "#F79009", "low": "#067647"}
+    fig = px.bar(
+        frame,
+        x="count",
+        y="display_label",
+        orientation="h",
+        color="severity",
+        color_discrete_map=severity_colors,
+        labels={"count": "Flagged frames", "display_label": "", "severity": "Severity"},
+        title="Possible activity type breakdown",
+    )
+    fig.update_layout(yaxis=dict(tickfont=dict(color="#111827")), legend=dict(font=dict(color="#111827")))
+    return finish(fig, 300)
+
+
+def safety_ai_day_type(frame: pd.DataFrame) -> go.Figure:
+    fig = px.bar(
+        frame,
+        x="day_type",
+        y=["flagged", "normal"],
+        barmode="group",
+        labels={"value": "Frames", "day_type": "", "variable": ""},
+        title="Weekday vs weekend activity",
+        color_discrete_map={"flagged": "#B42318", "normal": "#067647"},
+    )
+    fig.update_layout(legend=dict(font=dict(color="#111827")))
+    return finish(fig, 260)
+
+
 def latest_domain_bar(frame: pd.DataFrame, title: str) -> go.Figure:
     data = metadata.add_display_columns(frame)
     if {"sensor_name", "metric_name"}.issubset(data.columns):

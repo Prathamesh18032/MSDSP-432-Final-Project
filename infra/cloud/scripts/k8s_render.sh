@@ -24,6 +24,10 @@ dataset="$(tfvar bigquery_dataset || true)"; dataset="${dataset:-${BIGQUERY_DATA
 topic="$(tfvar pubsub_topic_name || true)"; topic="${topic:-${GCP_PUBSUB_TOPIC:-smartcity-readings}}"
 dlq_topic="$(tfvar pubsub_dlq_topic_name || true)"; dlq_topic="${dlq_topic:-${GCP_PUBSUB_DLQ_TOPIC:-smartcity-dlq}}"
 subscription="$(tfvar pubsub_subscription_name || true)"; subscription="${subscription:-${GCP_PUBSUB_SUBSCRIPTION:-smartcity-hot-writer}}"
+video_topic="$(tfvar video_pubsub_topic_name || true)"; video_topic="${video_topic:-${VIDEO_AGENT_PUBSUB_TOPIC:-smartcity-video-events}}"
+video_subscription="$(tfvar video_pubsub_subscription_name || true)"; video_subscription="${video_subscription:-${VIDEO_AGENT_PUBSUB_SUBSCRIPTION:-smartcity-video-agent}}"
+video_prefix="${VIDEO_AGENT_GCS_PREFIX:-video_inbox}"
+video_agent_replicas="${VIDEO_AGENT_REPLICAS:-0}"
 image_registry="${IMAGE_REGISTRY:-${region}-docker.pkg.dev/${project}/${repository}}"
 runtime_tag="${RUNTIME_IMAGE_TAG:-latest-main}"
 timescale_db="${K8S_TIMESCALE_DB:-smartcity_hot}"
@@ -61,6 +65,10 @@ render_file() {
     -e "s|__GCP_PUBSUB_TOPIC__|${topic}|g" \
     -e "s|__GCP_PUBSUB_DLQ_TOPIC__|${dlq_topic}|g" \
     -e "s|__GCP_PUBSUB_SUBSCRIPTION__|${subscription}|g" \
+    -e "s|__VIDEO_AGENT_PUBSUB_TOPIC__|${video_topic}|g" \
+    -e "s|__VIDEO_AGENT_PUBSUB_SUBSCRIPTION__|${video_subscription}|g" \
+    -e "s|__VIDEO_AGENT_GCS_PREFIX__|${video_prefix}|g" \
+    -e "s|__VIDEO_AGENT_REPLICAS__|${video_agent_replicas}|g" \
     -e "s|__GCS_BUCKET__|${bucket}|g" \
     -e "s|__BIGQUERY_DATASET__|${dataset}|g" \
     -e "s|__IMAGE_REGISTRY__|${image_registry}|g" \
