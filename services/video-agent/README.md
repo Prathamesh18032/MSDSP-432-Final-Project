@@ -1,23 +1,23 @@
 # Smart City Video Agent
 
-The video agent is an optional MVP inference worker. It does not use an LLM, external model API, training job, or fine-tuning path. In real image mode it runs a local two-stage Hugging Face classifier: Crime/Normal first, then a UCF-Crime activity-type hint for frames that clear the suspicious threshold. In mock mode it emits deterministic predictions for local smoke tests.
+The video agent is an optional MVP inference worker. It does not use an LLM, external model API, training job, or fine-tuning path. By default it runs a local two-stage Hugging Face classifier: Crime/Normal first, then a UCF-Crime activity-type hint for frames that clear the suspicious threshold. Mock mode is only available when explicitly enabled for local smoke tests.
 
-## Local Mock Path
+## Local Inference Path
 
 ```sh
 make run-local
-mkdir -p data/video_inbox/city=chicago/camera=demo-001
-touch data/video_inbox/city=chicago/camera=demo-001/robbery-sample.mp4
-VIDEO_AGENT_MOCK_MODEL=true make run-video-agent-once
+make seed-video-dataset
+python3 -m pip install -r services/video-agent/requirements.txt
+make run-video-agent-once
 ```
 
-Mock mode is the default so `make ai-check` and CI do not download PyTorch models.
+Mock mode can still be used explicitly with `VIDEO_AGENT_MOCK_MODEL=true`.
 
 ## Real Inference Path
 
 ```sh
 python3 -m pip install -r services/video-agent/requirements.txt
-VIDEO_AGENT_MOCK_MODEL=false make run-video-agent-once
+make run-video-agent-once
 ```
 
 Default real-image models:

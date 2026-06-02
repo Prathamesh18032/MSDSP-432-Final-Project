@@ -125,22 +125,19 @@ For the Streamlit command center, install the Python dependencies once with `pyt
 
 ## Optional Video AI Agent
 
-The optional video agent is an inference-only MVP for AI-flagged safety review. It does not use an LLM, API key, training job, or fine-tuning path. By default it runs in deterministic mock mode so local checks stay lightweight:
+The optional video agent is an inference-only MVP for AI-flagged safety review. It does not use an LLM, API key, training job, or fine-tuning path. By default it runs the two-stage Hugging Face image models configured by `VIDEO_AGENT_BINARY_MODEL` and `VIDEO_AGENT_TYPE_MODEL`:
 
 ```sh
-make ai-check
 make run-local
-mkdir -p data/video_inbox/city=chicago/camera=demo-001
-touch data/video_inbox/city=chicago/camera=demo-001/robbery-sample.mp4
-VIDEO_AGENT_MOCK_MODEL=true make run-video-agent-once
+make seed-video-dataset
+python3 -m pip install -r services/video-agent/requirements.txt
+make run-video-agent-once
 ```
 
-Real image inference is opt-in with the two-stage Hugging Face image models configured by
-`VIDEO_AGENT_BINARY_MODEL` and `VIDEO_AGENT_TYPE_MODEL`:
+Mock mode is only for explicit local smoke checks:
 
 ```sh
-python3 -m pip install -r services/video-agent/requirements.txt
-VIDEO_AGENT_MOCK_MODEL=false make run-video-agent-once
+VIDEO_AGENT_MOCK_MODEL=true make run-video-agent-once
 ```
 
 For demos, configure Kaggle credentials, then run `make seed-video-dataset` to sample the UCF-Crime `Test` folders into a dataset capped near 200 MB. To test a local clip, set `VIDEO_AGENT_SOURCE_VIDEO=/path/to/demo.mp4` and run `make extract-video-frames`; the extracted JPG frames use the same inference path as Kaggle images.
