@@ -644,10 +644,13 @@ def data_quality(filters: Filters) -> None:
 
 
 def safety_ai(filters: Filters) -> None:
-    styles.section("Safety AI", "Possible suspicious activity traces from the optional image inference agent.")
+    styles.section("Safety AI", "AI-flagged possible activity traces from the image inference agent. All labels are review hints, not confirmed incidents.")
     try:
         summary_frame = data_access.safety_ai_summary(filters.hours)
         timeline = data_access.safety_ai_timeline(filters.hours)
+        by_camera = data_access.safety_ai_by_camera(filters.hours)
+        by_label = data_access.safety_ai_by_label(filters.hours)
+        by_day = data_access.safety_ai_by_day_type(filters.hours)
         recent = data_access.safety_ai_recent(filters.hours)
     except Exception:
         st.error("Safety AI review traces are temporarily unavailable.")
@@ -662,99 +665,88 @@ def safety_ai(filters: Filters) -> None:
     suspicious = int(summary.get("suspicious_predictions") or 0)
     normal = int(summary.get("normal_predictions") or 0)
     high = int(summary.get("high_severity_predictions") or 0)
+    avg_conf = float(summary.get("avg_confidence") or 0)
+
     if total == 0:
         styles.empty_state("No Safety AI predictions were recorded in the selected time window.")
         return
+
+    flag_rate = suspicious / total if total else 0
 
     styles.card_grid(
         [
             {
                 "label": "Frames reviewed",
                 "value": format_int(total),
-                "note": f"Image predictions from the last {filters.hours} hours.",
+                "note": f"Last {filters.hours}h window.",
                 "tone": "good",
             },
             {
                 "label": "AI-flagged possible activity",
                 "value": format_int(suspicious),
-                "note": "Frames routed for human review.",
+                "note": f"{format_pct(100 * flag_rate)} flag rate.",
                 "tone": "warn" if suspicious else "good",
             },
             {
-                "label": "Normal review frames",
+                "label": "Normal frames",
                 "value": format_int(normal),
-                "note": "Frames not flagged as suspicious.",
+                "note": "Not flagged as suspicious.",
                 "tone": "good",
             },
             {
                 "label": "High-severity hints",
                 "value": format_int(high),
-                "note": "Possible high or critical activity labels.",
+                "note": "High or critical severity labels.",
                 "tone": "bad" if high else "good",
             },
             {
-                "label": "Average confidence",
-                "value": format_pct(100 * float(summary.get("avg_confidence") or 0)),
-                "note": f"Latest prediction: {format_time(summary.get('latest_prediction_at'))}.",
+                "label": "Avg confidence",
+                "value": format_pct(100 * avg_conf),
+                "note": f"Latest: {format_time(summary.get('latest_prediction_at'))}.",
                 "tone": "good",
             },
         ]
     )
 
-    if not timeline.empty:
-        st.plotly_chart(charts.safety_ai_timeline(timeline), use_container_width=True)
+    # Latest flagged alert banner
+    if not recent.empty:
+        latest_flagged = recent[recent["is_suspicious"] == True].head(1)  # noqa: E712
+        if not latest_flagged.empty:
+            latest = latest_flagged.iloc[0]
+            styles.report_panel(
+                "Latest AI-flagged possible activity",
+                [
+                    f"{latest.get('display_label')} at {latest.get('location_name')} — camera {latest.get('camera_id')}.",
+                    f"Time: {format_time(latest.get('event_time'))} · Confidence: {format_pct(100 * float(latest.get('confidence') or 0))} · Severity: {latest.get('severity', 'unknown')}.",
+                    "Review hint from a pretrained model — not a confirmed incident.",
+                ],
+            )
 
-    if recent.empty:
-        styles.empty_state("No recent Safety AI prediction rows match this window.")
-        return
+    st.markdown("---")
 
-    latest_flagged = recent[recent["is_suspicious"] == True].head(1)  # noqa: E712
-    if not latest_flagged.empty:
-        latest = latest_flagged.iloc[0]
-        styles.report_panel(
-            "Latest AI-flagged possible activity",
-            [
-                f"{latest.get('display_label')} at {latest.get('location_name')} from camera {latest.get('camera_id')}.",
-                f"Prediction time: {format_time(latest.get('event_time'))}; confidence: {format_pct(100 * float(latest.get('confidence') or 0))}.",
-                "This is a review hint from a pretrained model, not a confirmed incident.",
-            ],
-        )
+    # Row 1: by-camera and by-label side by side
+    col_left, col_right = st.columns(2)
+    with col_left:
+        if not by_camera.empty:
+            st.plotly_chart(charts.safety_ai_by_camera(by_camera), use_container_width=True)
+        else:
+            styles.empty_state("No camera breakdown available.")
+    with col_right:
+        if not by_label.empty:
+            st.plotly_chart(charts.safety_ai_by_label(by_label), use_container_width=True)
+        else:
+            styles.empty_state("No activity type breakdown available.")
 
-    table = recent.copy()
-    table["event_time"] = table["event_time"].map(format_time)
-    table["is_suspicious"] = table["is_suspicious"].map(lambda value: "Possible activity" if value else "Normal")
-    for column in ["confidence", "crime_score", "type_score"]:
-        table[column] = table[column].map(lambda value: "n/a" if pd.isna(value) else format_pct(100 * float(value)))
-    table = table[
-        [
-            "event_time",
-            "camera_id",
-            "location_name",
-            "is_suspicious",
-            "display_label",
-            "confidence",
-            "crime_score",
-            "type_score",
-            "severity",
-            "review_status",
-            "media_uri",
-        ]
-    ]
-    table.columns = [
-        "Prediction time",
-        "Camera",
-        "Location",
-        "Review result",
-        "Possible activity",
-        "Confidence",
-        "Crime score",
-        "Type score",
-        "Severity",
-        "Review status",
-        "Media URI",
-    ]
-    styles.responsive_table(table, max_rows=30)
-    download_csv("Download Safety AI predictions", table, "safety-ai-predictions")
+    # Row 2: weekday vs weekend
+    if not by_day.empty:
+        st.plotly_chart(charts.safety_ai_day_type(by_day), use_container_width=True)
+
+    # Expandable timeline — hidden by default
+    with st.expander("Show prediction timeline"):
+        if not timeline.empty:
+            st.plotly_chart(charts.safety_ai_timeline(timeline), use_container_width=True)
+        else:
+            styles.empty_state("No timeline data available.")
 
 
 def cold_path() -> None:

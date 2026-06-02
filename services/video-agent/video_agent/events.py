@@ -108,6 +108,43 @@ def discover_local_media(root: str, default_city: str, default_camera: str) -> l
 discover_local_videos = discover_local_media
 
 
+def discover_gcs_media(bucket: str, prefix: str, default_city: str, default_camera: str) -> list[VideoEvent]:
+    """List images under gs://<bucket>/<prefix> and return VideoEvents (no download).
+
+    Requires google-cloud-storage to be installed and GCP credentials
+    (GOOGLE_APPLICATION_CREDENTIALS or ADC).
+    """
+    try:
+        from google.cloud import storage as gcs
+    except ImportError as exc:
+        raise RuntimeError("google-cloud-storage is required for GCS scan mode") from exc
+
+    client = gcs.Client()
+    blobs = client.list_blobs(bucket, prefix=prefix.rstrip("/") + "/")
+    events: list[VideoEvent] = []
+    for blob in blobs:
+        name = blob.name
+        if Path(name).suffix.lower() not in MEDIA_EXTENSIONS:
+            continue
+        city, camera_id = infer_city_camera(name, default_city, default_camera)
+        event_time, location_name, latitude, longitude, source_video_uri, frame_index = infer_demo_metadata(name)
+        events.append(
+            VideoEvent(
+                uri=f"gs://{bucket}/{name}",
+                city=city,
+                camera_id=camera_id,
+                local_path=None,
+                event_time=event_time,
+                location_name=location_name,
+                latitude=latitude,
+                longitude=longitude,
+                source_video_uri=source_video_uri,
+                frame_index=frame_index,
+            )
+        )
+    return events
+
+
 def parse_gcs_notification(payload: bytes | str, default_city: str, default_camera: str) -> VideoEvent:
     if isinstance(payload, bytes):
         payload = payload.decode("utf-8")

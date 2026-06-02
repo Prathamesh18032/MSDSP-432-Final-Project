@@ -6,13 +6,14 @@ import time
 
 from .agent import VideoAgent
 from .config import load_config
-from .events import discover_local_media, parse_gcs_notification
+from .events import discover_gcs_media, discover_local_media, parse_gcs_notification
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Smart City video safety inference agent")
     parser.add_argument("--once", action="store_true", help="process available work once, then exit")
     parser.add_argument("--local-scan", action="store_true", help="scan VIDEO_AGENT_INPUT_DIR instead of Pub/Sub")
+    parser.add_argument("--gcs-scan", action="store_true", help="scan GCS bucket/prefix instead of Pub/Sub")
     parser.add_argument("--gcs-event-json", help="process one Cloud Storage notification JSON payload")
     return parser
 
@@ -24,6 +25,21 @@ def run_local_once(agent: VideoAgent) -> int:
     for event in events:
         count += len(agent.process_event(event))
     logging.getLogger("video-agent").info("processed local media=%d flags=%d", len(events), count)
+    return count
+
+
+def run_gcs_once(agent: VideoAgent) -> int:
+    cfg = agent.config
+    if not cfg.gcs_bucket:
+        raise ValueError("VIDEO_AGENT_GCS_BUCKET or GCS_BUCKET must be set for --gcs-scan")
+    log = logging.getLogger("video-agent")
+    log.info("scanning gs://%s/%s", cfg.gcs_bucket, cfg.gcs_prefix)
+    events = discover_gcs_media(cfg.gcs_bucket, cfg.gcs_prefix, cfg.city, cfg.camera_id)
+    log.info("found %d media objects in GCS", len(events))
+    count = 0
+    for event in events:
+        count += len(agent.process_event(event))
+    log.info("processed gcs media=%d flags=%d", len(events), count)
     return count
 
 
@@ -65,6 +81,9 @@ def main() -> int:
         if args.gcs_event_json:
             event = parse_gcs_notification(args.gcs_event_json, cfg.city, cfg.camera_id)
             return 0 if agent.process_event(event) else 1
+        if args.gcs_scan:
+            run_gcs_once(agent)
+            return 0
         if args.local_scan or args.once:
             run_local_once(agent)
             return 0

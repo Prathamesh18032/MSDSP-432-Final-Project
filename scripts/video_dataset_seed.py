@@ -217,7 +217,8 @@ def download_selected_kaggle_files(dataset: str, cache_dir: Path, selected_files
         flat_candidate = cache_dir / basename
         if flat_candidate.exists():
             target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(flat_candidate, target)
+            import shutil as _shutil
+            _shutil.copy2(flat_candidate, target)
             continue
 
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -249,14 +250,15 @@ def download_selected_kaggle_files(dataset: str, cache_dir: Path, selected_files
         if not target.exists():
             # Try flat location first
             if flat_candidate.exists():
-                shutil.copy2(flat_candidate, target)
+                _shutil.copy2(flat_candidate, target)
             else:
                 # Deep search: find any file matching the basename
                 basename_matches = list(cache_dir.rglob(basename))
                 # Filter out the target itself to avoid false matches
                 basename_matches = [m for m in basename_matches if m.resolve() != target.resolve()]
                 if basename_matches:
-                    shutil.copy2(str(basename_matches[0]), target)
+                    import shutil as _shutil2
+                    _shutil2.copy2(str(basename_matches[0]), target)
                 else:
                     print(f"  Warning: could not locate downloaded file for {file_name}")
     return cache_dir
