@@ -484,7 +484,7 @@ cloud-cold-smoke: ## Seed local data, export Parquet to GCS, and verify BigQuery
 	CLOUD_COLD_MIN_ROWS=$${CLOUD_COLD_MIN_ROWS:-1} $(MAKE) bigquery-cold-check
 
 run-streamlit: ## Run the Streamlit reports app locally
-	python3 -m streamlit run apps/streamlit/app.py --server.port $${STREAMLIT_PORT:-8501} --server.headless true --browser.gatherUsageStats false
+	STREAMLIT_THEME_BASE=light STREAMLIT_THEME_BACKGROUND_COLOR="#f7f8fb" STREAMLIT_THEME_SECONDARY_BACKGROUND_COLOR="#ffffff" STREAMLIT_THEME_TEXT_COLOR="#101828" STREAMLIT_THEME_PRIMARY_COLOR="#0f766e" python3 -m streamlit run apps/streamlit/app.py --server.port $${STREAMLIT_PORT:-8501} --server.headless true --browser.gatherUsageStats false
 
 run-streamlit-compose: ## Run the Streamlit reports app through Docker Compose
 	docker compose --profile analytics up -d --build streamlit
