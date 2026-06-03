@@ -1,6 +1,6 @@
 # Project Tracker
 
-Last updated: 2026-05-31
+Last updated: 2026-06-03
 
 This file is the repo-level project memory for Group 4. Read it at the start of each work session before choosing the next slice.
 
@@ -9,10 +9,10 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 - Project: Smart City Zero-Disk IoT Infrastructure.
 - Strategy: local-first MVP, cloud-ready architecture.
 - Current branch of record: `main`.
-- Latest merged slice: Slice 23, Phase 3 final submission package and presentation evidence.
-- Latest merged fix: PR #27, manual GKE runtime promotion workflow.
-- Active slice: Optional video AI agent MVP, branch `codex/video-agent-mvp`.
-- Next planned slice after this PR merges: refresh Phase 3 deliverables and demo script to include Safety AI evidence when enabled.
+- Latest merged slice: Slice 25, Phase 3 final report (enterprise PDF) and report design polish, PR #40.
+- Latest merged fix: PR #38, Streamlit UI auth and QA polish.
+- Active slice: None. Phase 3 implementation, reporting, and the optional AI safety agent are complete and merged to `main`.
+- Next planned slice: None required for the June 8 submission; refresh deliverables only if further changes land before the deadline.
 - Current working capability: deterministic Go simulator, OpenAQ, Open-Meteo, Divvy GBFS, and USGS pollers can generate or fetch smart-city readings, publish through a local queue buffer or Pub/Sub, insert into local TimescaleDB, export Parquet cold-storage files, upload cloud cold-storage files to GCS, record ingestion metrics, visualize readings through Grafana dashboards, run a polished Streamlit command center, build local deployable container images, publish those images to Artifact Registry in `asia-south1`, run safe GCP bootstrap checks, produce reviewable Terraform plans, apply low-cost core GCP resources, consume Pub/Sub readings into the local hot store, validate BigQuery external-table visibility over GCS Parquet files, run a live GKE Autopilot runtime with self-hosted TimescaleDB, publish images from GitHub Actions through OIDC, manually promote CI-published images to GKE, run runtime observability checks, automate TimescaleDB backups to GCS, restore-test backups in a disposable namespace, and optionally run an inference-only video safety agent that flags possible suspicious activity for human review.
 - Local checks expected to pass on `main`: `make check`, `make test`, `make ai-check`.
 - Known blocker: GitHub branch protection for private repositories requires GitHub Pro or making the repo public. Direct-push protection is deferred.
@@ -24,7 +24,8 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 - Total: 60 points.
 - Code submission: 45 points. Submit all project code as `Project_Phase_3_GroupName.zip`; Group 4 should submit `Project_Phase_3_Group4.zip`.
 - Presentation: 15 points. Week 10 sync-session presentation showing the implemented backend/data engineering pipeline and reports.
-- Phase 3 narrative should prioritize implementation proof, reporting value, operational readiness, and reviewer confidence. AI Agents in Smart City IoT, safety, privacy, and security should be addressed as narrative/future-scope topics unless implementation code lands before the final package is rebuilt.
+- Phase 3 narrative prioritizes implementation proof, reporting value, operational readiness, and reviewer confidence. AI Agents in Smart City IoT are now implemented as an optional, inference-only video safety agent (Slice 24); safety, privacy, and security are addressed in the final report and the presentation.
+- Final deliverables on `main`: `Project_Phase_3_Group4.zip` (built with `make phase3-package`), the Week 10 presentation (PPTX/PDF), and the written close-out report `docs/final/Project_Phase_3_Group4_Report_Final.pdf`.
 
 ## Completed Slices
 
@@ -52,23 +53,26 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 | 20 | Enterprise public demo, operations, cost governance, and release promotion | [#26](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/26) | Merged into `main` | `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `make ci-cd-check`, `make public-demo-render`, `make public-demo-status`, `make public-demo-url`, `make public-demo-smoke`, `make runtime-release-check`, `make runtime-cost-report`, `make runtime-evidence`, `docker compose config`, `git diff --check` |
 | 21 | Enterprise Streamlit command center redesign | [#26](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/26) | Merged into `main` | `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `make ci-cd-check`, `make docker-build IMAGE_TAG=slice21`, `make docker-smoke IMAGE_TAG=slice21`, `make docker-push IMAGE_TAG=slice21`, `make runtime-promote-sha IMAGE_TAG=slice21`, `make runtime-release-check RUNTIME_EXPECTED_IMAGE_TAG=slice21`, `make runtime-health`, `make public-demo-smoke`, `docker compose config`, `git diff --check` |
 | 22 | Enterprise Grafana operations dashboard | [#28](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/28) | Merged into `main` | `jq empty infra/local/grafana/provisioning/dashboards/smart-city-operations.json`, `make check`, `make test`, `make streamlit-check`, `make cloud-check`, `docker compose config`, `git diff --check`, `make grafana-demo-ready` |
+| 23 | Phase 3 final submission package and presentation evidence | [#29](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/29) | Merged into `main` | `make phase3-check`, `make phase3-package`, `make phase3-package-list` |
+| 24 | Optional AI video safety agent (inference-only predictive image model) and Safety AI dashboards | [#34](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/34), [#35](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/35) | Merged into `main` | `make ai-check`, `make seed-video-dataset`, `make run-video-agent-once`, Grafana Safety AI panels, `video_activity_predictions` / `video_activity_flags` row checks |
+| 25 | Phase 3 final report (enterprise PDF) and report design polish | [#39](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/39), [#40](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/40) | Merged into `main` | `make phase3-check`, 24-page report renders via `python docs/final/report/build_report.py` |
+| Fixes | Enterprise Grafana automation, dashboard/ingestion stabilization, runtime promotion IAM, runtime deploy refresh, and Streamlit UI auth/QA | [#30](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/30), [#31](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/31), [#32](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/32), [#33](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/33), [#36](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/36), [#37](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/37), [#38](https://github.com/Prathamesh18032/MSDSP-432-Final-Project/pull/38) | Merged into `main` | `make check`, `make test`, `make ci-cd-check`, `make grafana-demo-ready` |
 
 ## Next Planned Slices
 
 | Slice | Goal | Status | Default Owner |
 | --- | --- | --- | --- |
-| 23 | Phase 3 final submission package and presentation evidence | In Progress | DevOps / Analytics workstreams |
-| 24 | Optional video AI agent MVP and Safety AI Grafana evidence | In Progress | AI / Analytics workstreams |
+| — | Phase 3 implementation, reporting, and the optional AI safety agent are complete. No further slices are required before the June 8 submission. | Complete | — |
 
 ## Team Work Board
 
 ### Backlog
 
-- Add reviewer-safe AI demo evidence after the optional video agent lands.
+- None. All planned Phase 3 work is merged. A broader AI-agent layer (incident triage, anomaly explanation, operator copilot, policy-aware routing) is documented as future scope in the final report.
 
 ### In Progress
 
-- Slice 24: Optional video AI agent MVP, branch `codex/video-agent-mvp`.
+- None.
 
 ### In Review
 
@@ -98,6 +102,10 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 - Slice 20: Enterprise public demo, operations, cost governance, and release promotion, PR #26.
 - Slice 21: Enterprise Streamlit command center redesign, PR #26.
 - Slice 22: Enterprise Grafana operations dashboard, PR #28.
+- Slice 23: Phase 3 final submission package and presentation evidence, PR #29.
+- Slice 24: Optional AI video safety agent (inference-only predictive image model) and Safety AI dashboards, PR #34, PR #35.
+- Slice 25: Phase 3 final report (enterprise PDF) and report design polish, PR #39, PR #40.
+- Stabilization fixes: Grafana automation, dashboard/ingestion stability, runtime promotion IAM, runtime deploy refresh, Streamlit UI auth/QA, PR #30–#33 and #36–#38.
 
 ## Workstreams
 
@@ -105,7 +113,8 @@ This file is the repo-level project memory for Group 4. Read it at the start of 
 - Storage: TimescaleDB schema, inserts, aggregates, retention flush, Parquet path.
 - Dashboards and analytics: enterprise Grafana provisioning, Streamlit command center, data-quality views.
 - DevOps and cloud readiness: Compose, container images, GCP bootstrap checks, Artifact Registry publish workflow, GitHub Actions OIDC image publishing, Terraform plan/apply workflow, Pub/Sub adapter readiness, gated GKE Autopilot runtime, Workload Identity, backups, restore tests, observability checks, cost controls, public demo ingress, release promotion, demo runbooks, CI, Makefile, Kubernetes manifests, setup docs.
-- Phase 3 finalization: submission zip, final presentation, demo script, evidence guide, AI Agent future scope, and safety/privacy/security narrative.
+- AI safety agent: inference-only two-stage Hugging Face image classifier over CCTV-style frames, OpenCV frame extraction, `video_activity_predictions` / `video_activity_flags` tables, Safety AI views in Grafana and Streamlit, human-in-the-loop review.
+- Phase 3 finalization: submission zip, final presentation, the written final report PDF (generated from `docs/final/report/`), demo script, evidence guide, and safety/privacy/security narrative.
 
 ## Update Protocol
 
@@ -146,3 +155,6 @@ Then read this tracker, pick the next `Backlog` slice, create a `codex/<slice-na
 - 2026-05-26: Started Slice 21 enterprise Streamlit command center redesign on the same public-demo branch so the shareable URL becomes reviewer/client ready before Phase 3 packaging.
 - 2026-05-31: Completed and merged Slice 20 and Slice 21 / PR #26. PR #27 added the manual GKE runtime promotion workflow after the public demo merge. Started Slice 22 enterprise Grafana operations dashboard on branch `codex/slice-22-enterprise-grafana`. Phase 3 final zip, deck, and evidence package move to Slice 23.
 - 2026-05-31: Completed and merged Slice 22 / PR #28. Started Slice 23 Phase 3 final submission package on branch `codex/slice-23-phase3-final-package`; final deliverables must include the official rubric, `Project_Phase_3_Group4.zip`, PPTX/PDF presentation, Phase 2 reference artifacts, and safety/privacy/security plus AI Agent future-scope narrative.
+- 2026-06-01: Completed and merged Slice 23 / PR #29 (Phase 3 submission package and presentation evidence). Merged enterprise Grafana automation, dashboard and live-ingestion stabilization, and runtime promotion IAM, PR #30 through #33.
+- 2026-06-02: Merged the optional AI video safety agent MVP (Slice 24) / PR #34, then enabled it on the GKE deployment with the Safety AI dashboards / PR #35; runtime deploy refresh fixed in PR #36. The agent is inference-only (a two-stage Hugging Face image classifier) and frames outputs as possible activity for human review, never confirmed crime.
+- 2026-06-03: Merged Streamlit UI auth and QA polish, PR #37 and #38. Authored and merged the Phase 3 written final report (Slice 25): PR #39 added the 24-page enterprise PDF and refreshed the presentation deck, and PR #40 added the implemented AI safety-agent section, the cover team panel, and the design polish. Full repo sanity confirmed: `make phase3-check` passes, the submission zip is complete and secret-free, and the GKE runtime is live on the $300 GCP trial credits.
