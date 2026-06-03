@@ -45,6 +45,11 @@ def start_streamlit_if_needed() -> subprocess.Popen[str] | None:
     env.setdefault("PUBLIC_DEMO_ENABLED", "true")
     env.setdefault("STREAMLIT_DEMO_PASSWORD", PASSWORD)
     env.setdefault("STREAMLIT_REFRESH_SECONDS", "0")
+    env.setdefault("STREAMLIT_THEME_BASE", "light")
+    env.setdefault("STREAMLIT_THEME_BACKGROUND_COLOR", "#f7f8fb")
+    env.setdefault("STREAMLIT_THEME_SECONDARY_BACKGROUND_COLOR", "#ffffff")
+    env.setdefault("STREAMLIT_THEME_TEXT_COLOR", "#101828")
+    env.setdefault("STREAMLIT_THEME_PRIMARY_COLOR", "#0f766e")
     env.setdefault("PYTHONPATH", str(ROOT / "apps" / "streamlit"))
 
     command = [
@@ -83,11 +88,65 @@ def login(page: Page) -> None:
 
 
 def verify_tabs(page: Page) -> None:
-    for tab_name in ["Operations", "Domains", "Sensors", "Quality", "Safety AI", "Archive"]:
+    expected_content: dict[str, list[str]] = {
+        "Operations": [
+            "City Operations",
+            "Source activity, current availability, and recent service signals.",
+            "Service health",
+            "No dropped readings reported at last check.",
+            "Download source summary",
+        ],
+        "Domains": [
+            "Air Quality",
+            "Pollutant trends and current readings across monitored locations.",
+            "Mobility",
+            "Divvy station availability, dock pressure, and capacity signals.",
+            "Weather & Water",
+            "Download weather and river readings",
+        ],
+        "Sensors": [
+            "Sensor Network",
+            "Friendly locations, freshness, and monitored signals.",
+            "Locations monitored",
+            "Download sensor network",
+            "Location details",
+        ],
+        "Quality": [
+            "Data Quality",
+            "Coverage and readiness indicators for trusted reporting.",
+            "Readiness score",
+            "Coverage by metric",
+            "Download coverage summary",
+        ],
+        "Safety AI": [
+            "Safety AI",
+            "AI-flagged possible activity traces from the image inference agent.",
+            "No Safety AI prediction table is available in this environment yet.",
+        ],
+        "Archive": [
+            "Historical Archive",
+            "Longer-term reporting evidence for city readings.",
+            "No cold export detected",
+            "No cloud report files are visible yet.",
+            "Analytics row count is not available yet.",
+        ],
+    }
+    for tab_name, expected_texts in expected_content.items():
         tab = page.get_by_role("tab", name=tab_name)
         expect(tab).to_be_visible(timeout=10000)
         tab.click()
-        page.screenshot(path=str(ARTIFACT_DIR / f"{tab_name.lower().replace(' ', '-')}.png"), full_page=True)
+        if tab_name == "Sensors":
+            page.get_by_text("Location details", exact=True).click()
+            expect(page.get_by_text("Latitude", exact=True)).to_be_visible(timeout=10000)
+            expect(page.get_by_text("Longitude", exact=True)).to_be_visible(timeout=10000)
+        section = page.locator(".sc-section").filter(has_text=expected_texts[0])
+        expect(section).to_have_count(1, timeout=10000)
+        expect(section).to_be_visible(timeout=10000)
+        for expected_text in expected_texts:
+            expect(page.get_by_text(expected_text, exact=False).first).to_be_visible(timeout=10000)
+        verify_text_contrast(page)
+        section.scroll_into_view_if_needed()
+        page.screenshot(path=str(ARTIFACT_DIR / f"{tab_name.lower().replace(' ', '-')}.png"), full_page=False)
 
 
 def verify_sidebar_controls(page: Page) -> None:
@@ -100,6 +159,7 @@ def verify_text_contrast(page: Page) -> None:
         """
         () => {
             const selectors = [
+                '[data-testid="stHeader"]',
                 '[data-testid="stSidebar"] [data-testid="stMarkdownContainer"]',
                 '[data-testid="stSidebar"] label',
                 '[role="tab"]',
@@ -108,7 +168,10 @@ def verify_text_contrast(page: Page) -> None:
                 '[data-testid="stMarkdownContainer"] p',
                 '.sc-title',
                 '.sc-section',
-                '.sc-card-value'
+                '.sc-card-value',
+                '.sc-table-wrap th',
+                '.sc-table-wrap td',
+                '.js-plotly-plot text'
             ];
 
             function parseRgb(value) {
@@ -156,7 +219,8 @@ def verify_text_contrast(page: Page) -> None:
                     .filter((element) => isVisible(element) && element.textContent.trim().length > 0)
                     .slice(0, 6);
                 for (const element of candidates) {
-                    const foreground = parseRgb(getComputedStyle(element).color);
+                    const style = getComputedStyle(element);
+                    const foreground = parseRgb(style.color) || parseRgb(style.fill);
                     const background = effectiveBackground(element);
                     if (!foreground) continue;
                     const ratio = contrast(foreground, background);
@@ -178,6 +242,25 @@ def verify_text_contrast(page: Page) -> None:
     )
     if failures:
         raise AssertionError(f"Contrast failures: {failures}")
+
+    native_dataframes = page.locator('[data-testid="stDataFrame"]')
+    if native_dataframes.count() != 0:
+        raise AssertionError("Native Streamlit dataframe renderer is present; use app-owned responsive tables.")
+
+    header_too_dark = page.evaluate(
+        """
+        () => {
+            const header = document.querySelector('[data-testid="stHeader"]');
+            if (!header) return false;
+            const match = getComputedStyle(header).backgroundColor.match(/rgba?\\(([^)]+)\\)/);
+            if (!match) return false;
+            const [r, g, b] = match[1].split(',').map((part) => Number.parseFloat(part.trim()));
+            return ((0.2126 * r + 0.7152 * g + 0.0722 * b) / 255) < 0.82;
+        }
+        """
+    )
+    if header_too_dark:
+        raise AssertionError("Streamlit header is rendering as a dark strip in the controlled light theme.")
 
 
 def main() -> int:

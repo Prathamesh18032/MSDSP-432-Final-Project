@@ -8,6 +8,11 @@ from smartcity import metadata
 
 
 PLOT_TEMPLATE = "plotly_white"
+PLOT_TEXT = "#182230"
+PLOT_MUTED = "#475467"
+PLOT_GRID = "#e4e7ec"
+PLOT_HOVER_BG = "#ffffff"
+PLOT_HOVER_BORDER = "#d0d5dd"
 
 
 def finish(fig: go.Figure, height: int = 340) -> go.Figure:
@@ -18,11 +23,34 @@ def finish(fig: go.Figure, height: int = 340) -> go.Figure:
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         legend_title_text="",
-        font=dict(family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif", size=12),
+        font=dict(
+            family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
+            size=12,
+            color=PLOT_TEXT,
+        ),
+        title=dict(font=dict(color=PLOT_TEXT, size=16)),
+        legend=dict(font=dict(color=PLOT_TEXT)),
         hovermode="x unified",
+        hoverlabel=dict(bgcolor=PLOT_HOVER_BG, bordercolor=PLOT_HOVER_BORDER, font=dict(color=PLOT_TEXT)),
     )
-    fig.update_xaxes(showgrid=True, gridcolor="#edf0f5", zeroline=False)
-    fig.update_yaxes(showgrid=True, gridcolor="#edf0f5", zeroline=False)
+    fig.update_xaxes(
+        showgrid=True,
+        gridcolor=PLOT_GRID,
+        zeroline=False,
+        color=PLOT_MUTED,
+        tickfont=dict(color=PLOT_MUTED),
+        title_font=dict(color=PLOT_MUTED),
+    )
+    fig.update_yaxes(
+        showgrid=True,
+        gridcolor=PLOT_GRID,
+        zeroline=False,
+        color=PLOT_MUTED,
+        tickfont=dict(color=PLOT_MUTED),
+        title_font=dict(color=PLOT_MUTED),
+    )
+    fig.update_traces(textfont=dict(color=PLOT_TEXT), selector=dict(type="bar"))
+    fig.update_traces(textfont=dict(color=PLOT_TEXT), selector=dict(type="pie"))
     return fig
 
 
@@ -126,7 +154,17 @@ def ingestion_trend(frame: pd.DataFrame) -> go.Figure:
     fig.update_layout(
         title="Service activity",
         yaxis=dict(title="Activity rate"),
-        yaxis2=dict(title="Capacity used %", overlaying="y", side="right", rangemode="tozero"),
+        yaxis2=dict(
+            title="Capacity used %",
+            overlaying="y",
+            side="right",
+            rangemode="tozero",
+            color=PLOT_MUTED,
+            tickfont=dict(color=PLOT_MUTED),
+            title_font=dict(color=PLOT_MUTED),
+            gridcolor=PLOT_GRID,
+            zeroline=False,
+        ),
     )
     return finish(fig, 330)
 
@@ -145,7 +183,6 @@ def safety_ai_timeline(frame: pd.DataFrame) -> go.Figure:
             "Normal review frame": "#067647",
         },
     )
-    fig.update_layout(legend=dict(font=dict(color="#111827")))
     return finish(fig, 300)
 
 
@@ -160,7 +197,7 @@ def safety_ai_by_camera(frame: pd.DataFrame) -> go.Figure:
         labels={"flagged": "AI-flagged frames", "location_name": "", "avg_confidence": "Avg confidence"},
         title="AI-flagged frames by camera zone",
     )
-    fig.update_layout(yaxis=dict(tickfont=dict(color="#111827")), coloraxis_colorbar=dict(tickfont=dict(color="#111827")))
+    fig.update_layout(coloraxis_colorbar=dict(tickfont=dict(color=PLOT_MUTED), title_font=dict(color=PLOT_MUTED)))
     return finish(fig, 320)
 
 
@@ -176,7 +213,6 @@ def safety_ai_by_label(frame: pd.DataFrame) -> go.Figure:
         labels={"count": "Flagged frames", "display_label": "", "severity": "Severity"},
         title="Possible activity type breakdown",
     )
-    fig.update_layout(yaxis=dict(tickfont=dict(color="#111827")), legend=dict(font=dict(color="#111827")))
     return finish(fig, 300)
 
 
@@ -190,7 +226,6 @@ def safety_ai_day_type(frame: pd.DataFrame) -> go.Figure:
         title="Weekday vs weekend activity",
         color_discrete_map={"flagged": "#B42318", "normal": "#067647"},
     )
-    fig.update_layout(legend=dict(font=dict(color="#111827")))
     return finish(fig, 260)
 
 
@@ -266,4 +301,5 @@ def map_points(frame: pd.DataFrame) -> go.Figure:
         height=420,
     )
     fig.update_layout(mapbox_style="open-street-map", margin=dict(l=0, r=0, t=0, b=0))
+    fig.update_layout(font=dict(color=PLOT_TEXT), legend=dict(font=dict(color=PLOT_TEXT)))
     return fig

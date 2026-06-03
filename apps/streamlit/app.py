@@ -130,6 +130,14 @@ def format_int(value: Any) -> str:
         return "0"
 
 
+def plural_label(count: Any, singular: str, plural: str | None = None) -> str:
+    try:
+        number = int(count)
+    except (TypeError, ValueError):
+        number = 0
+    return singular if number == 1 else (plural or f"{singular}s")
+
+
 def format_pct(value: Any) -> str:
     try:
         return f"{float(value):.1f}%"
@@ -270,6 +278,7 @@ def executive_overview(snapshot: pd.Series | None, cold_summary: cold_storage.Co
     freshness = metadata.freshness_label(snapshot.get("latest_reading_at"))
     valid_pct = float(snapshot.get("valid_pct") or 0)
     dropped = int(snapshot.get("dropped_readings_total") or 0)
+    source_count = int(snapshot.get("sources") or 0)
     styles.card_grid(
         [
             {
@@ -281,7 +290,7 @@ def executive_overview(snapshot: pd.Series | None, cold_summary: cold_storage.Co
             {
                 "label": "Active sensors",
                 "value": format_int(snapshot.get("active_sensors")),
-                "note": f"{format_int(snapshot.get('sources'))} source groups are contributing.",
+                "note": f"{format_int(source_count)} {plural_label(source_count, 'source group')} contributing.",
                 "tone": "good" if int(snapshot.get("active_sensors") or 0) else "warn",
             },
             {
@@ -320,8 +329,9 @@ def executive_report(snapshot: pd.Series | None, source_summary: pd.DataFrame, c
         source_names = metadata.add_display_columns(source_summary)["source_name"].astype(str).tolist()
     latest = metadata.freshness_label(snapshot.get("latest_reading_at"))
     archive_status = cloud_summary.status
+    source_count = int(snapshot.get("sources") or 0)
     bullets = [
-        f"{CITY_NAME} has {format_int(snapshot.get('active_sensors'))} monitored locations across {format_int(snapshot.get('sources'))} source groups.",
+        f"{CITY_NAME} has {format_int(snapshot.get('active_sensors'))} monitored locations across {format_int(source_count)} {plural_label(source_count, 'source group')}.",
         f"The selected {filters.hours}-hour view includes {format_int(snapshot.get('total_readings'))} readings with {format_pct(snapshot.get('valid_pct'))} ready for reporting.",
         f"The latest city update is {latest}; most recent timestamp: {format_time(snapshot.get('latest_reading_at'))}.",
         f"Active source groups: {', '.join(source_names[:5]) if source_names else 'No active source groups in this window'}.",
@@ -355,8 +365,11 @@ def city_operations(filters: Filters) -> None:
         service_note = "No service events were reported during the selected window."
     else:
         latest = latest_ops.iloc[0]
-        service_note = f"{format_decimal(latest.get('readings_per_second'), 2)} new readings each second at last check."
-        service_tone = "warn" if int(latest.get("dropped_readings_total") or 0) else "good"
+        dropped_total = int(latest.get("dropped_readings_total") or 0)
+        service_note = "No dropped readings reported at last check."
+        if dropped_total:
+            service_note = f"{format_int(dropped_total)} dropped readings reported at last check."
+        service_tone = "warn" if dropped_total else "good"
 
     styles.card_grid(
         [
@@ -390,7 +403,7 @@ def city_operations(filters: Filters) -> None:
         table["valid_pct"] = table["valid_pct"].map(format_pct)
         table["latest_reading_at"] = table["latest_reading_at"].map(format_time)
         table.columns = ["Source", "Readings", "Sensors", "Signals", "Ready %", "Latest update"]
-        st.dataframe(table, use_container_width=True, hide_index=True)
+        styles.responsive_table(table, max_rows=12)
         download_csv("Download source summary", table, "source-summary")
 
     if ops.empty:
@@ -440,7 +453,7 @@ def air_quality(filters: Filters) -> None:
         table = latest[["sensor_name", "metric_name", "value", "unit", "quality", "time"]].copy()
         table["time"] = table["time"].map(format_time)
         table.columns = ["Location", "Signal", "Latest", "Unit", "Status", "Updated"]
-        st.dataframe(table, use_container_width=True, hide_index=True)
+        styles.responsive_table(table, max_rows=18)
         download_csv("Download air quality readings", table, "air-quality-readings")
 
 
@@ -479,7 +492,7 @@ def mobility(filters: Filters) -> None:
     table = latest[["sensor_name", "metric_name", "value", "unit", "time"]].copy()
     table["time"] = table["time"].map(format_time)
     table.columns = ["Station", "Signal", "Latest", "Unit", "Updated"]
-    st.dataframe(table, use_container_width=True, hide_index=True)
+    styles.responsive_table(table, max_rows=18)
     download_csv("Download mobility readings", table, "mobility-readings")
 
 
@@ -531,7 +544,7 @@ def weather_water(filters: Filters) -> None:
         table = latest[["sensor_name", "metric_name", "value", "unit", "quality", "time"]].copy()
         table["time"] = table["time"].map(format_time)
         table.columns = ["Location", "Signal", "Latest", "Unit", "Status", "Updated"]
-        st.dataframe(table, use_container_width=True, hide_index=True)
+        styles.responsive_table(table, max_rows=18)
         download_csv("Download weather and river readings", table, "weather-river-readings")
 
 
@@ -598,7 +611,7 @@ def sensor_network(filters: Filters) -> None:
         ].copy()
         details["latest_reading_at"] = details["latest_reading_at"].map(format_time)
         details.columns = ["Location", "Category", "Signals", "Latitude", "Longitude", "Updated"]
-        st.dataframe(details, use_container_width=True, hide_index=True)
+        styles.responsive_table(details, max_rows=24)
 
 
 def data_quality(filters: Filters) -> None:
@@ -805,6 +818,24 @@ def cold_path() -> None:
         return
 
     analytics_status = "Available" if cloud.row_count is not None else "Preparing"
+    archive_files_note = (
+        "Cloud report files are available for review."
+        if cloud.object_count
+        else "No cloud report files are visible yet."
+    )
+    if cloud.row_count is None:
+        archived_rows_note = "Analytics row count is not available yet."
+    elif cloud.row_count == 0:
+        archived_rows_note = "No archived rows are visible yet."
+    else:
+        archived_rows_note = "Rows currently visible to the reporting view."
+    analytics_note = cloud.message
+    if cloud.row_count is not None:
+        analytics_note = (
+            "Historical summary is queryable by the reporting app."
+            if cloud.row_count
+            else "Analytics table is connected but has no rows yet."
+        )
     styles.card_grid(
         [
             {
@@ -816,19 +847,19 @@ def cold_path() -> None:
             {
                 "label": "Archive files",
                 "value": format_int(cloud.object_count),
-                "note": "Cloud report files available for review.",
+                "note": archive_files_note,
                 "tone": "good" if cloud.object_count else "warn",
             },
             {
                 "label": "Analytics status",
                 "value": analytics_status,
-                "note": "Historical summary can be queried by the reporting app." if cloud.row_count is not None else cloud.message,
+                "note": analytics_note,
                 "tone": "good" if cloud.row_count is not None else "warn",
             },
             {
                 "label": "Archived readings",
                 "value": "n/a" if cloud.row_count is None else format_int(cloud.row_count),
-                "note": "Rows currently visible to the reporting view.",
+                "note": archived_rows_note,
                 "tone": "good" if cloud.row_count is not None else "warn",
             },
         ]

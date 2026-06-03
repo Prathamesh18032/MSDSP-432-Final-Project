@@ -13,7 +13,9 @@ def inject_styles() -> None:
         :root {
             --sc-bg: #f7f8fb;
             --sc-panel: #ffffff;
+            --sc-panel-soft: #f8fafc;
             --sc-border: #dce1ea;
+            --sc-border-soft: #eef2f7;
             --sc-text: #101828;
             --sc-muted: #667085;
             --sc-accent: #0f766e;
@@ -43,6 +45,22 @@ def inject_styles() -> None:
         }
         h1, h2, h3 {
             letter-spacing: 0;
+        }
+        [data-testid="stHeader"],
+        header[data-testid="stHeader"] {
+            background: var(--sc-bg) !important;
+            color: var(--sc-text) !important;
+            border-bottom: 1px solid rgba(220, 225, 234, .72);
+        }
+        [data-testid="stToolbar"],
+        [data-testid="stToolbar"] *,
+        [data-testid="collapsedControl"],
+        [data-testid="collapsedControl"] * {
+            color: var(--sc-text) !important;
+            -webkit-text-fill-color: var(--sc-text) !important;
+        }
+        [data-testid="stDecoration"] {
+            background: var(--sc-accent) !important;
         }
         [data-testid="stSidebar"] {
             background: #ffffff;
@@ -278,8 +296,10 @@ def inject_styles() -> None:
             border: 1px solid var(--sc-border);
             border-radius: 8px;
             background: #ffffff;
-            overflow: hidden;
+            overflow: auto;
+            max-height: 520px;
             box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+            scrollbar-color: #cbd5e1 #f8fafc;
         }
         .sc-table-wrap table {
             width: 100%;
@@ -289,21 +309,29 @@ def inject_styles() -> None:
         .sc-table-wrap th,
         .sc-table-wrap td {
             padding: .68rem .7rem;
-            border-bottom: 1px solid #eef2f7;
+            border-bottom: 1px solid var(--sc-border-soft);
             text-align: left;
             vertical-align: top;
             overflow-wrap: anywhere;
             white-space: normal;
             font-size: .82rem;
             line-height: 1.32;
+            color: var(--sc-text);
+            background: #ffffff;
         }
         .sc-table-wrap th {
             color: #475467;
-            background: #f8fafc;
+            background: var(--sc-panel-soft);
             font-size: .74rem;
             font-weight: 760;
             text-transform: uppercase;
             letter-spacing: .03em;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        .sc-table-wrap tr:nth-child(even) td {
+            background: #fbfcfe;
         }
         .sc-table-wrap tr:last-child td {
             border-bottom: 0;
