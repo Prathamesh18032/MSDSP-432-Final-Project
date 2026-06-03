@@ -55,6 +55,20 @@
   .foot .org span { color: #6E7C95; font-weight: 500; display: block; font-size: 8.4pt; margin-top: 2px; }
   .foot .meta { text-align: right; font-size: 8.6pt; color: #8A96AC; }
   .foot .meta b { color: #fff; display: block; font-size: 9.6pt; }
+
+  /* Apple-style liquid glass */
+  .pill { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    box-shadow: 0 6px 16px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.16); }
+  .team { margin-top: 7mm; padding: 5mm 6mm; border-radius: 14px; position: relative;
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.16);
+    -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+    box-shadow: 0 14px 36px rgba(0,0,0,.40), inset 0 1px 0 rgba(255,255,255,.22); }
+  .team::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 46%; border-radius: 14px 14px 0 0;
+    background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0)); pointer-events: none; }
+  .team .lbl { font-size: 8pt; letter-spacing: .2em; text-transform: uppercase; color: #3DD6D0; font-weight: 800; }
+  .team .names { margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 9px 24px; }
+  .team .names span { font-size: 11.5pt; color: #EAF0F8; font-weight: 600; }
+  .team .names span i { color: #5BA7FF; font-style: normal; margin-right: 9px; }
 </style>
 </head>
 <body>
@@ -67,7 +81,6 @@
       <div class="pills">
         <span class="pill gold">Group 4</span>
         <span class="pill cyan">Phase 3 Final Report</span>
-        <span class="pill blue">Project 4</span>
       </div>
       <h1>Smart City <span class="accent">Zero-Disk</span><br>IoT Infrastructure</h1>
       <div class="sub">From a detailed design blueprint to an operated, cloud-native data platform: live multi-source telemetry, hot and cold storage, an automated GKE runtime, and two executive reporting surfaces.</div>
@@ -77,6 +90,16 @@
         <div class="stat"><div class="v">22</div><div class="l">delivered engineering slices</div></div>
         <div class="stat"><div class="v">2</div><div class="l">protected dashboard surfaces</div></div>
         <div class="stat"><div class="v">100%</div><div class="l">infrastructure as code</div></div>
+      </div>
+
+      <div class="team">
+        <div class="lbl">Project Team · Group 4</div>
+        <div class="names">
+          <span><i>•</i>Tanishq Kureel</span>
+          <span><i>•</i>Nargiza Deidieva</span>
+          <span><i>•</i>Sai Lakshmi Priya Kothacheruvu</span>
+          <span><i>•</i>Prathamesh Abhang</span>
+        </div>
       </div>
 
       <div class="foot">
