@@ -149,7 +149,7 @@ For cloud demos, upload the prepared image/frame dataset with `make upload-video
 
 ## Phase 3 Final Submission
 
-The Phase 3 package is documented in [docs/final/README.md](docs/final/README.md). The required code zip is generated with `make phase3-package` and written to `dist/Project_Phase_3_Group4.zip`. The Week 10 presentation artifacts are [PPTX](docs/final/Project_Phase_3_Group4_Presentation.pptx) and [PDF](docs/final/Project_Phase_3_Group4_Presentation.pdf).
+The Phase 3 package is documented in [docs/final/README.md](docs/final/README.md). The required code zip is generated with `make phase3-package` and written to `dist/Project_Phase_3_Group4.zip`. The Week 10 presentation artifacts are [PPTX](docs/final/Project_Phase_3_Group4_Presentation.pptx) and [PDF](docs/final/Project_Phase_3_Group4_Presentation.pdf). The written project close-out is the [Phase 3 Final Report](docs/final/Project_Phase_3_Group4_Report_Final.pdf).
 
 ## Workstreams
 

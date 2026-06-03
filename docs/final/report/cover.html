@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phase 3 Final Report Cover</title>
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 0; }
+  html, body { font-family: "Helvetica Neue", "Segoe UI", Arial, sans-serif; }
+  .cover {
+    position: relative; width: 210mm; height: 297mm; overflow: hidden;
+    background:
+      radial-gradient(120% 80% at 80% -10%, #16243E 0%, rgba(22,36,62,0) 55%),
+      linear-gradient(160deg, #0B1220 0%, #0C1526 55%, #0A1020 100%);
+    color: #fff;
+  }
+  .topbar { position: absolute; top: 0; left: 0; right: 0; height: 7px;
+    background: linear-gradient(90deg, #3DD6D0 0%, #5BA7FF 45%, #84D65A 100%); }
+  .rail { position: absolute; top: 0; bottom: 0; right: 0; width: 64mm; background: #0E1728; opacity: .55; }
+  .rail .ln1 { position: absolute; top: -10mm; bottom: -10mm; left: 16mm; width: 2px; background: #1B2C49; }
+  .rail .ln2 { position: absolute; top: -10mm; bottom: -10mm; left: 30mm; width: 1px; background: #16243C; }
+
+  .skyline { position: absolute; left: 0; right: 0; bottom: 0; height: 120mm; }
+  .skyline img { width: 100%; height: 100%; object-fit: cover; opacity: .30; filter: saturate(.85); }
+  .skyline::after { content: ""; position: absolute; inset: 0;
+    background: linear-gradient(180deg, #0B1220 0%, rgba(11,18,32,.55) 35%, rgba(11,18,32,.78) 100%); }
+
+  .inner { position: absolute; inset: 0; padding: 26mm 22mm; display: flex; flex-direction: column; }
+  .eyebrow { font-size: 9.5pt; font-weight: 800; letter-spacing: .24em; text-transform: uppercase; color: #3DD6D0; }
+  .eyebrow .dot { display:inline-block; width:8px;height:8px;background:#3DD6D0;margin-right:9px;vertical-align:middle; }
+  .pills { display: flex; gap: 9px; margin-top: 20mm; }
+  .pill { font-size: 8.5pt; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+    padding: 5px 12px; border-radius: 30px; border: 1px solid; background: rgba(255,255,255,.03); }
+  .pill.gold { color: #F7C948; border-color: #F7C948; }
+  .pill.cyan { color: #3DD6D0; border-color: #3DD6D0; }
+  .pill.blue { color: #8FC0FF; border-color: #5BA7FF; }
+
+  h1 { font-size: 40pt; line-height: 1.04; font-weight: 800; letter-spacing: -.02em; margin-top: 9mm; max-width: 150mm;
+    text-shadow: 0 2px 18px rgba(0,0,0,.4); }
+  h1 .accent { color: #3DD6D0; }
+  .sub { font-size: 13.5pt; line-height: 1.5; color: #C4CFE0; margin-top: 7mm; max-width: 135mm; font-weight: 500; }
+
+  .stats { margin-top: auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; max-width: 168mm;
+    border-top: 1px solid #243653; padding-top: 8mm; }
+  .stat { padding-right: 8mm; border-right: 1px solid #1B2C49; }
+  .stat:last-child { border-right: none; }
+  .stat .v { font-size: 26pt; font-weight: 800; letter-spacing: -.02em; line-height: 1; }
+  .stat:nth-child(1) .v { color: #3DD6D0; } .stat:nth-child(2) .v { color: #F7C948; }
+  .stat:nth-child(3) .v { color: #84D65A; } .stat:nth-child(4) .v { color: #5BA7FF; }
+  .stat .l { font-size: 8.2pt; color: #97A3B8; margin-top: 6px; line-height: 1.35; }
+
+  .foot { margin-top: 9mm; display: flex; justify-content: space-between; align-items: flex-end;
+    border-top: 1px solid #1B2C49; padding-top: 6mm; }
+  .foot .org { font-size: 9.5pt; color: #C4CFE0; font-weight: 700; }
+  .foot .org span { color: #6E7C95; font-weight: 500; display: block; font-size: 8.4pt; margin-top: 2px; }
+  .foot .meta { text-align: right; font-size: 8.6pt; color: #8A96AC; }
+  .foot .meta b { color: #fff; display: block; font-size: 9.6pt; }
+</style>
+</head>
+<body>
+  <div class="cover">
+    <div class="topbar"></div>
+    <div class="rail"><div class="ln1"></div><div class="ln2"></div></div>
+    <div class="skyline"><img src="../presentation/assets/chicago-skyline-public-domain.jpg" alt="Chicago skyline"></div>
+    <div class="inner">
+      <div class="eyebrow"><span class="dot"></span>MSDS 432 · Foundations of Data Engineering</div>
+      <div class="pills">
+        <span class="pill gold">Group 4</span>
+        <span class="pill cyan">Phase 3 Final Report</span>
+        <span class="pill blue">Project 4</span>
+      </div>
+      <h1>Smart City <span class="accent">Zero-Disk</span><br>IoT Infrastructure</h1>
+      <div class="sub">From a detailed design blueprint to an operated, cloud-native data platform: live multi-source telemetry, hot and cold storage, an automated GKE runtime, and two executive reporting surfaces.</div>
+
+      <div class="stats">
+        <div class="stat"><div class="v">5</div><div class="l">live city signal families</div></div>
+        <div class="stat"><div class="v">22</div><div class="l">delivered engineering slices</div></div>
+        <div class="stat"><div class="v">2</div><div class="l">protected dashboard surfaces</div></div>
+        <div class="stat"><div class="v">100%</div><div class="l">infrastructure as code</div></div>
+      </div>
+
+      <div class="foot">
+        <div class="org">Northwestern University<span>School of Professional Studies · MSDS Program</span></div>
+        <div class="meta"><b>Project Final Report</b>Phase 3 · June 2026</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
