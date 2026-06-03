@@ -35,6 +35,21 @@ def public_demo_enabled() -> bool:
     return os.getenv("PUBLIC_DEMO_ENABLED", "false").strip().lower() in {"1", "true", "yes"}
 
 
+def clear_demo_password_error() -> None:
+    st.session_state["demo_password_invalid"] = False
+
+
+def submit_demo_password(expected_password: str) -> None:
+    supplied_password = st.session_state.get("demo_password", "")
+    if supplied_password == expected_password:
+        st.session_state["demo_authenticated"] = True
+        st.session_state["demo_password_invalid"] = False
+        return
+
+    st.session_state["demo_authenticated"] = False
+    st.session_state["demo_password_invalid"] = True
+
+
 def require_demo_password() -> bool:
     if not public_demo_enabled():
         return True
@@ -79,22 +94,21 @@ def require_demo_password() -> bool:
             """,
             unsafe_allow_html=True,
         )
-        with st.form("public_demo_gate", clear_on_submit=False):
-            supplied_password = st.text_input(
-                "Demo password",
-                type="password",
-                placeholder="Enter demo password",
-                key="demo_password",
-            )
-            submitted = st.form_submit_button("Sign in", use_container_width=True)
+        st.text_input(
+            "Demo password",
+            type="password",
+            placeholder="Enter demo password",
+            key="demo_password",
+            on_change=clear_demo_password_error,
+        )
+        st.button(
+            "Sign in",
+            key="demo_password_submit",
+            on_click=submit_demo_password,
+            args=(expected_password,),
+            use_container_width=True,
+        )
 
-        if submitted:
-            if supplied_password == expected_password:
-                st.session_state["demo_authenticated"] = True
-                st.session_state["demo_password_invalid"] = False
-                st.rerun()
-            else:
-                st.session_state["demo_password_invalid"] = True
         if st.session_state.get("demo_password_invalid") is True:
             st.error("That password did not match. Please check capitalization and try again.")
         st.markdown(
@@ -187,7 +201,7 @@ def sidebar_filters() -> Filters:
         st.sidebar.error("City data is currently unavailable. Please try again shortly.")
         sources, metrics = [], []
 
-    st.sidebar.title("Command Center")
+    st.sidebar.title("Control Center")
     st.sidebar.caption("Tune the city view for the story you want to inspect.")
     hours = st.sidebar.select_slider(
         "Time window",
