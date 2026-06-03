@@ -2,6 +2,10 @@
 
 Phase 3 is the final implementation submission for Group 4's Smart City Zero-Disk IoT Infrastructure project.
 
+## Final Report
+
+The written project close-out is [`Project_Phase_3_Group4_Report_Final.pdf`](Project_Phase_3_Group4_Report_Final.pdf) in this folder. It carries the story forward from the Phase 2 detailed design into the implemented and operated platform — delivery, architecture, ingestion, hot/cold storage, cloud runtime, CI/CD, reliability, cost governance, reporting, security, and AI-agent future scope — without repeating Phase 2 design material. It is regenerated from the `report/` sources (HTML/CSS) with `python report/build_report.py`, which renders the cover and body through headless Chrome (Playwright) and merges them with `pypdf`.
+
 ## Official Rubric
 
 - Due: Monday, June 8, 2026 at 10:29am.
