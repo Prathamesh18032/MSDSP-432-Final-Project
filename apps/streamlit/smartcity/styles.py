@@ -25,6 +25,16 @@ def inject_styles() -> None:
         .stApp {
             background: var(--sc-bg);
             color: var(--sc-text);
+            color-scheme: light;
+        }
+        .stApp,
+        [data-testid="stMarkdownContainer"],
+        [data-testid="stMarkdownContainer"] p,
+        [data-testid="stMarkdownContainer"] li,
+        [data-testid="stCaptionContainer"],
+        [data-testid="stWidgetLabel"],
+        [data-testid="stWidgetLabel"] label {
+            color: var(--sc-text);
         }
         .block-container {
             padding-top: 1.4rem;
@@ -37,6 +47,71 @@ def inject_styles() -> None:
         [data-testid="stSidebar"] {
             background: #ffffff;
             border-right: 1px solid var(--sc-border);
+        }
+        [data-testid="stSidebar"] [data-testid="stMarkdownContainer"],
+        [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+        [data-testid="stSidebar"] [data-testid="stCaptionContainer"],
+        [data-testid="stSidebar"] label,
+        [data-testid="stSidebar"] span {
+            color: var(--sc-text);
+        }
+        [data-testid="stSidebar"] [data-testid="stCaptionContainer"],
+        [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
+            color: var(--sc-muted);
+        }
+        [data-testid="stSidebar"] h1 {
+            color: #182230;
+            font-size: 1.32rem;
+            line-height: 1.2;
+            margin-bottom: .2rem;
+        }
+        [data-testid="stSelectbox"] label,
+        [data-testid="stSlider"] label,
+        [data-testid="stTextInput"] label,
+        [data-testid="stDownloadButton"] button,
+        [data-testid="stButton"] button,
+        [data-testid="stTabs"] button,
+        [role="tab"],
+        [data-testid="stExpander"] details summary {
+            color: var(--sc-text) !important;
+            -webkit-text-fill-color: var(--sc-text) !important;
+        }
+        [data-baseweb="select"] > div,
+        [data-baseweb="select"] input,
+        [data-baseweb="popover"],
+        [data-baseweb="popover"] ul,
+        [data-testid="stSelectbox"] [role="button"] {
+            background: #ffffff !important;
+            color: var(--sc-text) !important;
+            -webkit-text-fill-color: var(--sc-text) !important;
+        }
+        [data-baseweb="select"] span,
+        [data-baseweb="popover"] li,
+        [data-baseweb="popover"] [role="option"] {
+            color: var(--sc-text) !important;
+            -webkit-text-fill-color: var(--sc-text) !important;
+        }
+        [data-testid="stSlider"] [role="slider"] {
+            background: var(--sc-accent) !important;
+            border-color: var(--sc-accent) !important;
+        }
+        [data-testid="stSlider"] [data-testid="stThumbValue"] {
+            color: var(--sc-text) !important;
+        }
+        [data-testid="stTabs"] [role="tablist"] {
+            border-bottom: 1px solid var(--sc-border);
+        }
+        [data-testid="stTabs"] [role="tab"][aria-selected="true"] {
+            color: var(--sc-accent) !important;
+            border-color: var(--sc-accent) !important;
+        }
+        [data-testid="stAlert"] {
+            color: var(--sc-text);
+        }
+        [data-testid="stAlert"] *,
+        [data-testid="stExpander"] *,
+        [data-testid="stDataFrame"] * {
+            color: inherit;
         }
         [data-testid="stMetric"] {
             background: var(--sc-panel);
@@ -491,11 +566,33 @@ def inject_login_styles() -> None:
             line-height: 1.45;
             margin-top: .9rem;
         }
-        [data-testid="stForm"] {
+        [data-testid="stTextInput"],
+        [data-testid="stButton"] {
+            border-left: 1px solid rgba(255, 255, 255, .24);
+            border-right: 1px solid rgba(255, 255, 255, .24);
+            background: rgba(15, 23, 42, .76);
+            backdrop-filter: blur(22px);
+            padding-left: 1.35rem;
+            padding-right: 1.35rem;
+        }
+        [data-testid="stTextInput"] {
+            padding-top: .15rem;
+            padding-bottom: .75rem;
+        }
+        [data-testid="stButton"] {
+            border-bottom: 1px solid rgba(255, 255, 255, .24);
             border-radius: 0 0 8px 8px;
+            padding-bottom: 1.35rem;
+            box-shadow: 0 28px 80px rgba(0, 0, 0, .32);
+        }
+        [data-testid="stButton"] + [data-testid="stAlert"],
+        [data-testid="stButton"] + div [data-testid="stAlert"] {
+            margin-top: .75rem;
+        }
+        [data-testid="stForm"] {
+            border-radius: 8px;
             border: 1px solid rgba(255, 255, 255, .24);
-            border-top: 0;
-            padding: .15rem 1.35rem 1.35rem;
+            padding: 1.35rem;
             background: rgba(15, 23, 42, .76);
             box-shadow: 0 28px 80px rgba(0, 0, 0, .32);
             backdrop-filter: blur(22px);
@@ -504,7 +601,10 @@ def inject_login_styles() -> None:
             color: rgba(255, 255, 255, .8);
         }
         [data-testid="stTextInput"] input {
+            height: 3.05rem;
             min-height: 3.05rem;
+            line-height: 1.25rem;
+            padding: .9rem .95rem;
             border-radius: 8px;
             border: 1px solid rgba(255, 255, 255, .72);
             background: #ffffff !important;
@@ -516,6 +616,13 @@ def inject_login_styles() -> None:
         [data-testid="stTextInput"] input::placeholder {
             color: #64748b !important;
             -webkit-text-fill-color: #64748b !important;
+            opacity: 1;
+        }
+        [data-testid="stTextInput"] input:-webkit-autofill,
+        [data-testid="stTextInput"] input:-webkit-autofill:hover,
+        [data-testid="stTextInput"] input:-webkit-autofill:focus {
+            -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+            -webkit-text-fill-color: #0f172a !important;
         }
         [data-testid="stTextInput"] input:focus {
             border-color: rgba(94, 234, 212, .9);
@@ -524,18 +631,22 @@ def inject_login_styles() -> None:
         [data-testid="InputInstructions"] {
             display: none;
         }
-        [data-testid="stFormSubmitButton"] button {
+        [data-testid="stFormSubmitButton"] button,
+        [data-testid="stButton"] button {
             min-height: 3.05rem;
             border-radius: 8px;
             border: 0;
             background: #ffffff;
-            color: #0f172a;
+            color: #0f172a !important;
+            -webkit-text-fill-color: #0f172a !important;
             font-weight: 760;
             box-shadow: 0 14px 30px rgba(0, 0, 0, .22);
         }
-        [data-testid="stFormSubmitButton"] button:hover {
+        [data-testid="stFormSubmitButton"] button:hover,
+        [data-testid="stButton"] button:hover {
             background: #ccfbf1;
-            color: #042f2e;
+            color: #042f2e !important;
+            -webkit-text-fill-color: #042f2e !important;
         }
         [data-testid="stAlert"] {
             border-radius: 8px;
@@ -556,7 +667,9 @@ def inject_login_styles() -> None:
                 display: none;
             }
             .sc-login-card-intro,
-            [data-testid="stForm"] {
+            [data-testid="stForm"],
+            [data-testid="stTextInput"],
+            [data-testid="stButton"] {
                 background: rgba(15, 23, 42, .86);
             }
         }
@@ -568,7 +681,9 @@ def inject_login_styles() -> None:
                 font-size: .94rem;
             }
             .sc-login-card-intro,
-            [data-testid="stForm"] {
+            [data-testid="stForm"],
+            [data-testid="stTextInput"],
+            [data-testid="stButton"] {
                 padding-left: 1rem;
                 padding-right: 1rem;
             }
