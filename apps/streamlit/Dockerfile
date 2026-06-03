@@ -8,6 +8,11 @@ LABEL org.opencontainers.image.title="smartcity-streamlit" \
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV STREAMLIT_THEME_BASE=light
+ENV STREAMLIT_THEME_BACKGROUND_COLOR=#f7f8fb
+ENV STREAMLIT_THEME_SECONDARY_BACKGROUND_COLOR=#ffffff
+ENV STREAMLIT_THEME_TEXT_COLOR=#101828
+ENV STREAMLIT_THEME_PRIMARY_COLOR=#0f766e
 
 COPY apps/streamlit/requirements.txt /app/apps/streamlit/requirements.txt
 RUN pip install --no-cache-dir -r /app/apps/streamlit/requirements.txt

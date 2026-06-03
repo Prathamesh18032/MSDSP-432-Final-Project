@@ -12,8 +12,10 @@ ROOT = Path(__file__).resolve().parents[3]
 STREAMLIT_ROOT = ROOT / "apps" / "streamlit"
 APP_PATH = ROOT / "apps" / "streamlit" / "app.py"
 STYLE_PATH = ROOT / "apps" / "streamlit" / "smartcity" / "styles.py"
+CHARTS_PATH = ROOT / "apps" / "streamlit" / "smartcity" / "charts.py"
 APP_SOURCE = APP_PATH.read_text(encoding="utf-8")
 STYLE_SOURCE = STYLE_PATH.read_text(encoding="utf-8")
+CHARTS_SOURCE = CHARTS_PATH.read_text(encoding="utf-8")
 
 if str(STREAMLIT_ROOT) not in sys.path:
     sys.path.insert(0, str(STREAMLIT_ROOT))
@@ -88,6 +90,7 @@ class StreamlitUiSourceTests(TestCase):
 
     def test_core_widget_contrast_selectors_exist(self) -> None:
         required_selectors = [
+            '[data-testid="stHeader"]',
             '[data-testid="stSidebar"]',
             '[data-testid="stSelectbox"] label',
             '[data-testid="stSlider"] label',
@@ -96,13 +99,43 @@ class StreamlitUiSourceTests(TestCase):
             '[data-testid="stDownloadButton"] button',
             '[data-testid="stTabs"] button',
             '[data-testid="stExpander"] details summary',
-            '[data-testid="stDataFrame"] *',
             '[data-baseweb="popover"]',
+            ".sc-table-wrap td",
             "color-scheme: light",
             "-webkit-text-fill-color",
         ]
         missing = [selector for selector in required_selectors if selector not in STYLE_SOURCE]
         self.assertEqual(missing, [])
+
+    def test_native_dataframes_are_not_used_for_report_tables(self) -> None:
+        self.assertNotIn("st.dataframe(", APP_SOURCE)
+        self.assertIn("styles.responsive_table(table", APP_SOURCE)
+        self.assertIn("styles.responsive_table(details", APP_SOURCE)
+
+    def test_plotly_text_colors_are_explicit(self) -> None:
+        required_rules = [
+            'PLOT_TEXT = "#182230"',
+            "title=dict(font=dict(color=PLOT_TEXT",
+            "tickfont=dict(color=PLOT_MUTED)",
+            "legend=dict(font=dict(color=PLOT_TEXT))",
+            "hoverlabel=dict",
+        ]
+        missing = [rule for rule in required_rules if rule not in CHARTS_SOURCE]
+        self.assertEqual(missing, [])
+
+    def test_dashboard_copy_handles_singular_and_empty_states(self) -> None:
+        required_copy = [
+            "plural_label(source_count, 'source group')",
+            "No dropped readings reported at last check.",
+            "No cloud report files are visible yet.",
+            "Analytics row count is not available yet.",
+            "No archived rows are visible yet.",
+        ]
+        missing = [copy for copy in required_copy if copy not in APP_SOURCE]
+        self.assertEqual(missing, [])
+        self.assertNotIn("source groups are contributing", APP_SOURCE)
+        self.assertNotIn("new readings each second at last check", APP_SOURCE)
+        self.assertNotIn("Cloud report files available for review.", APP_SOURCE)
 
     def test_login_input_alignment_styles_exist(self) -> None:
         required_rules = [
