@@ -1,0 +1,1099 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Smart City Zero-Disk IoT Infrastructure: Phase 3 Final Report</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+  main.wrap { padding: 0 15mm; }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+<!-- ============================ TABLE OF CONTENTS ============================ -->
+<section class="toc" id="toc">
+  <div class="kicker">Group 4 · MSDS 432 · Northwestern University</div>
+  <h2>Phase 3 Final Report: Contents</h2>
+  <div class="s-rule"></div>
+  <p class="muted small" style="margin-top:-4px">Smart City Zero-Disk IoT Infrastructure · From detailed design to an operated, cloud-native data platform.</p>
+
+  <ol>
+    <li><b>Executive Summary</b><span>What was delivered, and the headline outcomes</span></li>
+    <li><b>From Phase 2 to Phase 3</b><span>Continuity, scope, and the design-to-delivery traceability matrix</span></li>
+    <li><b>Delivery Approach &amp; Methodology</b><span>Incremental vertical slices and validation gates</span></li>
+    <li><b>Implemented Platform Architecture</b><span>As-built hot path, cold path, and runtime</span></li>
+    <li><b>Live Data Ingestion</b><span>Five city signal families, validation, and backpressure</span></li>
+    <li><b>Storage: Hot &amp; Cold</b><span>TimescaleDB, Parquet, GCS, and BigQuery</span></li>
+    <li><b>Cloud Runtime &amp; Infrastructure as Code</b><span>Terraform, GKE Autopilot, Workload Identity</span></li>
+    <li><b>Release Engineering &amp; CI/CD</b><span>Keyless image publishing and gated promotion</span></li>
+    <li><b>Reliability, Backups &amp; Recovery</b><span>Health checks, backups, and restore drills</span></li>
+    <li><b>Cost Governance &amp; Operational Safety</b><span>Guards, runtime modes, and budget control</span></li>
+    <li><b>Reporting &amp; Visualization</b><span>Streamlit command center and Grafana operations</span></li>
+    <li><b>Data Quality &amp; Observability in Production</b><span>Operational quality, not exploratory analysis</span></li>
+    <li><b>Safety, Privacy &amp; Security</b><span>Privacy by design; keeping city data out of the wrong hands</span></li>
+    <li><b>Verification &amp; Evidence</b><span>Automated checks, evidence artifacts, demo paths</span></li>
+    <li><b>Business Impact &amp; Outcomes</b><span>Phase 2 civic use cases, now enabled</span></li>
+    <li><b>Future Scope: AI Agents in Smart City IoT</b><span>The next layer above the data platform</span></li>
+    <li><b>Conclusion</b><span>Project close-out</span></li>
+    <li class="apx"><b>Appendix A: Automation Catalog</b><span>Grouped Makefile targets</span></li>
+    <li class="apx"><b>Appendix B: Repository Map, Attributions &amp; Glossary</b><span>Where to find things; sources; terms</span></li>
+  </ol>
+
+  <table class="grid" style="margin-top:16px">
+    <caption>Document control</caption>
+    <thead><tr><th style="width:22%">Field</th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td class="n">Document</td><td>Project Phase 3 Final Report (project close-out)</td></tr>
+      <tr><td class="n">Project</td><td>Smart City Zero-Disk IoT Infrastructure · Project 4 · Group 4</td></tr>
+      <tr><td class="n">Course</td><td>MSDS 432: Foundations of Data Engineering, Northwestern University</td></tr>
+      <tr><td class="n">Date</td><td>June 2026</td></tr>
+      <tr><td class="n">Companion artifacts</td><td>Phase 2 detailed-design report &amp; presentation; Phase 3 presentation deck; <code class="inl">Project_Phase_3_Group4.zip</code> code submission</td></tr>
+      <tr><td class="n">Status</td><td>Implementation complete and operated; AI-agent layer documented as future scope</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================ 1 · EXECUTIVE SUMMARY ============================ -->
+<section class="section" id="s1">
+  <div class="s-head">
+    <div class="s-num">1</div>
+    <div class="s-meta"><div class="kicker">Executive Summary</div>
+    <h2>From a blueprint to an operated product</h2></div>
+  </div>
+  <div class="s-rule"></div>
+
+  <p class="lead">Phase 2 defined <em>what to build</em> and <em>why</em>. Phase 3 is the proof that it was
+  actually built, deployed, and operated. The Smart City Zero-Disk IoT Infrastructure now ingests live telemetry
+  from five real city signal families, normalizes and quality-checks every reading, serves a low-latency hot store
+  and a low-cost cold archive, runs on a managed cloud runtime with automated releases, and surfaces insight through
+  two complementary, access-protected dashboards.</p>
+
+  <div class="kpi-grid">
+    <div class="kpi"><div class="v">5</div><div class="l">Live signal families</div><div class="n">Air, weather, mobility, water, simulator</div></div>
+    <div class="kpi gold"><div class="v">22</div><div class="l">Engineering slices</div><div class="n">Merged, each behind validation gates</div></div>
+    <div class="kpi green"><div class="v">25</div><div class="l">Go test files</div><div class="n">Across 53 Go source files</div></div>
+    <div class="kpi blue"><div class="v">100</div><div class="l">Automation targets</div><div class="n">One Makefile drives the whole lifecycle</div></div>
+  </div>
+
+  <h3>What was delivered in Phase 3</h3>
+  <ul class="ticks">
+    <li><b>A working multi-source pipeline.</b> Go services poll OpenAQ (air), Open-Meteo (weather), Divvy GBFS
+      (mobility), and USGS (water), plus a deterministic simulator, all flowing through one normalized reading model.</li>
+    <li><b>Validated, quality-flagged data.</b> Every reading passes field, range, unit, coordinate, and freshness
+      checks and is tagged <code class="inl">valid</code>, <code class="inl">suspect</code>, or <code class="inl">invalid</code> before storage.</li>
+    <li><b>A dual hot/cold store.</b> TimescaleDB is the indexed hot operational store with continuous aggregates;
+      partitioned Parquet on Google Cloud Storage is queried as a zero-ETL BigQuery external table for history.</li>
+    <li><b>A cloud runtime, as code.</b> Terraform provisions Pub/Sub, GCS, BigQuery, Artifact Registry, and a GKE
+      Autopilot cluster; self-hosted TimescaleDB stays the hot store inside the cluster.</li>
+    <li><b>Automated, keyless releases.</b> GitHub Actions builds and publishes images via OIDC, then a gated
+      workflow promotes verified images to the runtime and checks its health.</li>
+    <li><b>Operational maturity.</b> Six-hourly backups, restore drills, hourly cold export, runtime health checks,
+      explicit cost-control modes, and a reviewer-safe submission package.</li>
+    <li><b>Two reporting surfaces.</b> A polished Streamlit command center for executives and an enterprise Grafana
+      operations dashboard for live monitoring.</li>
+  </ul>
+
+  <div class="callout">
+    <div class="ct">The Phase 3 thesis</div>
+    <p>The Phase 2 design has matured into a cloud-operated product. This report leads with delivery and operations,
+    references the Phase 2 blueprint only where it adds continuity, and closes the project.</p>
+  </div>
+</section>
+
+<!-- ============================ 2 · PHASE 2 → PHASE 3 ============================ -->
+<section class="section" id="s2">
+  <div class="s-head">
+    <div class="s-num">2</div>
+    <div class="s-meta"><div class="kicker">Continuity &amp; Scope</div>
+    <h2>From Phase 2 to Phase 3</h2></div>
+  </div>
+  <div class="s-rule"></div>
+
+  <p>Phase 2 delivered a 34-page detailed design organized as six engineering questions: architecture selection
+  (a hybrid-cloud data lake), a seven-layer architecture and device ecosystem, the data-integration and
+  four-stage data-quality strategy, the technology-stack rationale, the database zones and table structures, and an
+  executed exploratory data analysis with storage-and-cost modelling. That blueprint is not re-derived here. Phase 3
+  records what was built on top of it, and demonstrates that each design decision now has running evidence.</p>
+
+  <table class="grid avoid">
+    <caption>Design-to-delivery traceability: Phase 2 decision → Phase 3 as-built evidence</caption>
+    <thead><tr><th style="width:30%">Phase 2 design decision</th><th>Realized in Phase 3 as…</th></tr></thead>
+    <tbody>
+      <tr><td class="n">Hybrid-cloud data lake (hot + cold tiering)</td><td>TimescaleDB hot store + partitioned Parquet on GCS exposed as a BigQuery external table, both implemented and queried end-to-end.</td></tr>
+      <tr><td class="n">Zero-disk mandate</td><td>State lives in managed services and object storage; the cluster keeps no node-local data, and cold history is schema-on-read Parquet.</td></tr>
+      <tr><td class="n">Seven-layer architecture</td><td>Mapped 1:1 onto running components: sources, Go ingestion, hot store, cold store, query layer, orchestration, and dashboards (see §4).</td></tr>
+      <tr><td class="n">Go ingestion microservice</td><td><code class="inl">services/ingestor</code> with five source adapters under <code class="inl">internal/</code>, a shared reading model, and a backpressure buffer.</td></tr>
+      <tr><td class="n">Schema-on-read Parquet on object storage</td><td><code class="inl">internal/coldstore</code> writes Apache Arrow / Parquet partitioned by <code class="inl">source / metric / year / month / day</code> and uploads to GCS.</td></tr>
+      <tr><td class="n">Four-stage data-quality strategy</td><td>Validation at ingest, <code class="inl">quality_flag</code> on every row, <code class="inl">ingestion_metrics</code> telemetry, and dashboard quality panels (see §12).</td></tr>
+      <tr><td class="n">72-hour hot window, cheap long-term retention</td><td>Hourly cold-export job and a GCS lifecycle rule; the Phase 2 cost case (~90% cheaper than warehouse storage) is now the operating model.</td></tr>
+      <tr><td class="n">Tech stack: Go · TimescaleDB · Grafana · Streamlit · Docker</td><td>All implemented, and extended with Pub/Sub, GKE Autopilot, Terraform, and GitHub Actions CI/CD.</td></tr>
+      <tr><td class="n">Reports identified during EDA</td><td>Operationalized as a live Grafana operations dashboard and a Streamlit command center (see §11).</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout gold">
+    <div class="ct">Deliberately not repeated</div>
+    <p>Architecture-selection rationale, the data-warehouse/data-mart comparison, the device-ecosystem catalog,
+    the technology-choice justifications, and the exploratory data analysis all live in the Phase 2 detailed-design
+    report. This report assumes them and focuses on implementation, operation, and outcomes.</p>
+  </div>
+</section>
+
+<!-- ============================ 3 · DELIVERY APPROACH ============================ -->
+<section class="section" id="s3">
+  <div class="s-head">
+    <div class="s-num">3</div>
+    <div class="s-meta"><div class="kicker">How It Was Built</div>
+    <h2>Delivery approach &amp; methodology</h2></div>
+  </div>
+  <div class="s-rule"></div>
+
+  <p>The platform was built as a sequence of small, independently shippable <strong>vertical slices</strong>. Each
+  slice moved a thin thread of value end-to-end, from a data source through storage to a dashboard, rather than
+  building one layer at a time. A <strong>local-first</strong> stance meant every capability was proven on Docker
+  Compose before any cloud spend, and only then promoted to a <strong>cloud-ready</strong> equivalent behind explicit
+  safety gates.</p>
+
+  <div class="cols-12">
+    <div>
+      <h3>Slice phases</h3>
+      <div class="tl">
+        <div class="ph"><div class="h">Foundation <span>· Slices 1–3</span></div><div class="d">Repository scaffold, the simulator-to-TimescaleDB vertical slice, and Grafana datasource/dashboard provisioning.</div></div>
+        <div class="ph"><div class="h">Ingestion &amp; quality <span>· Slices 4–8</span></div><div class="d">OpenAQ, then a queue/backpressure buffer, the Parquet cold path, Streamlit reports, and full multi-source integration (Open-Meteo, GBFS, USGS).</div></div>
+        <div class="ph gold"><div class="h">Cloud readiness <span>· Slices 9–14</span></div><div class="d">GCP manifests, container images, account bootstrap, Artifact Registry publishing, Terraform plan review, and the Pub/Sub adapter.</div></div>
+        <div class="ph gold"><div class="h">Cloud apply &amp; runtime <span>· Slices 15–18</span></div><div class="d">Controlled core apply, the GCS/BigQuery cold path, the GKE Autopilot runtime with self-hosted TimescaleDB, CI/CD publishing, observability, and backups.</div></div>
+        <div class="ph green"><div class="h">Reliability &amp; demo <span>· Slices 19–20</span></div><div class="d">Restore testing, cost controls, public demo ingress, operations, and release promotion.</div></div>
+        <div class="ph green"><div class="h">Enterprise reporting <span>· Slices 21–22</span></div><div class="d">The redesigned Streamlit command center and the enterprise Grafana operations dashboard.</div></div>
+        <div class="ph green"><div class="h">Finalization <span>· Slice 23</span></div><div class="d">Phase 3 packaging, presentation, evidence, and this report.</div></div>
+      </div>
+    </div>
+    <div>
+      <h3>Validation gates</h3>
+      <p>No slice was considered done until it passed its gates and merged via pull request to <code class="inl">main</code>.</p>
+      <ul class="ticks">
+        <li><code class="inl">make check</code>: repository scaffold integrity</li>
+        <li><code class="inl">make test</code>: Go unit tests</li>
+        <li><code class="inl">docker compose config</code>: stack validity</li>
+        <li><code class="inl">make cloud-check</code> / <code class="inl">ci-cd-check</code>: cloud scaffold</li>
+        <li><code class="inl">git diff --check</code>: whitespace hygiene</li>
+        <li>Live validation against the real source, store, or runtime</li>
+      </ul>
+      <div class="callout blue">
+        <div class="ct">Continuous integration</div>
+        <p>The CI workflow runs scaffold checks, Go tests, Compose validation, cloud-readiness checks, and a
+        container image build on <em>every push and pull request</em>.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider-band">
+    <h3>The result of disciplined slicing</h3>
+    <p>A reviewer can reproduce the entire platform locally in five commands, and every cloud action is reversible
+    and guarded, because each capability was first proven in isolation before it was wired into the whole.</p>
+  </div>
+</section>
+
+<!-- ============================ 4 · ARCHITECTURE ============================ -->
+<section class="section" id="s4">
+  <div class="s-head">
+    <div class="s-num">4</div>
+    <div class="s-meta"><div class="kicker">As Built</div>
+    <h2>Implemented platform architecture</h2></div>
+  </div>
+  <div class="s-rule"></div>
+
+  <p>The running system follows the Phase 2 seven-layer design. Data flows from city sources through Go ingestion
+  into a <strong>hot path</strong> (Pub/Sub → hot writer → TimescaleDB) and, on a schedule, into a <strong>cold
+  path</strong> (Parquet → GCS → BigQuery), with Grafana and Streamlit reading from both, all on a governed GKE
+  Autopilot runtime.</p>
+
+  <figure class="plain avoid arch">
+    <div class="frame" style="padding:14px 12px">
+      <svg viewBox="0 0 1000 470" role="img" aria-label="As-built data flow architecture">
+        <defs>
+          <marker id="ar" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto">
+            <path d="M0,0 L7,3 L0,6 Z" fill="#5B6B85"></path>
+          </marker>
+          <style>
+            .bx{rx:9;}
+            .lbl{font:700 13px Helvetica,Arial,sans-serif;fill:#0B1220}
+            .sub{font:11px Helvetica,Arial,sans-serif;fill:#5B6B85}
+            .hd{font:800 11px Helvetica,Arial,sans-serif;fill:#6B7686;letter-spacing:1px}
+            .wh{font:700 12px Helvetica,Arial,sans-serif;fill:#fff}
+            .whs{font:10px Helvetica,Arial,sans-serif;fill:#C4CFE0}
+            .fl{stroke:#5B6B85;stroke-width:1.6;fill:none;marker-end:url(#ar)}
+          </style>
+        </defs>
+
+        <!-- lane labels -->
+        <text class="hd" x="14" y="20">SOURCES</text>
+        <text class="hd" x="196" y="20">GO INGESTION</text>
+        <text class="hd" x="470" y="20">HOT PATH</text>
+        <text class="hd" x="470" y="312">COLD PATH</text>
+        <text class="hd" x="852" y="20">CONSUMERS</text>
+
+        <!-- sources -->
+        <g>
+          <rect x="14" y="34" width="150" height="34" class="bx" fill="#F2E9FC" stroke="#B566F2"></rect>
+          <text class="lbl" x="26" y="49">Air · OpenAQ</text><text class="sub" x="26" y="62">PM2.5 · O₃ · NO₂</text>
+          <rect x="14" y="76" width="150" height="34" class="bx" fill="#E7F0FD" stroke="#5BA7FF"></rect>
+          <text class="lbl" x="26" y="91">Weather · Open-Meteo</text><text class="sub" x="26" y="104">temp · humidity · wind</text>
+          <rect x="14" y="118" width="150" height="34" class="bx" fill="#EAF6E2" stroke="#84D65A"></rect>
+          <text class="lbl" x="26" y="133">Mobility · Divvy GBFS</text><text class="sub" x="26" y="146">bikes · docks · capacity</text>
+          <rect x="14" y="160" width="150" height="34" class="bx" fill="#E6F7F6" stroke="#3DD6D0"></rect>
+          <text class="lbl" x="26" y="175">Water · USGS</text><text class="sub" x="26" y="188">river gage height</text>
+          <rect x="14" y="202" width="150" height="34" class="bx" fill="#FBF3DA" stroke="#F7C948"></rect>
+          <text class="lbl" x="26" y="217">Simulator</text><text class="sub" x="26" y="230">deterministic readings</text>
+        </g>
+
+        <!-- ingestion box -->
+        <rect x="190" y="34" width="186" height="202" class="bx" fill="#0E1728" stroke="#26384f"></rect>
+        <text class="wh" x="204" y="58" style="font-size:12px">Pollers → normalize</text>
+        <rect x="204" y="70" width="158" height="32" rx="6" fill="#15233b"></rect>
+        <text class="whs" x="214" y="90">Validate · range · unit · coords</text>
+        <rect x="204" y="108" width="158" height="32" rx="6" fill="#15233b"></rect>
+        <text class="whs" x="214" y="128">Quality flag  −1 / 0 / 1</text>
+        <rect x="204" y="146" width="158" height="32" rx="6" fill="#15233b"></rect>
+        <text class="whs" x="214" y="166">Buffer · backpressure</text>
+        <rect x="204" y="184" width="158" height="36" rx="6" fill="#0d2b2a" stroke="#0E8C88"></rect>
+        <text class="whs" x="214" y="206" style="fill:#7fe6e0">Sink: local  or  Pub/Sub</text>
+
+        <!-- hot path -->
+        <rect x="466" y="46" width="120" height="56" class="bx" fill="#fff" stroke="#5BA7FF"></rect>
+        <text class="lbl" x="478" y="70">Pub/Sub</text><text class="sub" x="478" y="86">topic + DLQ</text>
+        <rect x="466" y="130" width="120" height="56" class="bx" fill="#fff" stroke="#5BA7FF"></rect>
+        <text class="lbl" x="478" y="154">Hot Writer</text><text class="sub" x="478" y="170">consume → insert</text>
+        <rect x="640" y="78" width="156" height="92" class="bx" fill="#E6F7F6" stroke="#0E8C88"></rect>
+        <text class="lbl" x="654" y="104">TimescaleDB</text>
+        <text class="sub" x="654" y="120">hypertable · indexes</text>
+        <text class="sub" x="654" y="135">hourly_aggregates</text>
+        <text class="sub" x="654" y="150">ingestion_metrics</text>
+
+        <!-- cold path -->
+        <rect x="466" y="330" width="120" height="50" class="bx" fill="#FBF3DA" stroke="#F7C948"></rect>
+        <text class="lbl" x="478" y="352">Cold export</text><text class="sub" x="478" y="368">hourly job</text>
+        <rect x="618" y="330" width="120" height="50" class="bx" fill="#FBF3DA" stroke="#F7C948"></rect>
+        <text class="lbl" x="630" y="352">GCS Parquet</text><text class="sub" x="630" y="368">partitioned</text>
+        <rect x="770" y="330" width="150" height="50" class="bx" fill="#FBF3DA" stroke="#F7C948"></rect>
+        <text class="lbl" x="782" y="352">BigQuery</text><text class="sub" x="782" y="368">external table</text>
+
+        <!-- consumers -->
+        <rect x="846" y="56" width="142" height="50" class="bx" fill="#0E1728" stroke="#26384f"></rect>
+        <text class="wh" x="860" y="78">Grafana</text><text class="whs" x="860" y="94">live operations</text>
+        <rect x="846" y="150" width="142" height="50" class="bx" fill="#0d2b2a" stroke="#0E8C88"></rect>
+        <text class="wh" x="860" y="172">Streamlit</text><text class="whs" x="860" y="188">command center</text>
+
+        <!-- flows -->
+        <path class="fl" d="M166,135 L188,135"></path>
+        <path class="fl" d="M378,135 L420,135 L420,74 L464,74"></path>
+        <path class="fl" d="M526,102 L526,128"></path>
+        <path class="fl" d="M588,158 L612,158 L612,124 L638,124"></path>
+        <path class="fl" d="M796,118 L820,118 L820,80 L844,80"></path>
+        <path class="fl" d="M796,140 L824,140 L824,174 L844,174"></path>
+        <path class="fl" d="M718,170 L718,330"></path>
+        <path class="fl" d="M586,355 L616,355"></path>
+        <path class="fl" d="M738,355 L768,355"></path>
+        <path class="fl" d="M920,355 L946,355 L946,200 L990,200" style="marker-end:none;stroke-dasharray:4 3"></path>
+        <text class="sub" x="930" y="300" style="fill:#0E8C88">history</text>
+
+        <!-- runtime band -->
+        <rect x="14" y="416" width="974" height="42" rx="9" fill="#0B1220"></rect>
+        <text x="30" y="442" style="font:800 12px Helvetica,Arial;fill:#3DD6D0;letter-spacing:1px">GKE AUTOPILOT RUNTIME</text>
+        <text x="250" y="442" style="font:12px Helvetica,Arial;fill:#C4CFE0">Workload Identity · CI/CD promotion · 6-hourly backups · restore drills · cost-control modes</text>
+      </svg>
+    </div>
+    <figcaption><b>Figure 1.</b> End-to-end as-built data flow: five sources feed one Go ingestion pipeline that
+    validates and quality-flags every reading; the hot path lands in TimescaleDB while an hourly job tiers history to
+    Parquet/GCS/BigQuery, and Grafana and Streamlit consume the stores on a governed GKE Autopilot runtime.</figcaption>
+  </figure>
+
+  <h3>Seven layers, mapped to running components</h3>
+  <table class="grid avoid">
+    <thead><tr><th style="width:26%">Phase 2 layer</th><th style="width:34%">Implemented as</th><th>Where in the repository</th></tr></thead>
+    <tbody>
+      <tr><td class="n">1 · Data sources</td><td>OpenAQ, Open-Meteo, Divvy GBFS, USGS, simulator</td><td><code class="inl">internal/{openaq,openmeteo,gbfs,usgs,simulator}</code></td></tr>
+      <tr><td class="n">2 · Go ingestion</td><td>Pollers, validation, quality flags, backpressure buffer, sinks</td><td><code class="inl">internal/{readings,buffer,cloudpubsub}</code>, <code class="inl">services/ingestor</code></td></tr>
+      <tr><td class="n">3A · Hot storage</td><td>TimescaleDB hypertable + continuous aggregate + metrics</td><td><code class="inl">internal/timescale</code>, <code class="inl">infra/local/timescaledb</code></td></tr>
+      <tr><td class="n">3B · Cold storage</td><td>Arrow/Parquet partitions uploaded to GCS</td><td><code class="inl">internal/coldstore</code>, <code class="inl">services/writer/cmd/export-cold</code></td></tr>
+      <tr><td class="n">4 · Query layer</td><td>BigQuery external table over GCS Parquet</td><td><code class="inl">infra/cloud/terraform</code></td></tr>
+      <tr><td class="n">5–6 · Orchestration</td><td>GKE workloads, CronJobs, CI/CD, Makefile lifecycle</td><td><code class="inl">infra/cloud/k8s</code>, <code class="inl">.github/workflows</code>, <code class="inl">Makefile</code></td></tr>
+      <tr><td class="n">7 · Dashboards</td><td>Grafana operations + Streamlit command center</td><td><code class="inl">infra/local/grafana</code>, <code class="inl">apps/streamlit</code></td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <div class="ct">Zero-disk, realized</div>
+    <p>No application state depends on node-local disk. Recent data lives in a managed hot store; history is
+    schema-on-read Parquet objects in GCS; analytics run directly over those objects through BigQuery without an
+    ETL copy.</p>
+  </div>
+</section>
+
+<!-- ============================ 5 · INGESTION ============================ -->
+<section class="section" id="s5">
+  <div class="s-head">
+    <div class="s-num">5</div>
+    <div class="s-meta"><div class="kicker">Acquire · Normalize · Validate</div>
+    <h2>Live data ingestion</h2></div>
+  </div>
+  <div class="s-rule"></div>
+
+  <p>Five sources publish into a single canonical reading model, so the rest of the platform never has to know which
+  city system a measurement came from. Each source adapter follows the same shape, <em>client → normalize →
+  validate → publish</em>, and emits the shared <code class="inl">SensorReading</code> contract.</p>
+
+  <table class="grid avoid">
+    <caption>The five city signal families</caption>
+    <thead><tr><th>Source</th><th>Domain</th><th>Metrics produced</th><th>Sensor ID</th></tr></thead>
+    <tbody>
+      <tr><td class="n">OpenAQ v3</td><td><span class="tag violet">Air quality</span></td><td>PM2.5, O₃, NO₂</td><td><code class="inl">OPENAQ-…</code></td></tr>
+      <tr><td class="n">Open-Meteo</td><td><span class="tag blue">Weather</span></td><td>temperature, humidity, wind&nbsp;speed, precipitation</td><td><code class="inl">OPENMETEO-…</code></td></tr>
+      <tr><td class="n">Divvy GBFS</td><td><span class="tag green">Mobility</span></td><td>bikes available, docks available, station capacity</td><td><code class="inl">GBFS-…</code></td></tr>
+      <tr><td class="n">USGS</td><td><span class="tag teal">Water</span></td><td>river gage height</td><td><code class="inl">USGS-…</code></td></tr>
+      <tr><td class="n">Simulator</td><td><span class="tag gold">Synthetic</span></td><td>PM2.5, O₃, NO₂, temperature, humidity</td><td><code class="inl">SIM-…</code></td></tr>
+    </tbody>
+  </table>
+
+  <div class="cols-2">
+    <div>
+      <h3>One canonical reading</h3>
+      <p>Every measurement becomes the same record before storage, with a deduplication key of
+      <code class="inl">sensor_id | time | metric</code>.</p>
+      <pre class="code"><span class="k">type</span> <span class="t">SensorReading</span> <span class="k">struct</span> {
+  Time, IngestedAt   <span class="t">time.Time</span>
+  SensorID, Metric   <span class="t">string</span>
+  Value              <span class="t">float64</span>
+  Unit, Source       <span class="t">string</span>
+  Latitude, Longitude <span class="t">float64</span>
+  QualityFlag        <span class="t">int16</span>   <span class="c">// −1 / 0 / 1</span>
+  SchemaVersion      <span class="t">int</span>
+}</pre>
+    </div>
+    <div>
+      <h3>Quality flags</h3>
+      <p>Validation runs at the boundary; a reading is never stored without a verdict.</p>
+      <div class="tagrow">
+        <span class="tag green">1 · valid</span>
+        <span class="tag gold">0 · suspect</span>
+        <span class="tag coral">−1 · invalid</span>
+      </div>
+      <p class="small muted">Checks cover required fields, per-metric value ranges, expected units, coordinate
+      bounds (±90° / ±180°), timestamp freshness, and a positive schema version.</p>
+      <div class="callout green" style="margin-top:8px">
+        <div class="ct">Deterministic simulator</div>
+        <p>The built-in simulator emits reproducible readings, so dashboards can be seeded and the whole pipeline
+        exercised in CI without any external API calls.</p>
+      </div>
+    </div>
+  </div>
+
+  <h3>Per-metric validation ranges</h3>
+  <p>Range bounds are enforced in <code class="inl">internal/readings/validation.go</code>; values outside these
+  bounds are rejected or flagged rather than silently stored.</p>
+  <table class="grid avoid">
+    <thead><tr><th>Metric</th><th class="c">Min</th><th class="c">Max</th><th>Unit</th><th>Metric</th><th class="c">Min</th><th class="c">Max</th><th>Unit</th></tr></thead>
+    <tbody>
+      <tr><td>PM2.5</td><td class="c">0</td><td class="c">1000</td><td>ug/m3</td><td>precipitation</td><td class="c">0</td><td class="c">1000</td><td>mm</td></tr>
+      <tr><td>O3</td><td class="c">0</td><td class="c">1</td><td>ppm</td><td>bike_available_count</td><td class="c">0</td><td class="c">1000</td><td>count</td></tr>
+      <tr><td>NO2</td><td class="c">0</td><td class="c">1000</td><td>ppb</td><td>dock_available_count</td><td class="c">0</td><td class="c">1000</td><td>count</td></tr>
+      <tr><td>temperature</td><td class="c">−80</td><td class="c">60</td><td>C</td><td>station_capacity</td><td class="c">0</td><td class="c">1000</td><td>count</td></tr>
+      <tr><td>humidity</td><td class="c">0</td><td class="c">100</td><td>%</td><td>water_gage_height</td><td class="c">−100</td><td class="c">100</td><td>ft</td></tr>
+      <tr><td>wind_speed</td><td class="c">0</td><td class="c">400</td><td>km/h</td><td></td><td></td><td></td><td></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Backpressure &amp; the configurable sink</h3>
+  <div class="cols-2">
+    <div>
+      <p>Readings pass through an in-memory buffer that batches by size or time and applies non-blocking
+      backpressure, if the channel is full, the reading is counted as dropped rather than blocking the producer.
+      The buffer continuously records pipeline health to <code class="inl">ingestion_metrics</code>.</p>
+      <dl class="kv">
+        <dt>Channel</dt><dd>capacity-bounded, non-blocking</dd>
+        <dt>Batch</dt><dd>flush on size <em>or</em> interval</dd>
+        <dt>Metrics</dt><dd>readings/sec, channel fill %, dropped total</dd>
+        <dt>Shutdown</dt><dd>drains in-flight readings on cancel</dd>
+      </dl>
+    </div>
+    <div>
+      <p>The same producer writes to one of two sinks, selected by configuration: local-first by default,
+      cloud-native when ready.</p>
+      <ul class="ticks">
+        <li><b>Local</b>: buffer → TimescaleDB writer, for development and the reviewer demo.</li>
+        <li><b>Pub/Sub</b>: buffer → topic publisher, decoupling ingestion from storage in the cloud runtime.</li>
+        <li>A dedicated consumer drains the subscription back into TimescaleDB (see §6).</li>
+      </ul>
+    </div>
+  </div>
+
+  <table class="grid avoid">
+    <caption>Backend package map (<code>internal/</code>)</caption>
+    <thead><tr><th style="width:20%">Package</th><th>Responsibility</th></tr></thead>
+    <tbody>
+      <tr><td class="n">readings</td><td>Canonical <code class="inl">SensorReading</code> model, validation, quality flags, dedup key</td></tr>
+      <tr><td class="n">buffer</td><td>Backpressure queue, batching, and ingestion-metrics recording</td></tr>
+      <tr><td class="n">openaq · openmeteo · gbfs · usgs</td><td>Source clients, pollers, and metric normalization</td></tr>
+      <tr><td class="n">simulator</td><td>Deterministic reading generator for CI and demos</td></tr>
+      <tr><td class="n">cloudpubsub</td><td>Pub/Sub publisher, consumer, and message codec</td></tr>
+      <tr><td class="n">timescale</td><td>Batched, idempotent TimescaleDB writer and export reader</td></tr>
+      <tr><td class="n">coldstore</td><td>Arrow/Parquet writer and GCS uploader</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================ 6 · STORAGE ============================ -->
+<section class="section" id="s6">
+  <div class="s-head">
+    <div class="s-num">6</div>
+    <div class="s-meta"><div class="kicker">Hot &amp; Cold</div>
+    <h2>Storage: hot &amp; cold</h2></div>
+  </div>
+  <div class="s-rule"></div>
+
+  <p>The storage tier is the heart of the zero-disk design: a fast, indexed hot store for recent operational data,
+  and a cheap, schema-on-read cold archive for everything else, each queryable in place.</p>
+
+  <h3>Hot store: TimescaleDB</h3>
+  <p>Readings land in a TimescaleDB hypertable keyed on <code class="inl">(time, sensor_id, metric)</code>. Writes
+  are batched and idempotent (an <code class="inl">ON CONFLICT</code> upsert), so replays and Pub/Sub redelivery
+  never create duplicates. A continuous aggregate rolls valid readings into hourly statistics for fast dashboards,
+  and a metrics table captures pipeline health.</p>
+
+  <pre class="code"><span class="k">CREATE TABLE</span> sensor_readings (
+  time TIMESTAMPTZ, sensor_id VARCHAR(64), metric VARCHAR(32),
+  value DOUBLE PRECISION, unit VARCHAR(16), source VARCHAR(32),
+  latitude DECIMAL(9,6), longitude DECIMAL(9,6),
+  quality_flag SMALLINT <span class="k">DEFAULT</span> 1, ingested_at TIMESTAMPTZ, schema_version INT,
+  <span class="k">PRIMARY KEY</span> (time, sensor_id, metric),
+  <span class="k">CHECK</span> (quality_flag <span class="k">IN</span> (-1, 0, 1)) );
+<span class="k">SELECT</span> create_hypertable(<span class="s">'sensor_readings'</span>, <span class="s">'time'</span>);
+
+<span class="c">-- hourly rollup of valid readings, for dashboards</span>
+<span class="k">CREATE MATERIALIZED VIEW</span> hourly_aggregates <span class="k">WITH</span> (timescaledb.continuous) <span class="k">AS</span>
+  <span class="k">SELECT</span> time_bucket(<span class="s">'1 hour'</span>, time), sensor_id, metric,
+         avg(value), min(value), max(value), count(*)
+  <span class="k">FROM</span> sensor_readings <span class="k">WHERE</span> quality_flag = 1 <span class="k">GROUP BY</span> 1,2,3;</pre>
+
+  <dl class="kv">
+    <dt>Indexes</dt><dd><code class="inl">(sensor_id, metric, time DESC)</code> and <code class="inl">(metric, time DESC)</code> for sensor- and metric-oriented queries</dd>
+    <dt>ingestion_metrics</dt><dd>readings/sec, channel fill %, Pub/Sub lag, GCS write latency, dropped total</dd>
+    <dt>Idempotency</dt><dd>upsert on the natural key absorbs retries and at-least-once delivery</dd>
+  </dl>
+
+  <h3>Cold store: Parquet · GCS · BigQuery</h3>
+  <p>An export job reads from TimescaleDB and writes Apache Arrow / Parquet files partitioned for efficient
+  pruning, uploads them to a GCS bucket, and a BigQuery external table reads those objects directly: no import,
+  no second copy.</p>
+
+  <div class="cols-2">
+    <div>
+      <pre class="code"><span class="c"># Parquet partition layout in GCS</span>
+sensor_readings/
+  source=openaq/
+    metric=PM2.5/
+      year=2026/month=06/day=02/
+        part-…Z.parquet</pre>
+    </div>
+    <div>
+      <pre class="code"><span class="c"># BigQuery external table (Terraform)</span>
+source_format = <span class="s">"PARQUET"</span>
+source_uris   = [<span class="s">"gs://…-cold/sensor_readings/*"</span>]
+<span class="c"># 11-column schema mirrors the hot store</span></pre>
+    </div>
+  </div>
+
+  <p>The export does not delete hot rows; the hot window ages naturally while the cold archive grows cheaply. A GCS
+  lifecycle rule caps long-term retention. This is the Phase 2 cost case in production: object storage at roughly a
+  tenth the cost of warehouse-resident storage, with analytics still one SQL query away.</p>
+
+  <div class="callout blue">
+    <div class="ct">Hot ↔ cold consistency</div>
+    <p>The hot table, the cold Parquet schema, and the BigQuery external table all share the same eleven columns and
+    the same quality semantics, so a query gives the same shape of answer whether it hits the last hour or last
+    quarter.</p>
+  </div>
+</section>
+
+<!-- ============================ 7 · CLOUD RUNTIME & IaC ============================ -->
+<section class="section" id="s7">
+  <div class="s-head">
+    <div class="s-num">7</div>
+    <div class="s-meta"><div class="kicker">Provisioned as Code</div>
+    <h2>Cloud runtime &amp; infrastructure as code</h2></div>
+  </div>
+  <div class="s-rule"></div>
+
+  <p>The entire cloud footprint is declared in Terraform and rendered Kubernetes manifests: nothing is created by
+  hand, and every cost-bearing apply is gated behind an explicit environment flag, so the project can sit at zero
+  cost and be brought up reproducibly.</p>
+
+  <h3>Terraform-provisioned resources</h3>
+  <table class="grid avoid">
+    <thead><tr><th style="width:26%">Resource</th><th>Purpose</th><th style="width:18%">Gate</th></tr></thead>
+    <tbody>
+      <tr><td class="n">Pub/Sub topic + DLQ + subscription</td><td>Decoupled hot-path transport with a dead-letter policy and retry backoff</td><td>core</td></tr>
+      <tr><td class="n">GCS bucket</td><td>Cold Parquet storage with a retention lifecycle rule</td><td>core</td></tr>
+      <tr><td class="n">BigQuery dataset + external table</td><td>Zero-ETL analytics over the cold Parquet objects</td><td>core</td></tr>
+      <tr><td class="n">Artifact Registry repository</td><td>Docker images for the ingestor, writer, and Streamlit services</td><td>core</td></tr>
+      <tr><td class="n">Service accounts (×3) + IAM</td><td>Least-privilege identities for ingestor, writer, and analytics</td><td>core</td></tr>
+      <tr><td class="n">GKE Autopilot cluster</td><td>The managed runtime, with Workload Identity enabled</td><td><span class="tag gold">runtime</span></td></tr>
+      <tr><td class="n">Workload Identity pool + OIDC provider</td><td>Keyless GitHub Actions trust, restricted to <code class="inl">main</code></td><td><span class="tag blue">ci/cd</span></td></tr>
+    </tbody>
+  </table>
+  <p class="tbl-note">Region <code class="inl">asia-south1</code> · APIs enabled via Terraform · applies gated by
+  <code class="inl">ALLOW_TERRAFORM_APPLY_CORE</code> and <code class="inl">ALLOW_TERRAFORM_APPLY_RUNTIME</code>.</p>
+
+  <h3>Least-privilege identities</h3>
+  <table class="grid avoid">
+    <thead><tr><th style="width:24%">Service account</th><th>Granted roles</th></tr></thead>
+    <tbody>
+      <tr><td class="n">ingestor</td><td>Pub/Sub Publisher</td></tr>
+      <tr><td class="n">writer</td><td>Pub/Sub Subscriber · Storage Object Admin · BigQuery Data Editor</td></tr>
+      <tr><td class="n">analytics</td><td>Storage Object Viewer · BigQuery Data Viewer · BigQuery Job User</td></tr>
+    </tbody>
+  </table>
+
+  <h3>What runs on GKE</h3>
+  <p>Kubernetes service accounts are bound to the GCP service accounts through Workload Identity, so pods authenticate
+  without any service-account keys.</p>
+  <table class="grid avoid">
+    <thead><tr><th style="width:26%">Workload</th><th style="width:18%">Kind</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td class="n">smartcity-ingestor</td><td>Deployment</td><td>Polls sources and publishes to Pub/Sub</td></tr>
+      <tr><td class="n">smartcity-hot-writer</td><td>Deployment</td><td>Consumes the subscription into TimescaleDB</td></tr>
+      <tr><td class="n">smartcity-streamlit</td><td>Deployment</td><td>The command center, optionally behind guarded ingress</td></tr>
+      <tr><td class="n">smartcity-timescaledb</td><td>StatefulSet</td><td>Self-hosted hot store on a persistent volume</td></tr>
+      <tr><td class="n">timescale-backup</td><td>CronJob · every 6h</td><td>Backs up the hot store to GCS</td></tr>
+      <tr><td class="n">cold-export</td><td>CronJob · hourly</td><td>Tiers hot data to Parquet on GCS</td></tr>
+    </tbody>
+  </table>
+
+  <p class="small muted" style="margin-top:6px"><b>TimescaleDB stayed the hot store.</b> Rather than switch to a
+  managed cloud database, it runs inside the cluster as a StatefulSet, keeping the Phase 2 hot-store design intact
+  while gaining a managed runtime around it.</p>
+</section>
+
+<!-- ============================ 8 · CI/CD ============================ -->
+<section class="section" id="s8">
+  <div class="s-head">
+    <div class="s-num">8</div>
+    <div class="s-meta"><div class="kicker">Software Delivery</div>
+    <h2>Release engineering &amp; CI/CD</h2></div>
+  </div>
+  <div class="s-rule"></div>
+
+  <p>Three GitHub Actions workflows take code from a pull request to a verified deployment without a human touching
+  a credential or a cluster. Authentication is entirely keyless, via OpenID Connect federation into Google Cloud.</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="h"><span class="dot"></span><span class="t">CI</span></div>
+      <div class="b">On every push and PR: scaffold check, Go tests, Compose validation, cloud-readiness checks, and a
+      container image build + smoke test.</div>
+    </div>
+    <div class="card blue">
+      <div class="h"><span class="dot"></span><span class="t">Publish Images</span></div>
+      <div class="b">On <code class="inl">main</code>: OIDC auth, then a matrix build that pushes ingestor, writer,
+      and Streamlit images tagged with the short SHA and <code class="inl">latest-main</code>.</div>
+    </div>
+    <div class="card gold">
+      <div class="h"><span class="dot"></span><span class="t">Promote Runtime</span></div>
+      <div class="b">After a successful publish (or manual dispatch): verify the image tags exist, promote to GKE,
+      then run runtime health checks, serialized and tied to a protected environment.</div>
+    </div>
+  </div>
+
+  <figure class="plain avoid">
+    <div class="frame" style="padding:12px">
+      <svg viewBox="0 0 1000 132" role="img" aria-label="CI/CD pipeline">
+        <defs><marker id="ar2" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#5B6B85"/></marker>
+        <style>.s1{font:700 12px Helvetica,Arial;fill:#0B1220}.s2{font:10px Helvetica,Arial;fill:#5B6B85}.f2{stroke:#5B6B85;stroke-width:1.6;fill:none;marker-end:url(#ar2)}</style></defs>
+        <rect x="8" y="40" width="150" height="52" rx="9" fill="#F8FAFC" stroke="#D4DBE6"/><text class="s1" x="22" y="64">Pull request</text><text class="s2" x="22" y="80">CI gates run</text>
+        <rect x="208" y="40" width="150" height="52" rx="9" fill="#E7F0FD" stroke="#5BA7FF"/><text class="s1" x="222" y="64">Merge to main</text><text class="s2" x="222" y="80">trigger publish</text>
+        <rect x="408" y="40" width="160" height="52" rx="9" fill="#0E1728" stroke="#26384f"/><text x="422" y="64" style="font:700 12px Helvetica,Arial;fill:#fff">Build + push</text><text x="422" y="80" style="font:10px Helvetica,Arial;fill:#C4CFE0">OIDC → Artifact Registry</text>
+        <rect x="618" y="40" width="160" height="52" rx="9" fill="#FBF3DA" stroke="#F7C948"/><text class="s1" x="632" y="64">Promote to GKE</text><text class="s2" x="632" y="80">verify tag · gated</text>
+        <rect x="828" y="40" width="160" height="52" rx="9" fill="#E6F7F6" stroke="#0E8C88"/><text class="s1" x="842" y="64">Health check</text><text class="s2" x="842" y="80">runtime verified</text>
+        <path class="f2" d="M158,66 L206,66"/><path class="f2" d="M358,66 L406,66"/><path class="f2" d="M568,66 L616,66"/><path class="f2" d="M778,66 L826,66"/>
+      </svg>
+    </div>
+    <figcaption><b>Figure 2.</b> The release pipeline. Code is gated by CI, images are published to Artifact Registry
+    with keyless OIDC auth, and a separate, gated workflow promotes verified images to the cluster and confirms its health.</figcaption>
+  </figure>
+
+  <div class="callout green">
+    <div class="ct">No keys, anywhere</div>
+    <p>The pipeline uses GitHub OIDC federated into a Google Workload Identity pool, restricted by attribute condition
+    to this repository on the <code class="inl">main</code> branch. No service-account key files exist or are committed.</p>
+  </div>
+</section>
+
+<!-- ============================ 9 · RELIABILITY ============================ -->
+<section class="section" id="s9">
+  <div class="s-head">
+    <div class="s-num">9</div>
+    <div class="s-meta"><div class="kicker">Recoverable by Design</div>
+    <h2>Reliability, backups &amp; recovery</h2></div>
+  </div>
+  <div class="s-rule"></div>
+
+  <p>A platform that loses data is not operational. The runtime continuously protects the hot store, proves it can
+  be restored, and tiers history off the cluster, all on automated schedules, validated rather than assumed.</p>
+
+  <div class="kpi-grid k3">
+    <div class="kpi"><div class="v">6<span class="u">h</span></div><div class="l">Backup cadence</div><div class="n">TimescaleDB → GCS, on a CronJob</div></div>
+    <div class="kpi gold"><div class="v">1<span class="u">h</span></div><div class="l">Cold-export cadence</div><div class="n">Hot data tiered to Parquet</div></div>
+    <div class="kpi green"><div class="v">✓</div><div class="l">Restore drill</div><div class="n">Validated in a disposable namespace</div></div>
+  </div>
+
+  <table class="grid avoid">
+    <thead><tr><th style="width:30%">Control</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td class="n">Scheduled backup</td><td>A CronJob dumps TimescaleDB to GCS every six hours; <code class="inl">make k8s-backup-once</code> and <code class="inl">k8s-backup-check</code> trigger and verify it on demand.</td></tr>
+      <tr><td class="n">Restore drill</td><td><code class="inl">make k8s-restore-test</code> restores the latest backup into a throwaway namespace, <code class="inl">k8s-restore-check</code> validates it, and <code class="inl">k8s-restore-clean</code> tears it down: recovery is proven without touching production data.</td></tr>
+      <tr><td class="n">Hourly cold export</td><td>A CronJob moves aged hot data to partitioned Parquet on GCS, bounding hot-store growth.</td></tr>
+      <tr><td class="n">Runtime health checks</td><td><code class="inl">make runtime-health</code> confirms rollouts, pod restarts, volume binding, subscription reachability, and recent backup/export freshness.</td></tr>
+      <tr><td class="n">Dead-letter policy</td><td>Undeliverable Pub/Sub messages route to a dead-letter topic after bounded retries, so a poison message can never stall the pipeline.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <div class="ct">Backups never delete hot data</div>
+    <p>Both backup and cold-export are additive. Recovery workflows validate restorability in isolation, so a drill
+    can run any time without risk to the live hot store.</p>
+  </div>
+</section>
+
+<!-- ============================ 10 · COST GOVERNANCE ============================ -->
+<section class="section" id="s10">
+  <div class="s-head">
+    <div class="s-num">10</div>
+    <div class="s-meta"><div class="kicker">Explicit &amp; Reversible</div>
+    <h2>Cost governance &amp; operational safety</h2></div>
+  </div>
+  <div class="s-rule"></div>
+
+  <p>Every cost-bearing action is opt-in. The default posture is zero spend; bringing the cloud up, exposing a demo,
+  or running the runtime each requires an explicit flag, and each is reversible. Runtime modes make it cheap to keep
+  the platform idle between reviews and to bring it back for a demo.</p>
+
+  <div class="cols-2">
+    <div>
+      <h3>Apply guards</h3>
+      <table class="grid avoid">
+        <thead><tr><th>Flag</th><th>Gates</th></tr></thead>
+        <tbody>
+          <tr><td><code class="inl">ALLOW_TERRAFORM_APPLY_CORE</code></td><td>Low-cost core resources</td></tr>
+          <tr><td><code class="inl">ALLOW_TERRAFORM_APPLY_RUNTIME</code></td><td>The GKE runtime (the main cost driver)</td></tr>
+          <tr><td><code class="inl">ALLOW_PUBLIC_INGRESS</code></td><td>Public Streamlit endpoint</td></tr>
+          <tr><td><code class="inl">ALLOW_GRAFANA_PUBLIC_INGRESS</code></td><td>Public Grafana endpoint</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <h3>Runtime modes</h3>
+      <table class="grid avoid">
+        <thead><tr><th>Mode</th><th>Effect</th></tr></thead>
+        <tbody>
+          <tr><td class="n">demo</td><td>Bring optional workloads up for a review window</td></tr>
+          <tr><td class="n">idle</td><td>Suspend CronJobs and scale down optional pods</td></tr>
+          <tr><td class="n">resume</td><td>Return from idle to running</td></tr>
+          <tr><td class="n">scale&#8209;down / up</td><td>Zero (or restore) optional pods, keeping TimescaleDB</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <ul class="ticks">
+    <li><b>Budget awareness.</b> A cost guard refuses to proceed unless the budget is acknowledged, and a cost report
+      summarizes active workloads, persistent-volume use, GCS footprint, and registry size.</li>
+    <li><b>Evidence capture.</b> <code class="inl">make runtime-evidence</code> records a sanitized audit trail of
+      runtime health and cost for the record (see §14).</li>
+    <li><b>Backend stays private.</b> Only the chosen dashboard is ever exposed, and only behind a password and an
+      explicit flag.</li>
+  </ul>
+</section>
+
+<!-- ============================ 11 · REPORTING ============================ -->
+<section class="section" id="s11">
+  <div class="s-head">
+    <div class="s-num">11</div>
+    <div class="s-meta"><div class="kicker">Decision Surfaces</div>
+    <h2>Reporting &amp; visualization</h2></div>
+  </div>
+  <div class="s-rule"></div>
+
+  <p>Two surfaces serve two audiences. <strong>Streamlit</strong> is a polished command center for executives and
+  reviewers; <strong>Grafana</strong> is the live operations console for engineers. Both read the same stores, so
+  the story they tell is consistent.</p>
+
+  <figure class="avoid shot">
+    <div class="frame">
+      <div class="bar"><i style="background:#F97373"></i><i style="background:#F7C948"></i><i style="background:#84D65A"></i><span class="t">Streamlit · Smart City Command Center</span></div>
+      <img src="../presentation/assets/streamlit-command-center-wide.png" alt="Streamlit command center screenshot">
+    </div>
+    <figcaption><b>Figure 3.</b> The Streamlit command center: executive KPIs, source-specific city operations, data
+    quality, sensor maps, and cold-path evidence, drawn from TimescaleDB and the Parquet/BigQuery cold store.</figcaption>
+  </figure>
+
+  <figure class="avoid shot">
+    <div class="frame">
+      <div class="bar"><i style="background:#F97373"></i><i style="background:#F7C948"></i><i style="background:#84D65A"></i><span class="t">Grafana · Smart City Enterprise Operations</span></div>
+      <img src="../presentation/assets/grafana-operations-wide.png" alt="Grafana operations dashboard screenshot">
+    </div>
+    <figcaption><b>Figure 4.</b> The Grafana operations dashboard: executive overview, live ingestion operations,
+    per-domain city signals, the sensor estate with a geomap, and data-quality panels, provisioned automatically.</figcaption>
+  </figure>
+
+  <div class="cols-2">
+    <div>
+      <h3>Streamlit command center</h3>
+      <ul class="ticks">
+        <li>Executive KPIs: readings, active sensors, valid %, throughput, drops</li>
+        <li>Source operations: air, weather, mobility, and river telemetry</li>
+        <li>Data quality, sensor-network maps, and cold-path evidence</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Grafana operations (panel rows)</h3>
+      <ul class="ticks">
+        <li>Executive Overview &amp; Live Ingestion Operations</li>
+        <li>City Signal Domains: every metric, per domain</li>
+        <li>Sensor Estate (geomap, freshness) &amp; Data Quality</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 12 · DATA QUALITY ============================ -->
+<section class="section" id="s12">
+  <div class="s-head">
+    <div class="s-num">12</div>
+    <div class="s-meta"><div class="kicker">Quality in Operation</div>
+    <h2>Data quality &amp; observability in production</h2></div>
+  </div>
+  <div class="s-rule"></div>
+
+  <p>Where Phase 2 explored data quality analytically, Phase 3 enforces it continuously. Quality is a runtime
+  property: every reading is judged at ingest, the verdict travels with the row, and pipeline health is observable
+  in real time.</p>
+
+  <table class="grid avoid">
+    <thead><tr><th style="width:24%">Stage</th><th>What is enforced or observed</th></tr></thead>
+    <tbody>
+      <tr><td class="n">At ingest</td><td>Required fields, per-metric ranges, unit match, coordinate bounds, timestamp freshness, schema version</td></tr>
+      <tr><td class="n">On the row</td><td><code class="inl">quality_flag</code> of −1 / 0 / 1 stored alongside every reading; aggregates use valid rows only</td></tr>
+      <tr><td class="n">Pipeline telemetry</td><td><code class="inl">ingestion_metrics</code> records readings/sec, channel fill %, and dropped totals</td></tr>
+      <tr><td class="n">Transport</td><td>Idempotent upsert absorbs redelivery; a dead-letter topic isolates undeliverable messages</td></tr>
+      <tr><td class="n">In the dashboards</td><td>Quality-flag distribution, valid-rate by source, and a suspect/invalid table surface issues live</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout violet">
+    <div class="ct">Distinct from the Phase 2 EDA</div>
+    <p>The Phase 2 report analyzed sample data (descriptive statistics, diurnal patterns, outliers). This section is
+    about the <em>operational</em> quality system that runs on every reading in production, a different concern, not
+    a repeat.</p>
+  </div>
+</section>
+
+<!-- ============================ 13 · SECURITY ============================ -->
+<section class="section" id="s13">
+  <div class="s-head">
+    <div class="s-num">13</div>
+    <div class="s-meta"><div class="kicker">Privacy by Design</div>
+    <h2>Safety, privacy &amp; security</h2></div>
+  </div>
+  <div class="s-rule"></div>
+
+  <p class="lead">Smart-city data is sensitive precisely because it describes a city and the people in it. In the
+  wrong hands, fine-grained urban telemetry could enable surveillance, profiling, or targeting. The platform is
+  therefore built so that the data it holds cannot be turned against residents, and so that access stays scarce,
+  scoped, and revocable.</p>
+
+  <h3>Privacy by design: what the platform deliberately does not collect</h3>
+  <p>The strongest guardrail is structural: you cannot misuse data you never collect, so the reading model captures
+  the city's environment, not its citizens.</p>
+  <div class="cards">
+    <div class="card green"><div class="h"><span class="dot"></span><span class="t">No personal data</span></div><div class="b">Every reading is an environmental or station-level measurement (air quality, weather, river level, bike and dock counts) tied to a fixed public sensor. There is no name, device owner, account, or household in the schema.</div></div>
+    <div class="card"><div class="h"><span class="dot"></span><span class="t">No individual tracking</span></div><div class="b">Mobility comes from Divvy GBFS station availability counts, not individual trips, so no person's movements can be reconstructed from the data.</div></div>
+    <div class="card blue"><div class="h"><span class="dot"></span><span class="t">Public, fixed locations</span></div><div class="b">Coordinates identify sensor and station sites (public infrastructure), never personal locations, so home or workplace cannot be inferred.</div></div>
+    <div class="card gold"><div class="h"><span class="dot"></span><span class="t">Data minimization</span></div><div class="b">The schema stores only the eleven fields civic operations need. Nothing is gathered "just in case," which keeps the value of any leak low.</div></div>
+  </div>
+  <div class="callout green">
+    <div class="ct">The primary privacy guarantee is structural</div>
+    <p>Because the platform records environmental and aggregate signals rather than identities or movements, even a
+    complete breach would expose city telemetry, not residents.</p>
+  </div>
+
+  <h3>Keeping the data out of the wrong hands</h3>
+  <p>Where data is held, access is treated as a scarce, audited privilege rather than a default.</p>
+  <ul class="ticks">
+    <li><b>Private by default.</b> Backend services and the database sit inside the cluster network; there is no public data API, and insight is shared as curated dashboards rather than bulk raw-data downloads.</li>
+    <li><b>Opt-in, password-gated exposure.</b> Any public surface requires an explicit flag and a non-default password, and can be removed again after use.</li>
+    <li><b>Least privilege.</b> Three scoped service accounts; the analytics identity is read-only, and no identity holds more access than its job needs.</li>
+    <li><b>Keyless access and encryption.</b> No credential files exist (GitHub OIDC and Workload Identity); Google-managed encryption protects data at rest and TLS protects it in transit to managed services.</li>
+    <li><b>Bounded retention.</b> A GCS lifecycle rule caps how long history is kept, so data does not accumulate indefinitely and long-term exposure stays small.</li>
+    <li><b>Auditability.</b> Cloud-native access logging and immutable cold objects make who-touched-what traceable.</li>
+  </ul>
+
+  <h3>Responsible use: civic, not coercive</h3>
+  <p>The platform is scoped to civic-benefit use cases (public health, emergency response, planning) and surfaces
+  aggregate insight rather than person-level output. Because cold history is environmental and aggregate, it can be
+  shared with researchers through a read-only BigQuery or Parquet grant without exposing anyone. The planned
+  AI-agent layer (see §16) is designed for policy-aware alert routing that respects these data-access and privacy
+  boundaries, extending the existing least-privilege model with per-consumer scopes.</p>
+
+  <table class="grid avoid">
+    <caption>Misuse risk to control mapping</caption>
+    <thead><tr><th style="width:36%">Risk if the data were misused</th><th>How the platform prevents it</th></tr></thead>
+    <tbody>
+      <tr><td class="n">Surveillance or tracking of individuals</td><td>No personal data is collected; only environmental and station-level aggregates tied to fixed public sensors</td></tr>
+      <tr><td class="n">Re-identification from location</td><td>Coordinates are public infrastructure sites, and there are no identity or device fields to join against</td></tr>
+      <tr><td class="n">Bulk data exfiltration</td><td>No public data API, a private backend, dashboard-only insight, encryption at rest, and a read-only analytics identity</td></tr>
+      <tr><td class="n">Credentials in the wrong hands</td><td>Keyless OIDC and Workload Identity, scoped least-privilege accounts, and opt-in password-gated exposure</td></tr>
+      <tr><td class="n">Indefinite accumulation of history</td><td>A GCS lifecycle retention cap bounds how long any data is kept</td></tr>
+      <tr><td class="n">Decisions driven by bad data</td><td>Validation and quality flags keep low-trust readings out of operational views</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================ 14 · VERIFICATION ============================ -->
+<section class="section" id="s14">
+  <div class="s-head">
+    <div class="s-num">14</div>
+    <div class="s-meta"><div class="kicker">Proven, Not Asserted</div>
+    <h2>Verification &amp; evidence</h2></div>
+  </div>
+  <div class="s-rule"></div>
+
+  <p>Claims in this report are backed by repeatable checks and captured evidence. A reviewer can reproduce the whole
+  platform locally, and the cloud runtime emits sanitized evidence of its own health and cost.</p>
+
+  <div class="cols-2">
+    <div>
+      <h3>Automated checks</h3>
+      <table class="grid avoid">
+        <thead><tr><th>Target</th><th>Validates</th></tr></thead>
+        <tbody>
+          <tr><td><code class="inl">make check</code></td><td>Repository scaffold</td></tr>
+          <tr><td><code class="inl">make test</code></td><td>Go unit tests</td></tr>
+          <tr><td><code class="inl">make cloud-check</code></td><td>Cloud scaffold (offline)</td></tr>
+          <tr><td><code class="inl">make ci-cd-check</code></td><td>Workflow integrity</td></tr>
+          <tr><td><code class="inl">make phase3-check</code></td><td>Submission safety</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <h3>Local reviewer path</h3>
+      <pre class="code">make run-local
+make seed-simulator
+make poll-multisource-once
+make grafana-demo-ready
+make run-streamlit
+<span class="c"># Grafana :3000 · Streamlit :8501</span></pre>
+      <p class="small muted">Five commands stand up the stack, seed deterministic data, pull one live multi-source
+      poll, ready Grafana, and launch the command center.</p>
+    </div>
+  </div>
+
+  <h3>Captured runtime evidence</h3>
+  <p>The runtime produces timestamped, credential-free artifacts under <code class="inl">artifacts/evidence/</code>:</p>
+  <div class="tagrow">
+    <span class="tag">runtime-health</span><span class="tag gold">runtime-cost-report</span>
+    <span class="tag green">bigquery-cold-check</span><span class="tag blue">ci-publish-check</span>
+    <span class="tag">k8s-backup-check</span><span class="tag violet">public-demo-status</span>
+  </div>
+  <div class="callout">
+    <div class="ct">Submission package</div>
+    <p><code class="inl">make phase3-package</code> builds <code class="inl">Project_Phase_3_Group4.zip</code> from
+    tracked files only, excluding secrets, state, data, and generated evidence; <code class="inl">phase3-package-list</code>
+    prints its contents for a final pre-submission check.</p>
+  </div>
+</section>
+
+<!-- ============================ 15 · BUSINESS IMPACT ============================ -->
+<section class="section" id="s15">
+  <div class="s-head">
+    <div class="s-num">15</div>
+    <div class="s-meta"><div class="kicker">Outcomes</div>
+    <h2>Business impact &amp; outcomes</h2></div>
+  </div>
+  <div class="s-rule"></div>
+
+  <p>The civic use cases identified in Phase 2 are no longer hypothetical: each is enabled by a capability that now
+  exists and runs. The same platform serves real-time response and long-horizon analysis from one pipeline.</p>
+
+  <table class="grid avoid">
+    <caption>Phase 2 civic use case → the built capability that enables it</caption>
+    <thead><tr><th style="width:34%">Use case</th><th>Enabled by</th></tr></thead>
+    <tbody>
+      <tr><td class="n">Public-health air-quality alerts</td><td>Live OpenAQ PM2.5/NO₂ in the hot store with quality flags and Grafana threshold panels</td></tr>
+      <tr><td class="n">Traffic / emission correlation</td><td>Air, weather, mobility, and water unified in one reading model and store</td></tr>
+      <tr><td class="n">Smart urban planning</td><td>BigQuery analytics over months of partitioned Parquet history, at object-storage cost</td></tr>
+      <tr><td class="n">Emergency-response optimization</td><td>Low-latency hot store plus live ingestion metrics for situational awareness</td></tr>
+      <tr><td class="n">Environmental-compliance monitoring</td><td>A zero-ETL BigQuery audit trail over immutable cold objects</td></tr>
+      <tr><td class="n">Predictive maintenance of sensors</td><td><code class="inl">ingestion_metrics</code>, sensor-freshness, and dropped-reading observability</td></tr>
+      <tr><td class="n">Energy optimization</td><td>Weather telemetry (Open-Meteo) ready to correlate with consumption signals</td></tr>
+      <tr><td class="n">Academic / research access</td><td>Shareable Parquet on GCS and BigQuery external tables, zero-effort to grant</td></tr>
+    </tbody>
+  </table>
+
+  <div class="divider-band">
+    <h3>Operational maturity is the outcome</h3>
+    <p>Beyond features, the deliverable is a platform that can be deployed, observed, recovered, governed for cost,
+    and handed over: the difference between a prototype and a product.</p>
+  </div>
+</section>
+
+<!-- ============================ 16 · FUTURE: AI AGENTS ============================ -->
+<section class="section" id="s16">
+  <div class="s-head">
+    <div class="s-num">16</div>
+    <div class="s-meta"><div class="kicker">The Next Layer</div>
+    <h2>Future scope: AI agents in Smart City IoT</h2></div>
+  </div>
+  <div class="s-rule"></div>
+
+  <p>The data platform is the foundation an intelligent layer would stand on. With validated readings in the hot
+  store and queryable history in BigQuery, AI agents become a natural next step, documented here as future scope.</p>
+
+  <div class="cards c2">
+    <div class="card"><div class="h"><span class="dot"></span><span class="t">Incident-triage agent</span></div><div class="b">Summarizes abnormal city readings and recommends operator actions when thresholds are breached.</div></div>
+    <div class="card violet"><div class="h"><span class="dot"></span><span class="t">Anomaly-explanation agent</span></div><div class="b">Connects air, weather, mobility, and water signals to explain <em>why</em> a metric is moving.</div></div>
+    <div class="card blue"><div class="h"><span class="dot"></span><span class="t">Operator copilot</span></div><div class="b">Answers natural-language questions over recent TimescaleDB readings and cold BigQuery history.</div></div>
+    <div class="card gold"><div class="h"><span class="dot"></span><span class="t">Policy-aware alert routing</span></div><div class="b">Routes alerts while respecting the project's safety, privacy, and data-access boundaries.</div></div>
+  </div>
+
+  <div class="callout gold">
+    <div class="ct">Status</div>
+    <p>AI-agent features are future scope. The platform's clean reading contract, dual stores, and least-privilege
+    access model are deliberately agent-ready, so this layer can be added without re-architecting what exists.</p>
+  </div>
+</section>
+
+<!-- ============================ 17 · CONCLUSION ============================ -->
+<section class="section" id="s17">
+  <div class="s-head">
+    <div class="s-num">17</div>
+    <div class="s-meta"><div class="kicker">Close-Out</div>
+    <h2>Conclusion</h2></div>
+  </div>
+  <div class="s-rule"></div>
+
+  <p class="lead">The Smart City Zero-Disk IoT Infrastructure set out, in Phase 2, to be a production-minded data
+  platform rather than an exercise. Phase 3 delivered exactly that.</p>
+
+  <p>Five live city signal families now flow through one validated, quality-flagged Go pipeline into a TimescaleDB
+  hot store and a Parquet/GCS/BigQuery cold archive. The system runs on a GKE Autopilot runtime provisioned entirely
+  as code, released through keyless CI/CD, protected by backups and proven restores, governed by explicit cost
+  controls, and observed through two complementary dashboards, all reproducible locally and safe to submit.</p>
+
+  <p>The Phase 2 blueprint has become an operated product, with every design decision now backed by running
+  evidence. The civic use cases that motivated the project are enabled, and a clean path to an AI-agent layer is
+  open. This is the project's closing report.</p>
+
+  <div class="divider-band">
+    <h3>From blueprint to operated product</h3>
+    <p>Designed in Phase 2. Built, deployed, operated, and verified in Phase 3.</p>
+  </div>
+</section>
+
+<!-- ============================ APPENDIX A ============================ -->
+<section class="section" id="apB">
+  <div class="s-head">
+    <div class="s-num">A</div>
+    <div class="s-meta"><div class="kicker">Appendix</div>
+    <h2>Automation catalog</h2></div>
+  </div>
+  <div class="s-rule"></div>
+  <p>One <code class="inl">Makefile</code> with 100 targets drives the full lifecycle. The groups below summarize its
+  surface; <code class="inl">make help</code> lists every target.</p>
+
+  <div class="cols-2">
+    <div>
+      <h3>Develop &amp; demo</h3>
+      <ul class="plain"><li><code class="inl">run-local</code>, <code class="inl">stop</code>, <code class="inl">grafana-demo-ready</code></li>
+      <li><code class="inl">seed-simulator</code>, <code class="inl">poll-multisource-once</code>, <code class="inl">run-multisource</code></li>
+      <li><code class="inl">run-streamlit</code>, <code class="inl">run-openaq</code></li></ul>
+      <h3>Checks</h3>
+      <ul class="plain"><li><code class="inl">check</code>, <code class="inl">test</code>, <code class="inl">streamlit-check</code></li>
+      <li><code class="inl">cloud-check</code>, <code class="inl">ci-cd-check</code>, <code class="inl">phase3-check</code></li></ul>
+      <h3>Images &amp; registry</h3>
+      <ul class="plain"><li><code class="inl">docker-build</code>, <code class="inl">docker-smoke</code>, <code class="inl">docker-push</code></li>
+      <li><code class="inl">artifact-registry-create/check/list</code>, <code class="inl">ci-publish-check</code></li></ul>
+      <h3>Cold path</h3>
+      <ul class="plain"><li><code class="inl">export-cold-demo</code>, <code class="inl">export-cold-gcs</code>, <code class="inl">cloud-cold-smoke</code>, <code class="inl">bigquery-cold-check</code></li></ul>
+    </div>
+    <div>
+      <h3>Terraform</h3>
+      <ul class="plain"><li><code class="inl">terraform-init/validate/plan</code></li>
+      <li><code class="inl">terraform-apply-core</code>, <code class="inl">terraform-apply-runtime</code> (gated)</li></ul>
+      <h3>Kubernetes runtime</h3>
+      <ul class="plain"><li><code class="inl">k8s-render/apply/status/smoke/logs</code></li>
+      <li><code class="inl">k8s-backup-once/check</code>, <code class="inl">k8s-restore-test/check/clean</code></li></ul>
+      <h3>Runtime ops &amp; cost</h3>
+      <ul class="plain"><li><code class="inl">runtime-health</code>, <code class="inl">runtime-promote-latest/sha</code>, <code class="inl">runtime-release-check</code></li>
+      <li><code class="inl">runtime-demo/idle/resume-mode</code>, <code class="inl">runtime-cost-report</code>, <code class="inl">runtime-evidence</code></li></ul>
+      <h3>Public demo (guarded)</h3>
+      <ul class="plain"><li><code class="inl">public-demo-apply/url/smoke/disable</code></li>
+      <li><code class="inl">grafana-public-apply/url/disable</code></li></ul>
+      <h3>Packaging</h3>
+      <ul class="plain"><li><code class="inl">phase3-package</code>, <code class="inl">phase3-package-list</code></li></ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ APPENDIX B ============================ -->
+<section class="section" id="apC">
+  <div class="s-head">
+    <div class="s-num">B</div>
+    <div class="s-meta"><div class="kicker">Appendix</div>
+    <h2>Repository map, sources &amp; glossary</h2></div>
+  </div>
+  <div class="s-rule"></div>
+
+  <div class="cols-2">
+    <div>
+      <h3>Where to find things</h3>
+      <dl class="kv">
+        <dt>internal/</dt><dd>Go packages: reading model, buffer, sources, stores</dd>
+        <dt>services/</dt><dd>ingestor &amp; writer service entrypoints</dd>
+        <dt>apps/streamlit/</dt><dd>Command center app &amp; modules</dd>
+        <dt>infra/local/</dt><dd>Docker Compose, TimescaleDB schema, Grafana</dd>
+        <dt>infra/cloud/</dt><dd>Terraform &amp; Kubernetes manifests</dd>
+        <dt>.github/workflows/</dt><dd>CI, image publish, runtime promotion</dd>
+        <dt>docs/design/</dt><dd>Phase 2 detailed-design report</dd>
+        <dt>docs/final/</dt><dd>Phase 3 deck, this report, evidence</dd>
+        <dt>docs/runbooks/</dt><dd>Operational procedures</dd>
+      </dl>
+    </div>
+    <div>
+      <h3>Data &amp; image sources</h3>
+      <p class="small">Live data: <b>OpenAQ v3</b> (air quality), <b>Open-Meteo</b> (weather), <b>Divvy GBFS</b>
+      (bike share), and <b>USGS</b> (water) public APIs.</p>
+      <p class="small">Cover and figure photography is drawn from Wikimedia Commons under public-domain, CC0, or
+      CC&nbsp;BY-SA dedications; dashboard images are project-owned screenshots with no secrets visible. Full
+      attributions are recorded in <code class="inl">docs/final/presentation/assets/visual-sources.md</code>.</p>
+      <h3>Glossary</h3>
+      <dl class="kv">
+        <dt>Hypertable</dt><dd>TimescaleDB time-partitioned table</dd>
+        <dt>Continuous&nbsp;aggregate</dt><dd>Auto-maintained rollup view</dd>
+        <dt>Workload&nbsp;Identity</dt><dd>Keyless pod-to-GCP auth</dd>
+        <dt>OIDC&nbsp;federation</dt><dd>Keyless CI auth via identity tokens</dd>
+        <dt>External&nbsp;table</dt><dd>BigQuery query over GCS files, no import</dd>
+        <dt>Backpressure</dt><dd>Bounded buffering that drops, not blocks</dd>
+        <dt>DLQ</dt><dd>Dead-letter topic for undeliverable messages</dd>
+        <dt>Zero-disk</dt><dd>No reliance on node-local persistent disk</dd>
+      </dl>
+    </div>
+  </div>
+
+  <hr class="soft">
+  <p class="small muted" style="text-align:center">Smart City Zero-Disk IoT Infrastructure · MSDS 432 · Group 4 ·
+  Northwestern University · Phase 3 Final Report · June 2026 · <em>End of document.</em></p>
+</section>
+
+</main>
+</body>
+</html>
