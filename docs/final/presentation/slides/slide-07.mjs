@@ -1,15 +1,25 @@
-import { colors, depthPanel, kicker, label, paragraph, slideBase, subtitle, title } from "../common.mjs";
+import { calloutCard, colors, depthPanel, footerChrome, kicker, label, paragraph, photoFrame, slideBase, subtitle, title } from "../common.mjs";
+
+const HOT_STORE_IMAGE = "docs/final/presentation/assets/nersc-server-racks-cc0.jpg";
 
 export async function slide07(presentation, ctx) {
-  const slide = slideBase(presentation, ctx, { page: "07 / 18" });
+  const slide = slideBase(presentation, ctx, { page: "07 / 19" });
   kicker(ctx, slide, "Hot Store");
-  title(ctx, slide, "TimescaleDB is the operational store for current city state.", 82, 960);
-  subtitle(ctx, slide, "It holds readings and ingestion metrics that power both local dashboards and runtime validation.", 174, 900);
-  depthPanel(ctx, slide, 90, 296, 460, 270, { fill: "#101A2B" });
-  label(ctx, slide, 126, 332, "Hot data responsibilities", { width: 360, size: 24, bold: true, color: colors.cyan });
-  paragraph(ctx, slide, 126, 390, "- sensor_readings for city telemetry\n- ingestion_metrics for platform operations\n- row checks for source coverage\n- tables powering Streamlit and Grafana", { width: 360, height: 116, size: 19, color: colors.white });
-  depthPanel(ctx, slide, 652, 296, 360, 270, { fill: "#14263C" });
-  label(ctx, slide, 690, 332, "Reviewer commands", { width: 280, size: 24, bold: true, color: colors.green });
-  paragraph(ctx, slide, 690, 390, "make run-local\nmake seed-simulator\nmake poll-multisource-once\nmake grafana-demo-ready", { width: 270, height: 116, size: 21, color: colors.white });
+  title(ctx, slide, "TimescaleDB turns raw telemetry into operational city state.", 82, 960);
+  subtitle(ctx, slide, "The hot store supports fast current-state reads while preserving enough detail for freshness, quality, and source coverage decisions.", 198, 720);
+  await photoFrame(ctx, slide, 832, 218, 256, 68, HOT_STORE_IMAGE, {
+    label: "Private hot-store infrastructure",
+    accent: colors.green,
+    overlay: false,
+    labelSize: 9.4,
+    name: "motion-photo-hot-store-racks",
+  });
+  depthPanel(ctx, slide, 90, 292, 470, 278, { fill: "#101A2B" });
+  label(ctx, slide, 126, 328, "Hot data responsibilities", { width: 360, size: 24, bold: true, color: colors.cyan });
+  paragraph(ctx, slide, 126, 388, "- sensor_readings for city telemetry\n- ingestion_metrics for platform operations\n- source and metric coverage checks\n- dashboard-ready current state", { width: 360, height: 124, size: 19, color: colors.white });
+  await calloutCard(ctx, slide, 638, 294, 390, "Fast operations", "Operators can read current city state without scanning cold history.", "pulse", colors.green);
+  await calloutCard(ctx, slide, 638, 414, 390, "Unit-aware analytics", "Metric names, sources, and units stay explicit before panels render.", "quality", colors.gold);
+  await calloutCard(ctx, slide, 638, 512, 390, "Private backend", "The database remains inside the runtime network while dashboards expose only curated views.", "lock", colors.coral);
+  footerChrome(ctx, slide);
   return slide;
 }
