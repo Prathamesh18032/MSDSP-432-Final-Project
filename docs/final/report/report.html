@@ -5,7 +5,7 @@
 <title>Smart City Zero-Disk IoT Infrastructure: Phase 3 Final Report</title>
 <link rel="stylesheet" href="styles.css">
 <style>
-  main.wrap { padding: 0 15mm; }
+  main.wrap { padding: 0; }
 </style>
 </head>
 <body>
@@ -34,7 +34,7 @@
     <li><b>Safety, Privacy &amp; Security</b><span>Privacy by design; keeping city data out of the wrong hands</span></li>
     <li><b>Verification &amp; Evidence</b><span>Automated checks, evidence artifacts, demo paths</span></li>
     <li><b>Business Impact &amp; Outcomes</b><span>Phase 2 civic use cases, now enabled</span></li>
-    <li><b>Future Scope: AI Agents in Smart City IoT</b><span>The next layer above the data platform</span></li>
+    <li><b>AI Safety Agent: Computer Vision on the Platform</b><span>Implemented predictive image model, and the agent roadmap</span></li>
     <li><b>Conclusion</b><span>Project close-out</span></li>
     <li class="apx"><b>Appendix A: Automation Catalog</b><span>Grouped Makefile targets</span></li>
     <li class="apx"><b>Appendix B: Repository Map, Attributions &amp; Glossary</b><span>Where to find things; sources; terms</span></li>
@@ -45,7 +45,7 @@
     <thead><tr><th style="width:22%">Field</th><th>Detail</th></tr></thead>
     <tbody>
       <tr><td class="n">Document</td><td>Project Phase 3 Final Report (project close-out)</td></tr>
-      <tr><td class="n">Project</td><td>Smart City Zero-Disk IoT Infrastructure · Project 4 · Group 4</td></tr>
+      <tr><td class="n">Project</td><td>Smart City Zero-Disk IoT Infrastructure · Group 4</td></tr>
       <tr><td class="n">Course</td><td>MSDS 432: Foundations of Data Engineering, Northwestern University</td></tr>
       <tr><td class="n">Date</td><td>June 2026</td></tr>
       <tr><td class="n">Companion artifacts</td><td>Phase 2 detailed-design report &amp; presentation; Phase 3 presentation deck; <code class="inl">Project_Phase_3_Group4.zip</code> code submission</td></tr>
@@ -92,6 +92,8 @@
       explicit cost-control modes, and a reviewer-safe submission package.</li>
     <li><b>Two reporting surfaces.</b> A polished Streamlit command center for executives and an enterprise Grafana
       operations dashboard for live monitoring.</li>
+    <li><b>An optional AI safety agent.</b> A computer-vision model screens camera frames for possible incidents and
+      writes human-review flags into the same hot store, surfaced in a dedicated Safety AI view.</li>
   </ul>
 
   <div class="callout">
@@ -122,13 +124,13 @@
     <tbody>
       <tr><td class="n">Hybrid-cloud data lake (hot + cold tiering)</td><td>TimescaleDB hot store + partitioned Parquet on GCS exposed as a BigQuery external table, both implemented and queried end-to-end.</td></tr>
       <tr><td class="n">Zero-disk mandate</td><td>State lives in managed services and object storage; the cluster keeps no node-local data, and cold history is schema-on-read Parquet.</td></tr>
-      <tr><td class="n">Seven-layer architecture</td><td>Mapped 1:1 onto running components: sources, Go ingestion, hot store, cold store, query layer, orchestration, and dashboards (see §4).</td></tr>
+      <tr><td class="n">Seven-layer architecture</td><td>Mapped 1:1 onto running components: sources, Go ingestion, hot store, cold store, query layer, orchestration, and dashboards (see Section 4).</td></tr>
       <tr><td class="n">Go ingestion microservice</td><td><code class="inl">services/ingestor</code> with five source adapters under <code class="inl">internal/</code>, a shared reading model, and a backpressure buffer.</td></tr>
       <tr><td class="n">Schema-on-read Parquet on object storage</td><td><code class="inl">internal/coldstore</code> writes Apache Arrow / Parquet partitioned by <code class="inl">source / metric / year / month / day</code> and uploads to GCS.</td></tr>
-      <tr><td class="n">Four-stage data-quality strategy</td><td>Validation at ingest, <code class="inl">quality_flag</code> on every row, <code class="inl">ingestion_metrics</code> telemetry, and dashboard quality panels (see §12).</td></tr>
+      <tr><td class="n">Four-stage data-quality strategy</td><td>Validation at ingest, <code class="inl">quality_flag</code> on every row, <code class="inl">ingestion_metrics</code> telemetry, and dashboard quality panels (see Section 12).</td></tr>
       <tr><td class="n">72-hour hot window, cheap long-term retention</td><td>Hourly cold-export job and a GCS lifecycle rule; the Phase 2 cost case (~90% cheaper than warehouse storage) is now the operating model.</td></tr>
       <tr><td class="n">Tech stack: Go · TimescaleDB · Grafana · Streamlit · Docker</td><td>All implemented, and extended with Pub/Sub, GKE Autopilot, Terraform, and GitHub Actions CI/CD.</td></tr>
-      <tr><td class="n">Reports identified during EDA</td><td>Operationalized as a live Grafana operations dashboard and a Streamlit command center (see §11).</td></tr>
+      <tr><td class="n">Reports identified during EDA</td><td>Operationalized as a live Grafana operations dashboard and a Streamlit command center (see Section 11).</td></tr>
     </tbody>
   </table>
 
@@ -422,7 +424,7 @@
       <ul class="ticks">
         <li><b>Local</b>: buffer → TimescaleDB writer, for development and the reviewer demo.</li>
         <li><b>Pub/Sub</b>: buffer → topic publisher, decoupling ingestion from storage in the cloud runtime.</li>
-        <li>A dedicated consumer drains the subscription back into TimescaleDB (see §6).</li>
+        <li>A dedicated consumer drains the subscription back into TimescaleDB (see Section 6).</li>
       </ul>
     </div>
   </div>
@@ -708,7 +710,7 @@ source_uris   = [<span class="s">"gs://…-cold/sensor_readings/*"</span>]
     <li><b>Budget awareness.</b> A cost guard refuses to proceed unless the budget is acknowledged, and a cost report
       summarizes active workloads, persistent-volume use, GCS footprint, and registry size.</li>
     <li><b>Evidence capture.</b> <code class="inl">make runtime-evidence</code> records a sanitized audit trail of
-      runtime health and cost for the record (see §14).</li>
+      runtime health and cost for the record (see Section 14).</li>
     <li><b>Backend stays private.</b> Only the chosen dashboard is ever exposed, and only behind a password and an
       explicit flag.</li>
   </ul>
@@ -814,7 +816,7 @@ source_uris   = [<span class="s">"gs://…-cold/sensor_readings/*"</span>]
   <h3>Privacy by design: what the platform deliberately does not collect</h3>
   <p>The strongest guardrail is structural: you cannot misuse data you never collect, so the reading model captures
   the city's environment, not its citizens.</p>
-  <div class="cards">
+  <div class="cards c2">
     <div class="card green"><div class="h"><span class="dot"></span><span class="t">No personal data</span></div><div class="b">Every reading is an environmental or station-level measurement (air quality, weather, river level, bike and dock counts) tied to a fixed public sensor. There is no name, device owner, account, or household in the schema.</div></div>
     <div class="card"><div class="h"><span class="dot"></span><span class="t">No individual tracking</span></div><div class="b">Mobility comes from Divvy GBFS station availability counts, not individual trips, so no person's movements can be reconstructed from the data.</div></div>
     <div class="card blue"><div class="h"><span class="dot"></span><span class="t">Public, fixed locations</span></div><div class="b">Coordinates identify sensor and station sites (public infrastructure), never personal locations, so home or workplace cannot be inferred.</div></div>
@@ -840,9 +842,12 @@ source_uris   = [<span class="s">"gs://…-cold/sensor_readings/*"</span>]
   <h3>Responsible use: civic, not coercive</h3>
   <p>The platform is scoped to civic-benefit use cases (public health, emergency response, planning) and surfaces
   aggregate insight rather than person-level output. Because cold history is environmental and aggregate, it can be
-  shared with researchers through a read-only BigQuery or Parquet grant without exposing anyone. The planned
-  AI-agent layer (see §16) is designed for policy-aware alert routing that respects these data-access and privacy
-  boundaries, extending the existing least-privilege model with per-consumer scopes.</p>
+  shared with researchers through a read-only BigQuery or Parquet grant without exposing anyone.</p>
+  <p>The optional AI safety agent (Section 16) is the one component that processes imagery, and it is scoped
+  deliberately: it classifies scene activity for human review rather than performing facial recognition or identity
+  inference, runs on public demo footage rather than live citizen surveillance, and keeps a person in the loop through
+  an explicit review queue. Its planned successors are designed for policy-aware alert routing that respects the same
+  data-access and privacy boundaries.</p>
 
   <table class="grid avoid">
     <caption>Misuse risk to control mapping</caption>
@@ -854,6 +859,7 @@ source_uris   = [<span class="s">"gs://…-cold/sensor_readings/*"</span>]
       <tr><td class="n">Credentials in the wrong hands</td><td>Keyless OIDC and Workload Identity, scoped least-privilege accounts, and opt-in password-gated exposure</td></tr>
       <tr><td class="n">Indefinite accumulation of history</td><td>A GCS lifecycle retention cap bounds how long any data is kept</td></tr>
       <tr><td class="n">Decisions driven by bad data</td><td>Validation and quality flags keep low-trust readings out of operational views</td></tr>
+      <tr><td class="n">Misuse of camera or vision AI</td><td>The safety agent classifies scene activity only, with no facial recognition or identity inference; outputs are review flags rather than determinations, and a human stays in the loop</td></tr>
     </tbody>
   </table>
 </section>
@@ -950,25 +956,95 @@ make run-streamlit
 <section class="section" id="s16">
   <div class="s-head">
     <div class="s-num">16</div>
-    <div class="s-meta"><div class="kicker">The Next Layer</div>
-    <h2>Future scope: AI agents in Smart City IoT</h2></div>
+    <div class="s-meta"><div class="kicker">Implemented Intelligence</div>
+    <h2>AI safety agent: computer vision on the platform</h2></div>
   </div>
   <div class="s-rule"></div>
 
-  <p>The data platform is the foundation an intelligent layer would stand on. With validated readings in the hot
-  store and queryable history in BigQuery, AI agents become a natural next step, documented here as future scope.</p>
+  <p class="lead">An optional intelligence layer now sits on top of the data platform: a computer-vision safety agent
+  that screens camera frames for possible incidents and writes review flags into the same hot store the dashboards
+  already read. It is inference-only, built entirely on open-source models, and designed around a human-in-the-loop.</p>
 
+  <h3>How it works: a two-stage image classifier</h3>
+  <p>The agent runs a local two-stage Hugging Face pipeline on individual frames. No large language model, external
+  model API, training job, or fine-tuning is involved, and a deterministic mock model backs CI and smoke tests.</p>
+  <div class="cards">
+    <div class="card blue"><div class="h"><span class="dot"></span><span class="t">Stage 1 · Crime or normal</span></div><div class="b">An image classifier (<code class="inl">dima806/crime_cctv_image_detection</code>) scores each frame; only frames above the crime threshold of 0.50 advance.</div></div>
+    <div class="card violet"><div class="h"><span class="dot"></span><span class="t">Stage 2 · Activity type</span></div><div class="b">A second classifier (<code class="inl">dima806/crime_type_cctv_image_detection</code>) suggests an activity hint, for example assault- or robbery-like.</div></div>
+    <div class="card gold"><div class="h"><span class="dot"></span><span class="t">Frames, not faces</span></div><div class="b">Demo clips are converted to JPG frames with OpenCV. The models classify scene activity, never identities.</div></div>
+  </div>
+
+  <figure class="plain avoid">
+    <div class="frame" style="padding:12px">
+      <svg viewBox="0 0 1000 120" role="img" aria-label="AI safety agent pipeline">
+        <defs><marker id="ar3" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#5B6B85"/></marker>
+        <style>.s1{font:700 12px Helvetica,Arial;fill:#0B1220}.s2{font:9.5px Helvetica,Arial;fill:#5B6B85}.f3{stroke:#5B6B85;stroke-width:1.6;fill:none;marker-end:url(#ar3)}</style></defs>
+        <rect x="6" y="40" width="150" height="50" rx="9" fill="#FBF3DA" stroke="#F7C948"/><text class="s1" x="18" y="62">Camera frame</text><text class="s2" x="18" y="78">JPG via OpenCV</text>
+        <rect x="196" y="40" width="166" height="50" rx="9" fill="#E7F0FD" stroke="#5BA7FF"/><text class="s1" x="208" y="62">Stage 1</text><text class="s2" x="208" y="78">crime vs normal</text>
+        <rect x="402" y="40" width="166" height="50" rx="9" fill="#F2E9FC" stroke="#B566F2"/><text class="s1" x="414" y="62">Stage 2</text><text class="s2" x="414" y="78">activity type</text>
+        <rect x="608" y="40" width="180" height="50" rx="9" fill="#E6F7F6" stroke="#0E8C88"/><text class="s1" x="620" y="62">TimescaleDB</text><text class="s2" x="620" y="78">predictions + flags</text>
+        <rect x="828" y="40" width="166" height="50" rx="9" fill="#0E1728" stroke="#26384f"/><text x="840" y="62" style="font:700 12px Helvetica,Arial;fill:#fff">Safety AI</text><text x="840" y="78" style="font:9.5px Helvetica,Arial;fill:#C4CFE0">Grafana + Streamlit</text>
+        <path class="f3" d="M156,65 L194,65"/><path class="f3" d="M362,65 L400,65"/><path class="f3" d="M568,65 L606,65"/><path class="f3" d="M788,65 L826,65"/>
+        <text class="s2" x="368" y="34" style="fill:#2F6FD0">&#8805; 0.50</text>
+      </svg>
+    </div>
+    <figcaption><b>Figure 5.</b> The safety-agent pipeline. Frames are scored by a binary crime classifier; only
+    those above threshold are typed by a second model, then written to TimescaleDB and surfaced in the Safety AI
+    dashboards.</figcaption>
+  </figure>
+
+  <h3>What it records</h3>
+  <p>Results land in two TimescaleDB tables alongside the sensor data, with idempotent upserts and the same quality
+  discipline as the rest of the platform.</p>
+  <table class="grid avoid">
+    <thead><tr><th style="width:32%">Table</th><th>Holds</th></tr></thead>
+    <tbody>
+      <tr><td class="n">video_activity_predictions</td><td>Every scored frame: crime and type scores, confidence, suspicious flag, predicted and display labels, severity, camera, location, model name and version, and review status</td></tr>
+      <tr><td class="n">video_activity_flags</td><td>The human-review queue: only frames above the review threshold of 0.65 that also carry a suspicious label, deduplicated per camera and label</td></tr>
+    </tbody>
+  </table>
+  <div class="tagrow">
+    <span class="tag coral">severity · critical</span><span class="tag gold">high</span><span class="tag blue">medium</span><span class="tag">low</span>
+    <span class="tag green">review · pending / reviewed / dismissed</span>
+  </div>
+
+  <div class="callout gold">
+    <div class="ct">Built for human judgement, not automated accusation</div>
+    <p>Every output is framed as AI-flagged possible activity for human review, never a confirmed crime. Display
+    labels are deliberately tentative (for example assault_like_activity), the model performs no facial recognition
+    or identity inference, and it runs on public demo footage rather than live citizen surveillance.</p>
+  </div>
+
+  <h3>Where it surfaces, and how to run it</h3>
+  <div class="cols-2">
+    <div>
+      <p>The flags feed a dedicated <b>Safety AI</b> row in the Grafana operations dashboard and a Safety AI view in
+      the Streamlit command center.</p>
+      <ul class="ticks">
+        <li>AI flags in window and high-severity counts</li>
+        <li>Latest AI-flagged activity and predictions over time</li>
+        <li>Flags grouped by possible activity</li>
+      </ul>
+    </div>
+    <div>
+      <p>The agent is fully automated through the Makefile, locally or in the cloud.</p>
+      <ul class="ticks">
+        <li><code class="inl">make seed-video-dataset</code>, <code class="inl">extract-video-frames</code></li>
+        <li><code class="inl">make run-video-agent-once</code> / <code class="inl">run-video-agent-gcs</code></li>
+        <li><code class="inl">make ai-check</code>, <code class="inl">docker-build-video-agent</code></li>
+      </ul>
+    </div>
+  </div>
+  <p class="small muted">Cloud deployments process Cloud Storage object-finalize notifications from a Pub/Sub
+  subscription, so new frames in <code class="inl">video_inbox/</code> are scored as they arrive.</p>
+
+  <h3>What is next</h3>
+  <p>The vision agent is the first realized step; the same platform is ready for a broader agent layer.</p>
   <div class="cards c2">
     <div class="card"><div class="h"><span class="dot"></span><span class="t">Incident-triage agent</span></div><div class="b">Summarizes abnormal city readings and recommends operator actions when thresholds are breached.</div></div>
     <div class="card violet"><div class="h"><span class="dot"></span><span class="t">Anomaly-explanation agent</span></div><div class="b">Connects air, weather, mobility, and water signals to explain <em>why</em> a metric is moving.</div></div>
     <div class="card blue"><div class="h"><span class="dot"></span><span class="t">Operator copilot</span></div><div class="b">Answers natural-language questions over recent TimescaleDB readings and cold BigQuery history.</div></div>
     <div class="card gold"><div class="h"><span class="dot"></span><span class="t">Policy-aware alert routing</span></div><div class="b">Routes alerts while respecting the project's safety, privacy, and data-access boundaries.</div></div>
-  </div>
-
-  <div class="callout gold">
-    <div class="ct">Status</div>
-    <p>AI-agent features are future scope. The platform's clean reading contract, dual stores, and least-privilege
-    access model are deliberately agent-ready, so this layer can be added without re-architecting what exists.</p>
   </div>
 </section>
 
@@ -990,8 +1066,9 @@ make run-streamlit
   controls, and observed through two complementary dashboards, all reproducible locally and safe to submit.</p>
 
   <p>The Phase 2 blueprint has become an operated product, with every design decision now backed by running
-  evidence. The civic use cases that motivated the project are enabled, and a clean path to an AI-agent layer is
-  open. This is the project's closing report.</p>
+  evidence. The civic use cases that motivated the project are enabled, an optional AI safety agent already proves
+  the intelligence layer on top, and a clear path to a broader agent layer is open. This is the project's closing
+  report.</p>
 
   <div class="divider-band">
     <h3>From blueprint to operated product</h3>

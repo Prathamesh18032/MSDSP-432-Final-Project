@@ -230,3 +230,65 @@ ul.plain { padding-left: 18px; margin: 8px 0; } ul.plain li { margin-bottom: 4px
 .metricline .m { font-size: 9pt; color: var(--muted); } .metricline .m b { color: var(--ink); }
 hr.soft { border: none; border-top: 1px solid var(--line); margin: 14px 0; }
 .page-break { break-before: page; }
+
+/* ============================================================================
+   PREMIUM POLISH — page frame, 3D elevation, liquid glass, framed tables
+   ============================================================================ */
+:root {
+  --e1: 0 1px 2px rgba(11,18,32,.05), 0 2px 6px rgba(11,18,32,.06);
+  --e2: 0 2px 4px rgba(11,18,32,.06), 0 9px 18px rgba(11,18,32,.09);
+  --e3: 0 5px 10px rgba(11,18,32,.10), 0 17px 32px rgba(11,18,32,.13);
+  --e4: 0 9px 16px rgba(11,18,32,.13), 0 30px 52px rgba(11,18,32,.18);
+}
+
+/* ---- Elevation: varied depth per element type, so pages feel fresh not uniform ---- */
+.kpi { box-shadow: var(--e2); }
+.card { box-shadow: var(--e2); }
+.callout { box-shadow: var(--e1); }
+.s-num { box-shadow: var(--e3); }
+pre.code { box-shadow: var(--e3); }
+.divider-band { box-shadow: var(--e3); }
+figure .frame { box-shadow: var(--e4) !important; }
+figure.plain .frame { box-shadow: var(--e3) !important; }
+/* accent-tinted pops vary the look between figures */
+figure.arch .frame { box-shadow: 0 8px 16px rgba(11,18,32,.12), 0 28px 50px rgba(14,140,136,.18) !important; }
+figure.shot .frame { box-shadow: 0 12px 22px rgba(11,18,32,.17), 0 34px 60px rgba(11,18,32,.22) !important; }
+.kpi.gold { box-shadow: 0 2px 4px rgba(11,18,32,.06), 0 10px 20px rgba(154,123,18,.14); }
+.kpi.green { box-shadow: 0 2px 4px rgba(11,18,32,.06), 0 10px 20px rgba(78,158,46,.14); }
+.kpi.blue { box-shadow: 0 2px 4px rgba(11,18,32,.06), 0 10px 20px rgba(47,111,208,.14); }
+.kpi.violet { box-shadow: 0 2px 4px rgba(11,18,32,.06), 0 10px 20px rgba(124,63,190,.14); }
+
+/* ---- Framed, rounded tables with a soft lift ---- */
+table.grid { border: 1px solid var(--line-2); border-radius: 9px; border-collapse: separate;
+  border-spacing: 0; box-shadow: var(--e1); }
+table.grid thead th { border-bottom: 0; }
+table.grid thead th:first-child { border-top-left-radius: 8px; }
+table.grid thead th:last-child  { border-top-right-radius: 8px; }
+table.grid tbody td { border-bottom: 1px solid var(--line); }
+table.grid tbody tr:last-child td { border-bottom: 0; }
+table.grid tbody tr:last-child td:first-child { border-bottom-left-radius: 8px; }
+table.grid tbody tr:last-child td:last-child  { border-bottom-right-radius: 8px; }
+
+/* ---- Liquid-glass treatment for dark panels (gradient + specular highlight) ---- */
+.divider-band { position: relative;
+  background: linear-gradient(135deg, #18294A 0%, #0E1A30 55%, #0B1220 100%);
+  border: 1px solid rgba(255,255,255,.08); overflow: hidden; }
+.divider-band::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 42%;
+  background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,0)); pointer-events: none; }
+.callout.ink { position: relative;
+  background: linear-gradient(135deg, #16243E 0%, #0B1220 70%);
+  border: 1px solid rgba(255,255,255,.08); box-shadow: var(--e3); overflow: hidden; }
+.callout.ink::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 40%;
+  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,0)); pointer-events: none; }
+
+/* ---- Equal-height + equal-width card grids ----
+   minmax(0,1fr) stops long code tokens from blowing out one column and shrinking another. */
+.cards { align-items: stretch; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.cards.c2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cards.c4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.card { display: flex; flex-direction: column; }
+.card .b code.inl, code.inl { overflow-wrap: anywhere; }
+
+/* Keep a subheading attached to the content that follows it (no orphaned headings) */
+h3 { break-after: avoid; page-break-after: avoid; }
+h3 + * { break-before: avoid; }
