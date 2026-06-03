@@ -56,7 +56,7 @@ def render():
             display_header_footer=True,
             header_template=EMPTY,
             footer_template=FOOTER,
-            margin={"top": "15mm", "bottom": "16mm", "left": "0", "right": "0"},
+            margin={"top": "15mm", "bottom": "16mm", "left": "15mm", "right": "15mm"},
         )
         browser.close()
 
