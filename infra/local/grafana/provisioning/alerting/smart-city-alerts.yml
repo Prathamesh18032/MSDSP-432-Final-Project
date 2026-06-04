@@ -3,7 +3,7 @@ apiVersion: 1
 groups:
   - orgId: 1
     name: Smart City Operations Alerts
-    folder: Smart City
+    folder: Smart City Alerts
     interval: 1m
     rules:
       - uid: smartcity-no-recent-ingestion
