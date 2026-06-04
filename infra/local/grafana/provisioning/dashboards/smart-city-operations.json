@@ -529,7 +529,7 @@
           },
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "WITH ops AS (\n  SELECT\n    recorded_at AS \"time\",\n    'Readings/sec' AS metric,\n    readings_per_second AS value\n  FROM ingestion_metrics\n  WHERE $__timeFilter(recorded_at)\n), fallback AS (\n  SELECT\n    time_bucket('1 minute', time) AS \"time\",\n    'Readings/sec' AS metric,\n    (COUNT(*)::DOUBLE PRECISION / 60.0) AS value\n  FROM sensor_readings\n  WHERE $__timeFilter(time)\n    AND NOT EXISTS (SELECT 1 FROM ops)\n  GROUP BY 1\n)\nSELECT * FROM ops\nUNION ALL\nSELECT * FROM fallback\nORDER BY \"time\";",
+          "rawSql": "SELECT\n  time_bucket('1 minute', ingested_at) AS \"time\",\n  'Readings/sec' AS metric,\n  (COUNT(*)::DOUBLE PRECISION / 60.0) AS value\nFROM sensor_readings\nWHERE $__timeFilter(ingested_at)\nGROUP BY 1\nORDER BY \"time\";",
           "refId": "A"
         }
       ],
