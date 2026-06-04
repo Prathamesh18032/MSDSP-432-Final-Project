@@ -2528,9 +2528,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 59
+        "y": 87
       },
-      "id": 26,
+      "id": 40,
       "panels": [],
       "title": "Safety AI",
       "type": "row"
@@ -2571,9 +2571,9 @@
         "h": 4,
         "w": 6,
         "x": 0,
-        "y": 60
+        "y": 88
       },
-      "id": 27,
+      "id": 41,
       "options": {
         "colorMode": "background",
         "graphMode": "none",
@@ -2601,7 +2601,8 @@
         }
       ],
       "title": "AI Flags In Window",
-      "type": "stat"
+      "type": "stat",
+      "timeFrom": "7d"
     },
     {
       "datasource": {
@@ -2639,9 +2640,9 @@
         "h": 4,
         "w": 6,
         "x": 6,
-        "y": 60
+        "y": 88
       },
-      "id": 28,
+      "id": 42,
       "options": {
         "colorMode": "background",
         "graphMode": "none",
@@ -2669,7 +2670,8 @@
         }
       ],
       "title": "High Severity Flags",
-      "type": "stat"
+      "type": "stat",
+      "timeFrom": "7d"
     },
     {
       "datasource": {
@@ -2707,9 +2709,9 @@
         "h": 4,
         "w": 6,
         "x": 12,
-        "y": 60
+        "y": 88
       },
-      "id": 29,
+      "id": 43,
       "options": {
         "colorMode": "background",
         "graphMode": "none",
@@ -2770,9 +2772,9 @@
         "h": 4,
         "w": 6,
         "x": 18,
-        "y": 60
+        "y": 88
       },
-      "id": 30,
+      "id": 44,
       "options": {
         "cellHeight": "sm",
         "footer": {
@@ -2859,9 +2861,9 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 64
+        "y": 92
       },
-      "id": 31,
+      "id": 45,
       "options": {
         "legend": {
           "calcs": [],
@@ -2887,7 +2889,8 @@
         }
       ],
       "title": "Safety AI Predictions Over Time",
-      "type": "timeseries"
+      "type": "timeseries",
+      "timeFrom": "7d"
     },
     {
       "datasource": {
@@ -2931,9 +2934,9 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 64
+        "y": 92
       },
-      "id": 32,
+      "id": 46,
       "options": {
         "barRadius": 0,
         "barWidth": 0.8,
@@ -2968,7 +2971,8 @@
         }
       ],
       "title": "Flags by Possible Activity",
-      "type": "barchart"
+      "type": "barchart",
+      "timeFrom": "7d"
     },
     {
       "datasource": {
@@ -3001,9 +3005,9 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 72
+        "y": 100
       },
-      "id": 33,
+      "id": 47,
       "options": {
         "cellHeight": "sm",
         "footer": {
@@ -3029,7 +3033,8 @@
         }
       ],
       "title": "Recent Safety AI Flags",
-      "type": "table"
+      "type": "table",
+      "timeFrom": "7d"
     }
   ],
   "refresh": "10s",
