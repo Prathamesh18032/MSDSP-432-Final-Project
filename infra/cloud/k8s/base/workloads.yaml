@@ -483,3 +483,104 @@ spec:
     - name: http
       port: 3000
       targetPort: http
+
+---
+# NO2 rolling re-seed: OpenAQ publishes no NO2 sensor near Chicago (0/100 locations within 25km),
+# so NO2 can only come from the simulator source ("City Sensor Network" on the Grafana dashboard).
+# This CronJob keeps a continuous, fresh 24h NO2 series in TimescaleDB.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: smartcity-no2-seed-sql
+  namespace: __GKE_NAMESPACE__
+  labels:
+    app.kubernetes.io/name: smartcity-no2-seed
+data:
+  seed_no2.sql: |
+    -- Mirrors internal/simulator/simulator.go NO2 profile (baseline 22 ppb, amplitude 8).
+    -- Aligned 10-minute grid over the last 24h + ON CONFLICT => idempotent and gap-resilient
+    -- (a missed run is backfilled on the next run; existing points are never rewritten).
+    INSERT INTO sensor_readings
+      (time, sensor_id, metric, value, unit, source, latitude, longitude, quality_flag, ingested_at, schema_version)
+    SELECT
+      gs,
+      s.sensor_id,
+      'NO2',
+      GREATEST(0.5, 22.0
+          + 8.0 * sin(extract(epoch from gs) / 3600.0 * (2 * pi() / 24.0))
+          + s.voffset
+          + (random() - 0.5) * 3.0),
+      'ppb', 'simulator', s.lat, s.lon, 1, now(), 1
+    FROM generate_series(
+           date_bin('10 minutes', now() - interval '24 hours', TIMESTAMPTZ 'epoch'),
+           date_bin('10 minutes', now(),                       TIMESTAMPTZ 'epoch'),
+           interval '10 minutes') AS gs
+    CROSS JOIN (VALUES
+      ('SIM-CHI-AQ-001'::varchar, 41.886400::numeric, -87.624600::numeric, 0.0::double precision),
+      ('SIM-CHI-AQ-002',          41.884000,          -87.647000,           1.5),
+      ('SIM-CHI-AQ-003',          41.794300,          -87.590700,          -1.5)
+    ) AS s(sensor_id, lat, lon, voffset)
+    ON CONFLICT (time, sensor_id, metric) DO NOTHING;
+
+    -- Bound storage growth: keep ~7 days of seeded NO2 history.
+    DELETE FROM sensor_readings
+     WHERE source = 'simulator' AND metric = 'NO2'
+       AND time < now() - interval '7 days';
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: smartcity-no2-seed
+  namespace: __GKE_NAMESPACE__
+  labels:
+    app.kubernetes.io/name: smartcity-no2-seed
+spec:
+  schedule: "*/30 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 200
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      # Generous bound: lets the pod wait out a node scale-up (minutes) but still releases a
+      # stuck/unschedulable run before the next 30-min slot instead of blocking it.
+      activeDeadlineSeconds: 900
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: smartcity-no2-seed
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: seed
+              image: __K8S_TIMESCALE_IMAGE__
+              imagePullPolicy: IfNotPresent
+              command:
+                - psql
+                - "$(TIMESCALE_DSN)"
+                - -v
+                - ON_ERROR_STOP=1
+                - -f
+                - /sql/seed_no2.sql
+              env:
+                - name: TIMESCALE_DSN
+                  valueFrom:
+                    secretKeyRef:
+                      name: smartcity-runtime-secrets
+                      key: TIMESCALE_DSN
+              volumeMounts:
+                - name: sql
+                  mountPath: /sql
+                  readOnly: true
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+          volumes:
+            - name: sql
+              configMap:
+                name: smartcity-no2-seed-sql
