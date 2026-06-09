@@ -6,6 +6,7 @@ This directory contains the cloud-ready foundation for the Smart City Zero-Disk 
 
 - `terraform/`: GCP resources for Pub/Sub, dead-letter routing, GCS cold storage, video object notifications, BigQuery external analytics, Artifact Registry, service accounts, and gated GKE Autopilot runtime.
 - `k8s/`: renderable GKE manifests for self-hosted TimescaleDB, the multi-source ingestor, Pub/Sub hot writer, optional video AI agent, cold export CronJob, Streamlit, and guarded Streamlit-only public demo ingress.
+- Final cleanup is documented in `docs/runbooks/cloud-teardown.md` and exposed through guarded `make cloud-teardown-*` targets.
 - Local container image packaging uses the same Artifact Registry naming convention through `make docker-build`, `make docker-tag-release`, and `make docker-push`.
 - Terraform plan review uses local, ignored `terraform.tfvars` and `smartcity.tfplan` artifacts.
 
@@ -90,6 +91,8 @@ make runtime-check
 ```
 
 `cloud-check` validates expected cloud files and runs optional Terraform/Kubernetes checks only when the related tools are installed. The bootstrap preview targets verify local configuration and print future commands. `artifact-registry-create` is the only Slice 12 setup target that creates a live cloud resource: one Artifact Registry Docker repository in `asia-south1`, after enabling the Artifact Registry API. The image push targets publish containers only; they do not deploy workloads or run Terraform.
+
+The final teardown targets are destructive and guarded. Start with `make cloud-teardown-inventory`, then follow `docs/runbooks/cloud-teardown.md` for the freeze, data-emptying, destroy, verification, billing unlink, and project shutdown order.
 
 The Terraform targets support Slice 13 plan review only. They initialize, validate, and save a local plan artifact, but they do not apply resources. The existing Artifact Registry repository from Slice 12 must be imported before any later apply.
 
