@@ -17,7 +17,7 @@ endif
 TFVARS_GCS_BUCKET := $(shell awk -F= '/^[[:space:]]*gcs_bucket[[:space:]]*=/ {gsub(/[ "	]/, "", $$2); print $$2}' infra/cloud/terraform/terraform.tfvars 2>/dev/null)
 CLOUD_COLD_BUCKET ?= $(if $(TFVARS_GCS_BUCKET),$(TFVARS_GCS_BUCKET),$(GCS_BUCKET))
 
-.PHONY: help check test streamlit-check streamlit-test streamlit-ui-qa ai-check cloud-check ci-cd-check phase3-check phase3-package phase3-package-list gcp-bootstrap-check gcp-cost-guard-check artifact-registry-preview artifact-registry-check artifact-registry-create artifact-registry-list ci-publish-check terraform-check terraform-init terraform-validate terraform-plan terraform-show-plan terraform-import-artifact-registry-preview terraform-import-artifact-registry terraform-apply-core terraform-plan-runtime terraform-apply-runtime gcp-core-check pubsub-check bigquery-cold-check gke-get-credentials k8s-render k8s-apply k8s-status k8s-smoke k8s-logs k8s-backup-once k8s-backup-check k8s-restore-test k8s-restore-check k8s-restore-clean k8s-port-forward-streamlit public-demo-render public-demo-apply public-demo-status public-demo-url public-demo-smoke public-demo-disable grafana-public-render grafana-public-apply grafana-public-status grafana-public-url grafana-public-smoke grafana-public-disable observability-check runtime-check runtime-health runtime-cost-check runtime-scale-down runtime-scale-up runtime-demo-mode runtime-idle-mode runtime-resume-mode runtime-promote-latest runtime-promote-sha runtime-image-check runtime-release-check runtime-cost-report runtime-cost-guard runtime-evidence runtime-live-smoke demo-live-start demo-live-stop docker-build docker-build-ingestor docker-build-writer docker-build-streamlit docker-build-video-agent docker-smoke docker-tag-release docker-push docker-push-video-agent run run-local seed-simulator seed-video-dataset extract-video-frames upload-video-dataset-gcs grafana-demo-ready run-openaq run-multisource poll-multisource-once consume-pubsub consume-pubsub-once pubsub-smoke pubsub-hotpath-smoke export-cold export-cold-demo export-cold-gcs cloud-cold-smoke run-streamlit run-streamlit-compose run-video-agent-once run-video-agent-compose stop logs clean
+.PHONY: help check test streamlit-check streamlit-test streamlit-ui-qa ai-check cloud-check ci-cd-check phase3-check phase3-package phase3-package-list gcp-bootstrap-check gcp-cost-guard-check artifact-registry-preview artifact-registry-check artifact-registry-create artifact-registry-list ci-publish-check terraform-check terraform-init terraform-validate terraform-plan terraform-show-plan terraform-import-artifact-registry-preview terraform-import-artifact-registry terraform-apply-core terraform-plan-runtime terraform-apply-runtime gcp-core-check pubsub-check bigquery-cold-check gke-get-credentials k8s-render k8s-apply k8s-status k8s-smoke k8s-logs k8s-backup-once k8s-backup-check k8s-restore-test k8s-restore-check k8s-restore-clean k8s-port-forward-streamlit public-demo-render public-demo-apply public-demo-status public-demo-url public-demo-smoke public-demo-disable grafana-public-render grafana-public-apply grafana-public-status grafana-public-url grafana-public-smoke grafana-public-disable observability-check runtime-check runtime-health runtime-cost-check runtime-scale-down runtime-scale-up runtime-demo-mode runtime-idle-mode runtime-resume-mode runtime-promote-latest runtime-promote-sha runtime-image-check runtime-release-check runtime-cost-report runtime-cost-guard runtime-evidence runtime-live-smoke demo-live-start demo-live-stop cloud-teardown-inventory cloud-teardown-freeze cloud-teardown-empty-data cloud-teardown-destroy-plan cloud-teardown-destroy cloud-teardown-verify docker-build docker-build-ingestor docker-build-writer docker-build-streamlit docker-build-video-agent docker-smoke docker-tag-release docker-push docker-push-video-agent run run-local seed-simulator seed-video-dataset extract-video-frames upload-video-dataset-gcs grafana-demo-ready run-openaq run-multisource poll-multisource-once consume-pubsub consume-pubsub-once pubsub-smoke pubsub-hotpath-smoke export-cold export-cold-demo export-cold-gcs cloud-cold-smoke run-streamlit run-streamlit-compose run-video-agent-once run-video-agent-compose stop logs clean
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z0-9_-]+:.*##/ {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -179,6 +179,13 @@ cloud-check: ## Validate cloud-readiness scaffold without contacting GCP
 	@test -x infra/cloud/scripts/runtime_live_smoke.sh
 	@test -x infra/cloud/scripts/demo_live_start.sh
 	@test -x infra/cloud/scripts/demo_live_stop.sh
+	@test -f infra/cloud/scripts/cloud_teardown_lib.sh
+	@test -x infra/cloud/scripts/cloud_teardown_inventory.sh
+	@test -x infra/cloud/scripts/cloud_teardown_freeze.sh
+	@test -x infra/cloud/scripts/cloud_teardown_empty_data.sh
+	@test -x infra/cloud/scripts/cloud_teardown_destroy_plan.sh
+	@test -x infra/cloud/scripts/cloud_teardown_destroy.sh
+	@test -x infra/cloud/scripts/cloud_teardown_verify.sh
 	@test -x infra/cloud/scripts/ci_cd_check.sh
 	@test -x infra/cloud/scripts/ci_publish_check.sh
 	@test -f docs/runbooks/artifact-registry-publish.md
@@ -190,6 +197,7 @@ cloud-check: ## Validate cloud-readiness scaffold without contacting GCP
 	@test -f docs/runbooks/cloud-operations.md
 	@test -f docs/runbooks/live-demo.md
 	@test -f docs/runbooks/public-demo.md
+	@test -f docs/runbooks/cloud-teardown.md
 	@for file in $$(find infra/cloud/k8s -name '*.yaml' -type f); do grep -q '^apiVersion:' "$$file"; grep -q '^kind:' "$$file"; done
 	@if command -v terraform >/dev/null 2>&1; then terraform fmt -check -recursive infra/cloud/terraform; else echo "terraform not installed; skipping terraform fmt"; fi
 	@if command -v kubectl >/dev/null 2>&1; then kubectl version --client=true >/dev/null; echo "kubectl installed; cluster dry-run intentionally skipped"; else echo "kubectl not installed; skipping kubernetes client check"; fi
@@ -384,6 +392,24 @@ demo-live-start: ## Run live demo checks and print Streamlit port-forward instru
 
 demo-live-stop: ## Scale down optional demo workloads and print cleanup guidance
 	infra/cloud/scripts/demo_live_stop.sh
+
+cloud-teardown-inventory: ## Capture final GCP teardown inventory without deleting resources
+	infra/cloud/scripts/cloud_teardown_inventory.sh
+
+cloud-teardown-freeze: ## Disable public entry points and stop runtime workloads for final teardown
+	infra/cloud/scripts/cloud_teardown_freeze.sh
+
+cloud-teardown-empty-data: ## Empty final GCS/BQ/Artifact Registry/Kubernetes data before destroy
+	infra/cloud/scripts/cloud_teardown_empty_data.sh
+
+cloud-teardown-destroy-plan: ## Create a reviewed Terraform destroy plan for final teardown
+	infra/cloud/scripts/cloud_teardown_destroy_plan.sh
+
+cloud-teardown-destroy: ## Destroy Terraform-managed cloud resources after explicit acknowledgement
+	infra/cloud/scripts/cloud_teardown_destroy.sh
+
+cloud-teardown-verify: ## Verify cloud resources are gone before billing unlink and project deletion
+	infra/cloud/scripts/cloud_teardown_verify.sh
 
 docker-build: docker-build-ingestor docker-build-writer docker-build-streamlit ## Build all application container images locally
 

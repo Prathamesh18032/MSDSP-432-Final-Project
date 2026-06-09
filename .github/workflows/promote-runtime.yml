@@ -1,11 +1,6 @@
 name: Promote Runtime
 
 on:
-  workflow_run:
-    workflows:
-      - Publish Images
-    types:
-      - completed
   workflow_dispatch:
     inputs:
       image_tag:
@@ -65,13 +60,10 @@ jobs:
     name: Promote runtime to GKE
     runs-on: ubuntu-latest
     environment: production
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') }}
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Require repository variables
         run: |
@@ -102,21 +94,11 @@ jobs:
           INPUT_RUN_PUBLIC_SMOKE: ${{ github.event.inputs.run_public_smoke }}
           INPUT_DEPLOY_PUBLIC_GRAFANA: ${{ github.event.inputs.deploy_public_grafana }}
           INPUT_RUN_GRAFANA_SMOKE: ${{ github.event.inputs.run_grafana_smoke }}
-          AUTO_RUN_PUBLIC_SMOKE: ${{ vars.AUTO_RUN_PUBLIC_SMOKE }}
-          AUTO_DEPLOY_PUBLIC_GRAFANA: ${{ vars.AUTO_DEPLOY_PUBLIC_GRAFANA }}
-          AUTO_RUN_GRAFANA_SMOKE: ${{ vars.AUTO_RUN_GRAFANA_SMOKE }}
         run: |
-          if [[ "${GITHUB_EVENT_NAME}" == "workflow_run" ]]; then
-            echo "PROMOTE_IMAGE_TAG=latest-main" >> "${GITHUB_ENV}"
-            echo "RUN_PUBLIC_SMOKE=${AUTO_RUN_PUBLIC_SMOKE:-false}" >> "${GITHUB_ENV}"
-            echo "DEPLOY_PUBLIC_GRAFANA=${AUTO_DEPLOY_PUBLIC_GRAFANA:-false}" >> "${GITHUB_ENV}"
-            echo "RUN_GRAFANA_SMOKE=${AUTO_RUN_GRAFANA_SMOKE:-false}" >> "${GITHUB_ENV}"
-          else
-            echo "PROMOTE_IMAGE_TAG=${INPUT_IMAGE_TAG:-latest-main}" >> "${GITHUB_ENV}"
-            echo "RUN_PUBLIC_SMOKE=${INPUT_RUN_PUBLIC_SMOKE:-false}" >> "${GITHUB_ENV}"
-            echo "DEPLOY_PUBLIC_GRAFANA=${INPUT_DEPLOY_PUBLIC_GRAFANA:-false}" >> "${GITHUB_ENV}"
-            echo "RUN_GRAFANA_SMOKE=${INPUT_RUN_GRAFANA_SMOKE:-false}" >> "${GITHUB_ENV}"
-          fi
+          echo "PROMOTE_IMAGE_TAG=${INPUT_IMAGE_TAG:-latest-main}" >> "${GITHUB_ENV}"
+          echo "RUN_PUBLIC_SMOKE=${INPUT_RUN_PUBLIC_SMOKE:-false}" >> "${GITHUB_ENV}"
+          echo "DEPLOY_PUBLIC_GRAFANA=${INPUT_DEPLOY_PUBLIC_GRAFANA:-false}" >> "${GITHUB_ENV}"
+          echo "RUN_GRAFANA_SMOKE=${INPUT_RUN_GRAFANA_SMOKE:-false}" >> "${GITHUB_ENV}"
 
       - name: Verify published image tags exist
         run: RUNTIME_EXPECTED_IMAGE_TAG="${PROMOTE_IMAGE_TAG}" make runtime-image-check
